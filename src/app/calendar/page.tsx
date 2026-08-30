@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import {
   Calendar as CalendarIcon,
+  ChevronRight,
+  ChevronLeft,
   CheckCircle2,
   Clock,
   Plus,
@@ -12,17 +14,32 @@ import {
   Star,
   RefreshCw,
   BookOpen,
-  Filter,
-  AlertCircle,
+  AlertTriangle,
   X,
+  Zap,
+  Info,
+  CalendarCheck,
 } from "lucide-react";
 
 export default function CalendarPage() {
-  const [activeTab, setActiveTab] = useState<"TASKS" | "DIARY">("TASKS");
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState<any[]>([]);
   const [entries, setEntries] = useState<any[]>([]);
+  const [waterLogs, setWaterLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
+
+  // Selected Day Details Modal
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+
+  // Task Completion with Numerical Results Modal
+  const [completingTask, setCompletingTask] = useState<any | null>(null);
+  const [completionForm, setCompletionForm] = useState({
+    valueBefore: "",
+    amountAdded: "",
+    valueAfter: "",
+    notes: "",
+  });
+  const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
 
   // Add Task Modal
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -42,7 +59,7 @@ export default function CalendarPage() {
     waterQualityRating: "5",
   });
 
-  // Email state
+  // Email reminder state
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState<string | null>(null);
 
@@ -57,6 +74,7 @@ export default function CalendarPage() {
       if (logsRes.ok) {
         const lData = await logsRes.json();
         setEntries(lData.entries || []);
+        setWaterLogs(lData.waterLogs || []);
       }
     } catch (err) {
       console.error(err);
@@ -69,48 +87,139 @@ export default function CalendarPage() {
     loadData();
   }, []);
 
-  const handleMarkDone = async (taskId: string) => {
+  // Month navigation
+  const nextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+  const prevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  // Calendar calculations
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const hebrewMonths = [
+    "ינואר",
+    "פברואר",
+    "מרץ",
+    "אפריל",
+    "מאי",
+    "יוני",
+    "יולי",
+    "אוגוסט",
+    "ספטמבר",
+    "אוקטובר",
+    "נובמבר",
+    "דצמבר",
+  ];
+
+  const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Sunday
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const calendarDays = [];
+
+  // Previous month trailing days
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    calendarDays.push({
+      date: new Date(year, month - 1, daysInPrevMonth - i),
+      isCurrentMonth: false,
+    });
+  }
+
+  // Current month days
+  for (let i = 1; i <= daysInMonth; i++) {
+    calendarDays.push({
+      date: new Date(year, month, i),
+      isCurrentMonth: true,
+    });
+  }
+
+  // Next month leading days to complete grid (multiples of 7)
+  const remainingCells = (7 - (calendarDays.length % 7)) % 7;
+  for (let i = 1; i <= remainingCells; i++) {
+    calendarDays.push({
+      date: new Date(year, month + 1, i),
+      isCurrentMonth: false,
+    });
+  }
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  };
+
+  const getEventsForDay = (date: Date) => {
+    const dayTasks = tasks.filter((t) => isSameDay(new Date(t.nextDueDate), date));
+    const doneTasks = tasks.filter(
+      (t) => t.lastDoneDate && isSameDay(new Date(t.lastDoneDate), date)
+    );
+    const dayEntries = entries.filter((e) => isSameDay(new Date(e.entryDate), date));
+    const dayWaterLogs = waterLogs.filter((w) => isSameDay(new Date(w.testedAt), date));
+
+    return { dayTasks, doneTasks, dayEntries, dayWaterLogs };
+  };
+
+  // Open Structured Completion Modal
+  const openCompletionModal = (task: any) => {
+    setCompletingTask(task);
+    setCompletionForm({
+      valueBefore: "",
+      amountAdded: "",
+      valueAfter: "",
+      notes: "",
+    });
+  };
+
+  const handleSaveCompletion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!completingTask) return;
+
+    setIsSubmittingCompletion(true);
     try {
       await fetch("/api/tasks", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: taskId, markDoneAndReschedule: true }),
+        body: JSON.stringify({
+          id: completingTask.id,
+          markDoneAndReschedule: true,
+          valueBefore: completionForm.valueBefore,
+          amountAdded: completionForm.amountAdded,
+          valueAfter: completionForm.valueAfter,
+          notes: completionForm.notes,
+        }),
       });
-      loadData();
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
-  const handleDeleteTask = async (id: string) => {
-    if (!confirm("האם למחוק משימה זו?")) return;
-    try {
-      await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
+      setCompletingTask(null);
       loadData();
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsSubmittingCompletion(false);
     }
   };
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/tasks", {
+      const targetDate = selectedDay || new Date();
+      await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(taskForm),
+        body: JSON.stringify({
+          ...taskForm,
+          nextDueDate: targetDate.toISOString(),
+        }),
       });
-      if (res.ok) {
-        setIsTaskModalOpen(false);
-        setTaskForm({
-          title: "",
-          description: "",
-          category: "WEEKLY",
-          frequencyDays: "7",
-          priority: "MEDIUM",
-        });
-        loadData();
-      }
+      setIsTaskModalOpen(false);
+      loadData();
     } catch (err) {
       console.error(err);
     }
@@ -119,29 +228,16 @@ export default function CalendarPage() {
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/log", {
+      const targetDate = selectedDay || new Date();
+      await fetch("/api/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(noteForm),
+        body: JSON.stringify({
+          ...noteForm,
+          entryDate: targetDate.toISOString(),
+        }),
       });
-      if (res.ok) {
-        setIsNoteModalOpen(false);
-        setNoteForm({
-          title: "",
-          content: "",
-          waterQualityRating: "5",
-        });
-        loadData();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleDeleteNote = async (id: string) => {
-    if (!confirm("האם למחוק רשומה זו מהיומן?")) return;
-    try {
-      await fetch(`/api/log?id=${id}`, { method: "DELETE" });
+      setIsNoteModalOpen(false);
       loadData();
     } catch (err) {
       console.error(err);
@@ -170,33 +266,54 @@ export default function CalendarPage() {
     }
   };
 
-  const filteredTasks = tasks.filter((t) => {
-    if (categoryFilter === "ALL") return true;
-    return t.category === categoryFilter;
-  });
+  const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 pb-12">
+      {/* Header & Controls */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
             <CalendarIcon className="w-8 h-8 text-cyan-400" />
-            <span>לוח טיפולים ויומן תחזוקה אישי</span>
+            <span>לוח שנה ויומן טיפולים חודשי</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            מעקב אחר משימות מחזוריות (שבועי, חודשי, רבעוני) וכתיבת הערות ומעקב אישי.
+            תצוגת לוח שנה חודשית מלאה למעקב טיפולים מחזוריים, תוצאות מספריות והערות יומן.
           </p>
         </div>
 
-        <button
-          onClick={handleSendEmailReminder}
-          disabled={emailSending}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50"
-        >
-          <Send className="w-4 h-4" />
-          <span>{emailSending ? "שולח תזכורת..." : "שלח לי תזכורת עכשיו למייל"}</span>
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => {
+              setSelectedDay(new Date());
+              setIsTaskModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/40 text-xs font-bold transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>משימה חדשה</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSelectedDay(new Date());
+              setIsNoteModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/40 text-xs font-bold transition-all"
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>הערה ביומן</span>
+          </button>
+
+          <button
+            onClick={handleSendEmailReminder}
+            disabled={emailSending}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50"
+          >
+            <Send className="w-4 h-4" />
+            <span>{emailSending ? "שולח..." : "שלח תזכורת למייל"}</span>
+          </button>
+        </div>
       </div>
 
       {emailResult && (
@@ -208,214 +325,394 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-        <button
-          onClick={() => setActiveTab("TASKS")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
-            activeTab === "TASKS"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-              : "text-slate-400 hover:text-white hover:bg-slate-900"
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          <span>משימות תחזוקה מחזוריות ({tasks.length})</span>
-        </button>
+      {/* Month Navigation Bar */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-5 flex items-center justify-between shadow-xl">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <h2 className="text-xl sm:text-2xl font-black text-white">
+            {hebrewMonths[month]} {year}
+          </h2>
+          <button
+            onClick={goToToday}
+            className="text-xs px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg border border-slate-700 font-semibold transition-colors"
+          >
+            היום
+          </button>
+        </div>
 
-        <button
-          onClick={() => setActiveTab("DIARY")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
-            activeTab === "DIARY"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-              : "text-slate-400 hover:text-white hover:bg-slate-900"
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span>יומן טיפולים והערות אישיות ({entries.length})</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={prevMonth}
+            className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
+            title="חודש קודם"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          <button
+            onClick={nextMonth}
+            className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
+            title="חודש הבא"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
-      {/* Tab 1: Tasks */}
-      {activeTab === "TASKS" && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            {/* Filter buttons */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {["ALL", "WEEKLY", "MONTHLY", "QUARTERLY"].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    categoryFilter === cat
-                      ? "bg-slate-800 text-cyan-300 border border-cyan-500/40"
-                      : "bg-slate-950 text-slate-400 hover:text-white border border-slate-850"
+      {/* Monthly Calendar Grid */}
+      {loading ? (
+        <div className="text-center py-24 text-cyan-400">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto" />
+        </div>
+      ) : (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-2 overflow-hidden">
+          {/* Days of week header */}
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center pb-2 border-b border-slate-800 text-xs font-bold text-slate-400">
+            {daysOfWeek.map((day, idx) => (
+              <div key={idx} className="py-1">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Grid Cells */}
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {calendarDays.map((cell, idx) => {
+              const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(cell.date);
+              const isToday = isSameDay(cell.date, new Date());
+              const isSelected = selectedDay && isSameDay(cell.date, selectedDay);
+              const hasEvents =
+                dayTasks.length > 0 || doneTasks.length > 0 || dayEntries.length > 0 || dayWaterLogs.length > 0;
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedDay(cell.date)}
+                  className={`min-h-[90px] sm:min-h-[110px] p-2 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                    isSelected
+                      ? "bg-cyan-950/40 border-cyan-400 ring-1 ring-cyan-400 shadow-lg"
+                      : isToday
+                      ? "bg-slate-950/90 border-cyan-500/60 shadow-cyan-950/20"
+                      : cell.isCurrentMonth
+                      ? "bg-slate-950/60 border-slate-850 hover:border-slate-700"
+                      : "bg-slate-950/20 border-slate-900 text-slate-600"
                   }`}
                 >
-                  {cat === "ALL"
-                    ? "הכל"
-                    : cat === "WEEKLY"
-                    ? "שבועי"
-                    : cat === "MONTHLY"
-                    ? "חודשי"
-                    : "רבעוני / מילוי מים"}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setIsTaskModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/40 text-xs font-bold transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>הוסף משימה מותאמת אישית</span>
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-12 text-cyan-400">
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto" />
-            </div>
-          ) : filteredTasks.length === 0 ? (
-            <div className="text-center py-12 bg-slate-900/60 rounded-3xl border border-slate-800 text-slate-400 text-sm">
-              אין משימות להצגה בקטגוריה זו.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredTasks.map((task) => {
-                const isOverdue = new Date(task.nextDueDate).getTime() < Date.now();
-                return (
-                  <div
-                    key={task.id}
-                    className={`bg-slate-900/90 border rounded-2xl p-5 space-y-4 flex flex-col justify-between transition-all ${
-                      isOverdue ? "border-rose-900/70" : "border-slate-800 hover:border-slate-700"
-                    }`}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                            task.priority === "URGENT"
-                              ? "bg-rose-950 text-rose-300 border border-rose-800"
-                              : task.priority === "HIGH"
-                              ? "bg-amber-950 text-amber-300 border border-amber-800"
-                              : "bg-cyan-950 text-cyan-300 border border-cyan-800"
-                          }`}
-                        >
-                          {task.category === "WEEKLY"
-                            ? "שבועי"
-                            : task.category === "MONTHLY"
-                            ? "חודשי"
-                            : task.category === "QUARTERLY"
-                            ? "רבעוני"
-                            : "מותאם אישית"}
-                        </span>
-
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="text-slate-500 hover:text-rose-400 p-1"
-                          title="מחק משימה"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      <h3 className="font-bold text-white text-base">{task.title}</h3>
-                      {task.description && <p className="text-xs text-slate-400 leading-relaxed">{task.description}</p>}
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                      <div className="text-xs">
-                        <span className="text-slate-500">יעד הבא: </span>
-                        <span className={`font-bold ${isOverdue ? "text-rose-400" : "text-slate-300"}`}>
-                          {new Date(task.nextDueDate).toLocaleDateString("he-IL")}
-                        </span>
-                        {isOverdue && <span className="text-[10px] text-rose-400 mr-1">(באיחור)</span>}
-                      </div>
-
-                      <button
-                        onClick={() => handleMarkDone(task.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow transition-all"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>בוצע היום ותזמן</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 2: Diary & Notes */}
-      {activeTab === "DIARY" && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-400">רישום חופשי של טיפולים, תקלות, הוספת כימיקלים והערות שונות</p>
-            <button
-              onClick={() => setIsNoteModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold shadow transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>רשום הערה / טיפול ביומן</span>
-            </button>
-          </div>
-
-          {entries.length === 0 ? (
-            <div className="text-center py-16 bg-slate-900/60 rounded-3xl border border-slate-800 space-y-3">
-              <BookOpen className="w-10 h-10 text-slate-600 mx-auto" />
-              <div className="text-slate-300 text-sm font-semibold">היומן שלך ריק</div>
-              <p className="text-xs text-slate-500">הוסף הערות על טיפולים מיוחדים שביצעת, מסיבות או החלפת מים</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {entries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 space-y-3 transition-all"
-                >
+                  {/* Top: Day Number & Indicators */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-white text-base">{entry.title}</h3>
-                      <span className="text-xs text-slate-500">
-                        • {new Date(entry.entryDate).toLocaleDateString("he-IL")}
+                    <span
+                      className={`text-xs font-bold px-1.5 py-0.5 rounded-lg ${
+                        isToday
+                          ? "bg-cyan-500 text-slate-950 font-black"
+                          : cell.isCurrentMonth
+                          ? "text-slate-200"
+                          : "text-slate-600"
+                      }`}
+                    >
+                      {cell.date.getDate()}
+                    </span>
+
+                    {isToday && (
+                      <span className="hidden sm:inline text-[9px] text-cyan-400 font-bold bg-cyan-950 px-1.5 py-0.2 rounded border border-cyan-800">
+                        היום
                       </span>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      {entry.waterQualityRating && (
-                        <div className="flex items-center text-amber-400">
-                          {Array.from({ length: entry.waterQualityRating }).map((_, i) => (
-                            <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
-                          ))}
-                        </div>
-                      )}
-
-                      <button
-                        onClick={() => handleDeleteNote(entry.id)}
-                        className="text-slate-500 hover:text-rose-400 p-1"
-                        title="מחק רשומה"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    )}
                   </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{entry.content}</p>
+                  {/* Events list badges in cell */}
+                  <div className="space-y-1 my-1 overflow-hidden">
+                    {/* Scheduled Tasks */}
+                    {dayTasks.map((t) => (
+                      <div
+                        key={t.id}
+                        className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-cyan-950/90 text-cyan-300 border border-cyan-800 truncate font-semibold flex items-center gap-1"
+                        title={t.title}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+                        <span className="truncate">{t.title}</span>
+                      </div>
+                    ))}
+
+                    {/* Completed Tasks with Results */}
+                    {doneTasks.map((t) => (
+                      <div
+                        key={`done-${t.id}`}
+                        className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-emerald-950/90 text-emerald-300 border border-emerald-800 truncate font-medium flex items-center gap-1"
+                        title={`בוצע: ${t.title}`}
+                      >
+                        <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                        <span className="truncate">{t.title}</span>
+                      </div>
+                    ))}
+
+                    {/* Diary Entries */}
+                    {dayEntries.map((e) => (
+                      <div
+                        key={e.id}
+                        className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-purple-950/80 text-purple-300 border border-purple-800 truncate flex items-center gap-1"
+                        title={e.title}
+                      >
+                        <BookOpen className="w-2.5 h-2.5 text-purple-400 shrink-0" />
+                        <span className="truncate">{e.title}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dot counters for mobile */}
+                  <div className="sm:hidden flex items-center gap-1 justify-end">
+                    {dayTasks.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />}
+                    {doneTasks.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                    {dayEntries.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />}
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* Add Task Modal */}
+      {/* Selected Day Details Drawer / Modal */}
+      {selectedDay && (
+        <div className="bg-slate-900/90 border border-cyan-800/50 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-black">
+                {selectedDay.getDate()}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  אירועים וטיפולים לתאריך: {selectedDay.toLocaleDateString("he-IL")}
+                </h2>
+                <p className="text-xs text-slate-400">פרטי משימות, פעולות שבוצעו ורשומות יומן</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsTaskModalOpen(true)}
+                className="px-3 py-1.5 bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white rounded-xl text-xs font-semibold border border-cyan-500/40"
+              >
+                + הוסף משימה לתאריך זה
+              </button>
+              <button
+                onClick={() => setIsNoteModalOpen(true)}
+                className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white rounded-xl text-xs font-semibold border border-purple-500/40"
+              >
+                + הוסף הערה ביומן
+              </button>
+              <button onClick={() => setSelectedDay(null)} className="p-1.5 text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {(() => {
+            const { dayTasks, doneTasks, dayEntries } = getEventsForDay(selectedDay);
+            const total = dayTasks.length + doneTasks.length + dayEntries.length;
+
+            if (total === 0) {
+              return (
+                <div className="text-center py-8 text-slate-400 text-xs">
+                  אין טיפולים או משימות מתועדות בתאריך זה.
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-6">
+                {/* Pending Tasks */}
+                {dayTasks.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" />
+                      <span>משימות מתוזמנות לביצוע:</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {dayTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className="bg-slate-950 border border-cyan-800/60 rounded-2xl p-4 space-y-3 flex flex-col justify-between"
+                        >
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                              {task.category === "WEEKLY" ? "שבועי" : task.category === "MONTHLY" ? "חודשי" : "תקופתי"}
+                            </span>
+                            <h4 className="font-bold text-white text-sm pt-1">{task.title}</h4>
+                            {task.description && <p className="text-xs text-slate-400">{task.description}</p>}
+                          </div>
+
+                          <button
+                            onClick={() => openCompletionModal(task)}
+                            className="w-full py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>סמן כבוצע והזן תוצאות מספריות</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Completed treatments with historical values */}
+                {doneTasks.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>טיפולים שבוצעו ותועדו:</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {doneTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className="bg-slate-950/80 border border-emerald-900/60 rounded-2xl p-4 space-y-2 text-xs"
+                        >
+                          <div className="font-bold text-emerald-300 text-sm flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>{task.title}</span>
+                          </div>
+
+                          {task.lastValueBefore && (
+                            <div className="text-slate-300">
+                              <span className="text-slate-500">לפני: </span>
+                              {task.lastValueBefore}
+                            </div>
+                          )}
+
+                          {task.lastAmountAdded && (
+                            <div className="text-cyan-300 font-semibold">
+                              <span className="text-slate-500">מה הוסף / בוצע: </span>
+                              {task.lastAmountAdded}
+                            </div>
+                          )}
+
+                          {task.lastValueAfter && (
+                            <div className="text-emerald-300 font-semibold">
+                              <span className="text-slate-500">תוצאה אחרי: </span>
+                              {task.lastValueAfter}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Diary Entries */}
+                {dayEntries.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                      <BookOpen className="w-4 h-4" />
+                      <span>רשומות יומן:</span>
+                    </h3>
+
+                    <div className="space-y-2">
+                      {dayEntries.map((e) => (
+                        <div key={e.id} className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-1">
+                          <h4 className="font-bold text-white text-sm">{e.title}</h4>
+                          <p className="text-xs text-slate-300 whitespace-pre-wrap">{e.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Modal: Task Completion with Numerical Results */}
+      {completingTask && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-cyan-800/80 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-cyan-400">
+                <CheckCircle2 className="w-6 h-6" />
+                <h2 className="text-lg font-bold text-white">תיעוד תוצאות טיפול: {completingTask.title}</h2>
+              </div>
+              <button onClick={() => setCompletingTask(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              הזן את הערכים המספריים של המדידה לפני ואחרי. הנתונים ישמרו בהיסטוריית ה-AI לחישוב מגמות ותזכורות עתידיות.
+            </p>
+
+            <form onSubmit={handleSaveCompletion} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">1. מדידה לפני הטיפול (אם רלוונטי)</label>
+                <input
+                  type="text"
+                  value={completionForm.valueBefore}
+                  onChange={(e) => setCompletionForm({ ...completionForm, valueBefore: e.target.value })}
+                  placeholder="למשל: pH היה 7.9, כלור היה 0.5 ppm"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">2. מה נעשה / כמה הוספת (כמות וחומר)</label>
+                <input
+                  type="text"
+                  required
+                  value={completionForm.amountAdded}
+                  onChange={(e) => setCompletionForm({ ...completionForm, amountAdded: e.target.value })}
+                  placeholder="למשל: הוספתי 25 גרם pH Minus, שטפתי פילטר בזרם מים"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs font-bold text-cyan-300 focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">3. תוצאה ומדידה סופית אחרי</label>
+                <input
+                  type="text"
+                  value={completionForm.valueAfter}
+                  onChange={(e) => setCompletionForm({ ...completionForm, valueAfter: e.target.value })}
+                  placeholder="למשל: pH ירד ל-7.4, המים צלולים"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs text-emerald-300 font-semibold focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">4. הערות נוספות</label>
+                <textarea
+                  value={completionForm.notes}
+                  onChange={(e) => setCompletionForm({ ...completionForm, notes: e.target.value })}
+                  rows={2}
+                  placeholder="הערות אישיות..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setCompletingTask(null)}
+                  className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                >
+                  ביטול
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingCompletion}
+                  className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2"
+                >
+                  {isSubmittingCompletion ? "שומר טיפול..." : "שמור טיפול ותזמן לפעם הבאה"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add Task */}
       {isTaskModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-lg font-bold text-white">הוספת משימת תחזוקה</h2>
+              <h2 className="text-lg font-bold text-white">הוספת משימת תחזוקה חדשה</h2>
               <button onClick={() => setIsTaskModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -453,10 +750,10 @@ export default function CalendarPage() {
                     onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
                   >
-                    <option value="LOW">רגילה (Low)</option>
-                    <option value="MEDIUM">בינונית (Medium)</option>
-                    <option value="HIGH">גבוהה (High)</option>
-                    <option value="URGENT">דחופה (Urgent)</option>
+                    <option value="LOW">רגילה</option>
+                    <option value="MEDIUM">בינונית</option>
+                    <option value="HIGH">גבוהה</option>
+                    <option value="URGENT">דחופה</option>
                   </select>
                 </div>
               </div>
@@ -491,7 +788,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Add Diary Modal */}
+      {/* Modal: Add Diary Note */}
       {isNoteModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
@@ -516,7 +813,7 @@ export default function CalendarPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">דירוג צלילות ואיכות המים (1-5)</label>
+                <label className="text-xs font-semibold text-slate-300">דירוג איכות המים (1-5)</label>
                 <select
                   value={noteForm.waterQualityRating}
                   onChange={(e) => setNoteForm({ ...noteForm, waterQualityRating: e.target.value })}
@@ -525,8 +822,8 @@ export default function CalendarPage() {
                   <option value="5">⭐⭐⭐⭐⭐ מושלם וצלול כקריסטל</option>
                   <option value="4">⭐⭐⭐⭐ טוב מאוד</option>
                   <option value="3">⭐⭐⭐ סביר אך מעט עכור</option>
-                  <option value="2">⭐⭐ דורש טיפול מיידי</option>
-                  <option value="1">⭐ ירוד / קצף ועכירות קשה</option>
+                  <option value="2">⭐⭐ דורש טיפול</option>
+                  <option value="1">⭐ ירוד / קצף ועכירות</option>
                 </select>
               </div>
 
@@ -537,7 +834,7 @@ export default function CalendarPage() {
                   value={noteForm.content}
                   onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
                   rows={3}
-                  placeholder="פרט מה בוצע, כמה גרם הוספת, הערות כלליות..."
+                  placeholder="פרט מה בוצע, כמה גרם הוספת..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
                 />
               </div>
@@ -552,7 +849,7 @@ export default function CalendarPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-white rounded-xl text-xs font-bold"
+                  className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-white rounded-xl text-xs font-bold"
                 >
                   שמור ביומן
                 </button>

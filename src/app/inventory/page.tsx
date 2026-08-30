@@ -5,7 +5,6 @@ import {
   Package,
   Plus,
   Trash2,
-  Edit2,
   Sparkles,
   Camera,
   Upload,
@@ -15,6 +14,7 @@ import {
   RefreshCw,
   ShieldAlert,
   Info,
+  ScanLine,
 } from "lucide-react";
 
 export default function InventoryPage() {
@@ -25,17 +25,16 @@ export default function InventoryPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
 
-  // Form State
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "SANITIZER",
-    quantity: "500",
-    unit: "GRAMS",
-    minThreshold: "100",
-    notes: "",
-    imageUrl: "",
-  });
+  // Photo-first AI Identification Form State
+  const [imagePreview, setImagePreview] = useState("");
+  const [imageMimeType, setImageMimeType] = useState("");
+  const [isScanningPhoto, setIsScanningPhoto] = useState(false);
+  const [identifiedData, setIdentifiedData] = useState<any>(null);
+
+  const [quantity, setQuantity] = useState("500");
+  const [minThreshold, setMinThreshold] = useState("100");
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const loadChemicals = async () => {
     try {
@@ -55,41 +54,83 @@ export default function InventoryPage() {
     loadChemicals();
   }, []);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, imageUrl: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+
+    setErrorMsg("");
+    setImageMimeType(file.type);
+    setIsScanningPhoto(true);
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setImagePreview(base64);
+
+      // Trigger Gemini Vision AI identification
+      try {
+        const res = await fetch("/api/ai/identify-chemical", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageBase64: base64,
+            imageMimeType: file.type,
+          }),
+        });
+
+        const json = await res.json();
+        if (json.success && json.data) {
+          setIdentifiedData(json.data);
+          if (json.data.defaultMinThreshold) {
+            setMinThreshold(json.data.defaultMinThreshold.toString());
+          }
+        }
+      } catch (err) {
+        console.error("Failed to identify photo:", err);
+      } finally {
+        setIsScanningPhoto(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleAddChemical = async (e: React.FormEvent) => {
+  const handleSaveChemical = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!imagePreview) {
+      setErrorMsg("חובה להעלות צילום של החומר לזיהוי");
+      return;
+    }
+
     setSaving(true);
+    setErrorMsg("");
+
     try {
       const res = await fetch("/api/chemicals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: identifiedData?.name || "חומר שזוהה מצילום",
+          category: identifiedData?.category || "OTHER",
+          quantity: parseFloat(quantity) || 0,
+          unit: identifiedData?.unit || "GRAMS",
+          minThreshold: parseFloat(minThreshold) || 100,
+          imageUrl: imagePreview,
+          notes: identifiedData?.usageSummary || identifiedData?.safetyNotes || "",
+        }),
       });
+
       if (res.ok) {
         setIsAddModalOpen(false);
-        setFormData({
-          name: "",
-          category: "SANITIZER",
-          quantity: "500",
-          unit: "GRAMS",
-          minThreshold: "100",
-          notes: "",
-          imageUrl: "",
-        });
+        setImagePreview("");
+        setIdentifiedData(null);
+        setQuantity("500");
         loadChemicals();
+      } else {
+        const d = await res.json();
+        setErrorMsg(d.error || "שגיאה בשמירת החומר");
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setErrorMsg(err.message);
     } finally {
       setSaving(false);
     }
@@ -141,7 +182,7 @@ export default function InventoryPage() {
     SANITIZER: "חיטוי (כלור / ברום)",
     PH_MINUS: "מוריד pH",
     PH_PLUS: "מעלה pH / בסיסיות",
-    SHOCK: "שוק מחמצן (ללא כלור)",
+    SHOCK: "שוק מחמצן",
     ANTI_FOAM: "מסיר קצף (Anti-Foam)",
     CLARIFIER: "מצליל מים",
     TEST_STRIPS: "מקלונים לבדיקה",
@@ -159,7 +200,7 @@ export default function InventoryPage() {
             <span>ארון חומרים ומלאי כימיקלים</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            מעקב אחר כמויות החומרים שיש לך, צילומי אריזות וזיהוי חומרים קריטיים חסרים בעזרת AI.
+            הוספת חומרים באמצעות צילום בלבד (Gemini Vision), הזנת כמויות ואיתור חומרים חסרים.
           </p>
         </div>
 
@@ -173,11 +214,15 @@ export default function InventoryPage() {
           </button>
 
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setIsAddModalOpen(true);
+              setImagePreview("");
+              setIdentifiedData(null);
+            }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-600/20 transition-all hover:scale-105"
           >
-            <Plus className="w-4 h-4" />
-            <span>הוסף חומר חדש</span>
+            <Camera className="w-4 h-4" />
+            <span>צלם והוסף חומר חדש</span>
           </button>
         </div>
       </div>
@@ -189,17 +234,21 @@ export default function InventoryPage() {
         </div>
       ) : chemicals.length === 0 ? (
         <div className="text-center py-16 bg-slate-900/60 border border-slate-800 rounded-3xl space-y-4">
-          <Package className="w-12 h-12 text-slate-600 mx-auto" />
+          <Camera className="w-12 h-12 text-slate-600 mx-auto" />
           <div className="space-y-1">
             <h3 className="text-lg font-bold text-white">ארון החומרים ריק</h3>
-            <p className="text-sm text-slate-400">הוסף את החומרים שיש לך בבית או צלם את האריזות</p>
+            <p className="text-sm text-slate-400">צלם את אריזת החומר הראשון שלך וה-AI יזהה אותו אוטומטית</p>
           </div>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setIsAddModalOpen(true);
+              setImagePreview("");
+              setIdentifiedData(null);
+            }}
             className="px-6 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold inline-flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" />
-            <span>הוסף חומר ראשון</span>
+            <Camera className="w-4 h-4" />
+            <span>צלם חומר ראשון</span>
           </button>
         </div>
       ) : (
@@ -214,7 +263,6 @@ export default function InventoryPage() {
                 }`}
               >
                 <div className="space-y-3">
-                  {/* Photo or Placeholder */}
                   {chem.imageUrl ? (
                     <div className="relative h-44 w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
                       <img src={chem.imageUrl} alt={chem.name} className="w-full h-full object-cover" />
@@ -233,7 +281,6 @@ export default function InventoryPage() {
                     </div>
                   )}
 
-                  {/* Title & Info */}
                   <div>
                     <div className="flex items-center justify-between">
                       <h3 className="font-bold text-base text-white">{chem.name}</h3>
@@ -248,10 +295,9 @@ export default function InventoryPage() {
                   </div>
                 </div>
 
-                {/* Stock Controls */}
                 <div className="pt-3 border-t border-slate-800/80 space-y-3">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">כמות נוכחית:</span>
+                    <span className="text-slate-400">כמות נוכחית בארון:</span>
                     <span className="font-black text-sm text-cyan-300">
                       {chem.quantity} {chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit}
                     </span>
@@ -297,151 +343,164 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Add Chemical Modal */}
+      {/* Photo-First Add Chemical Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Plus className="w-5 h-5 text-cyan-400" />
-                <span>הוספת חומר לארון</span>
+                <Camera className="w-5 h-5 text-cyan-400" />
+                <span>זיהוי חומר לפי צילום (Gemini Vision)</span>
               </h2>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setImagePreview("");
+                  setIdentifiedData(null);
+                }}
+                className="text-slate-400 hover:text-white"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddChemical} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">שם החומר</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="למשל: גרגירי כלור מהיר, מוריד pH נוזלי..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 text-sm"
-                />
+            {errorMsg && (
+              <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs">
+                {errorMsg}
               </div>
+            )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">קטגוריה</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                  >
-                    <option value="SANITIZER">חיטוי (כלור / ברום)</option>
-                    <option value="PH_MINUS">מוריד pH (חומצה)</option>
-                    <option value="PH_PLUS">מעלה pH / בסיסיות</option>
-                    <option value="SHOCK">שוק ללא כלור (MPS)</option>
-                    <option value="ANTI_FOAM">מסיר קצף (Anti-Foam)</option>
-                    <option value="CLARIFIER">מצליל מים</option>
-                    <option value="TEST_STRIPS">מקלונים לבדיקה</option>
-                    <option value="CLEANER">ניקוי פילטר / צנרת</option>
-                    <option value="OTHER">אחר</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">יחידת מידה</label>
-                  <select
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                  >
-                    <option value="GRAMS">גרמים (ג')</option>
-                    <option value="ML">מיליליטר (מ"ל)</option>
-                    <option value="TABLETS">טבליות / כדורים</option>
-                    <option value="STRIPS">מקלונים (מארז)</option>
-                    <option value="PIECES">יחידות</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">כמות נוכחית בארון</label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="1"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">התראת מלאי נמוך כאשר נותר פחות מ-</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.minThreshold}
-                    onChange={(e) => setFormData({ ...formData, minThreshold: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Photo Upload */}
+            <form onSubmit={handleSaveChemical} className="space-y-5">
+              {/* Step 1: Photo Upload Area */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300">צילום של האריזה / תווית</label>
-                <div className="flex items-center gap-3">
-                  <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold transition-colors border border-slate-700">
-                    <Camera className="w-4 h-4" />
-                    <span>בחר תמונה / צלם</span>
-                    <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                  </label>
-                  {formData.imageUrl && (
-                    <span className="text-xs text-emerald-400 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>תמונה נטענה בהצלחה</span>
-                    </span>
-                  )}
-                </div>
+                <label className="text-xs font-semibold text-slate-300 block">
+                  1. צלם את האריזה או התווית של החומר:
+                </label>
 
-                {formData.imageUrl && (
-                  <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-slate-700 mt-2">
-                    <img src={formData.imageUrl} alt="תצוגה מקדימה" className="w-full h-full object-cover" />
+                {!imagePreview ? (
+                  <label className="border-2 border-dashed border-cyan-800/60 hover:border-cyan-500 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer bg-slate-950/50 hover:bg-slate-950 transition-all group">
+                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Camera className="w-7 h-7" />
+                    </div>
+                    <div className="text-center">
+                      <span className="text-sm font-bold text-white block">לחץ כאן לצילום או בחירת תמונה</span>
+                      <span className="text-xs text-slate-400">ה-AI ינתח את האריזה ויזהה את החומר במדויק</span>
+                    </div>
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                  </label>
+                ) : (
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-950">
+                    <img src={imagePreview} alt="צילום חומר" className="w-full h-48 object-contain bg-slate-950" />
                     <button
                       type="button"
-                      onClick={() => setFormData({ ...formData, imageUrl: "" })}
-                      className="absolute top-1 right-1 p-1 bg-black/70 rounded-full text-white"
+                      onClick={() => {
+                        setImagePreview("");
+                        setIdentifiedData(null);
+                      }}
+                      className="absolute top-2 right-2 px-3 py-1 bg-black/70 hover:bg-black/90 rounded-full text-white text-xs flex items-center gap-1"
                     >
                       <X className="w-3.5 h-3.5" />
+                      <span>החלף תמונה</span>
                     </button>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">הערות נוספות (הוראות שימוש / מותג)</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="למשל: נרכש ב-2026, יצרן HTH..."
-                  rows={2}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500"
-                />
-              </div>
+              {/* Scanning status */}
+              {isScanningPhoto && (
+                <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-xs flex items-center gap-3">
+                  <RefreshCw className="w-5 h-5 animate-spin shrink-0" />
+                  <span>Gemini Vision מנתח את התווית ומזהה את הרכיבים...</span>
+                </div>
+              )}
+
+              {/* Step 2: AI Recognized Metadata */}
+              {identifiedData && (
+                <div className="space-y-4 p-4 rounded-2xl bg-slate-950/80 border border-cyan-900/60">
+                  <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold">
+                    <Sparkles className="w-4 h-4" />
+                    <span>החומר זוהה בהצלחה על ידי הבינה המלאכותית:</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-sm font-bold text-white">{identifiedData.name}</div>
+                    <div className="text-xs text-cyan-300">
+                      קטגוריה: {categoryLabels[identifiedData.category] || identifiedData.category}
+                      {identifiedData.activeIngredients && ` • חומר פעיל: ${identifiedData.activeIngredients}`}
+                    </div>
+                  </div>
+
+                  {identifiedData.usageSummary && (
+                    <div className="text-[11px] text-slate-300 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                      💡 {identifiedData.usageSummary}
+                    </div>
+                  )}
+
+                  {/* Step 3: User enters quantity only! */}
+                  <div className="pt-2 border-t border-slate-800/80 space-y-3">
+                    <label className="text-xs font-bold text-white block">
+                      2. הזן רק את הכמות שברשותך כרגע:
+                    </label>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-slate-400">
+                          כמות שנותרה באריזה ({identifiedData.unit === "GRAMS" ? 'גר\'' : identifiedData.unit === "ML" ? 'מ"ל' : identifiedData.unit})
+                        </span>
+                        <input
+                          type="number"
+                          required
+                          min="0"
+                          step="1"
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-bold text-sm text-cyan-300 focus:border-cyan-500"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-slate-400">התראת מלאי נמוך מפחות מ-</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={minThreshold}
+                          onChange={(e) => setMinThreshold(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    setImagePreview("");
+                    setIdentifiedData(null);
+                  }}
                   className="px-5 py-2.5 rounded-xl text-slate-400 hover:text-white text-xs font-medium"
                 >
                   ביטול
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 transition-all disabled:opacity-50"
+                  disabled={saving || !imagePreview || isScanningPhoto}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 transition-all disabled:opacity-50 flex items-center gap-2"
                 >
-                  {saving ? "שומר..." : "שמור חומר בארון"}
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>שומר בארון...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>שמור חומר בארון</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -474,7 +533,6 @@ export default function InventoryPage() {
                   {aiAnalysis.inventorySummary}
                 </div>
 
-                {/* Missing Materials */}
                 <div className="space-y-3">
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
                     <ShieldAlert className="w-5 h-5 text-rose-400" />
@@ -507,7 +565,6 @@ export default function InventoryPage() {
                   )}
                 </div>
 
-                {/* Safety Tips */}
                 {aiAnalysis.safetyRecommendations?.length > 0 && (
                   <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-2">
                     <h4 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">

@@ -16,14 +16,24 @@ import {
   RefreshCw,
   ShieldCheck,
   Zap,
+  History,
+  Info,
 } from "lucide-react";
 
 export default function WaterDoctorPage() {
   const [clarity, setClarity] = useState("CLEAR");
   const [description, setDescription] = useState("");
+
+  // Test strip states + "Unknown" toggles
+  const [phUnknown, setPhUnknown] = useState(false);
   const [ph, setPh] = useState("7.4");
+
+  const [clUnknown, setClUnknown] = useState(false);
   const [freeChlorine, setFreeChlorine] = useState("3.0");
+
+  const [alkUnknown, setAlkUnknown] = useState(false);
   const [alkalinity, setAlkalinity] = useState("90");
+
   const [imagePreview, setImagePreview] = useState("");
   const [imageMimeType, setImageMimeType] = useState("");
 
@@ -57,9 +67,9 @@ export default function WaterDoctorPage() {
         body: JSON.stringify({
           waterClarity: clarity,
           description,
-          ph: ph ? parseFloat(ph) : undefined,
-          freeChlorine: freeChlorine ? parseFloat(freeChlorine) : undefined,
-          alkalinity: alkalinity ? parseFloat(alkalinity) : undefined,
+          ph: phUnknown ? "UNKNOWN" : ph ? parseFloat(ph) : "UNKNOWN",
+          freeChlorine: clUnknown ? "UNKNOWN" : freeChlorine ? parseFloat(freeChlorine) : "UNKNOWN",
+          alkalinity: alkUnknown ? "UNKNOWN" : alkalinity ? parseFloat(alkalinity) : "UNKNOWN",
           imageBase64: imagePreview || undefined,
           imageMimeType: imageMimeType || undefined,
           saveToLog: true,
@@ -81,7 +91,7 @@ export default function WaterDoctorPage() {
   const clarityOptions = [
     { value: "CLEAR", label: "מים צלולים", icon: "✨", desc: "שקופים לחלוטין וללא ריח" },
     { value: "SLIGHTLY_CLOUDY", label: "מעט עכורים", icon: "🌫️", desc: "ראות מופחתת קלות בקרקעית" },
-    { value: "VERY_CLOUDY", label: "עכורים מאוד", icon: "🥛", desc: "מים חלביים/אטומים" },
+    { value: "VERY_CLOUDY", label: "עכורים מאוד", icon: "🥛", desc: "מים חלביים / אטומים" },
     { value: "FOAMY", label: "מקציפים", icon: "🧼", desc: "שכבת קצף בעת הפעלת ג'טים" },
     { value: "GREEN", label: "ירוקים / אצות", icon: "🌿", desc: "גוון ירקרק או דפנות חלקלקות" },
     { value: "BAD_ODOR", label: "ריח חריף / צריבה", icon: "👃", desc: "ריח כלוראמינים חזק או צריבה בעיניים" },
@@ -93,11 +103,11 @@ export default function WaterDoctorPage() {
       <div className="text-center max-w-2xl mx-auto space-y-2">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-bold border border-cyan-500/20">
           <Sparkles className="w-4 h-4" />
-          <span>מופעל על ידי Gemini 3.7 AI • חישובי מינונים לפי נפח המים שלך</span>
+          <span>מופעל על ידי Gemini 3.7 AI • שקלול מגמות היסטוריות ואיזון מותאם</span>
         </div>
         <h1 className="text-3xl font-black text-white">רופא המים של הג'קוזי</h1>
         <p className="text-sm text-slate-300">
-          תאר את מצב המים, הזן ערכי בדיקת מקלון (אם יש) וקבל מרשם מדויק בגרמים לאיזון וחיטוי מושלם.
+          תאר את מצב המים, הזן ערכים שידועים לך (או סמן "לא יודע"), וקבל מרשם מדויק בגרמים לאיזון וחיטוי מושלם.
         </p>
       </div>
 
@@ -112,7 +122,7 @@ export default function WaterDoctorPage() {
           <form onSubmit={handleDiagnose} className="space-y-5">
             {/* Clarity picker */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">צלילות ומראה המים כרגע</label>
+              <label className="text-xs font-semibold text-slate-300">1. מראה וצלילות המים כרגע</label>
               <div className="grid grid-cols-2 gap-2">
                 {clarityOptions.map((opt) => (
                   <button
@@ -133,65 +143,124 @@ export default function WaterDoctorPage() {
               </div>
             </div>
 
-            {/* Test strip values */}
-            <div className="space-y-3 pt-2">
-              <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                <span>ערכי בדיקת מקלון (אם נבדק):</span>
-                <span className="text-[11px] text-cyan-400 font-normal">ערכים מומלצים</span>
-              </label>
+            {/* Test strip values with "Unknown" toggles */}
+            <div className="space-y-3 pt-2 border-t border-slate-800/80">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300">
+                  2. ערכי בדיקת מקלון (ניתן לסמן "לא יודע"):
+                </label>
+              </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <span className="text-[11px] text-slate-400">חומציות pH</span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="6.0"
-                    max="8.8"
-                    value={ph}
-                    onChange={(e) => setPh(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-center text-sm font-bold focus:border-cyan-500"
-                  />
-                  <span className="block text-[10px] text-center text-slate-500">7.2 - 7.6</span>
+              {/* pH Input */}
+              <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-200">חומציות (pH)</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                    <input
+                      type="checkbox"
+                      checked={phUnknown}
+                      onChange={(e) => setPhUnknown(e.target.checked)}
+                      className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                    />
+                    <span>לא יודע / לא נבדק</span>
+                  </label>
                 </div>
+                {!phUnknown ? (
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="6.0"
+                      max="8.8"
+                      value={ph}
+                      onChange={(e) => setPh(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center focus:border-cyan-500"
+                    />
+                    <span className="text-[10px] text-slate-500 shrink-0">מומלץ: 7.2-7.6</span>
+                  </div>
+                ) : (
+                  <div className="text-center py-1 text-xs text-amber-400/80 font-medium">
+                    לא ידוע (ה-AI ימליץ לפי מראה המים וההיסטוריה)
+                  </div>
+                )}
+              </div>
 
-                <div className="space-y-1">
-                  <span className="text-[11px] text-slate-400">כלור חופשי (ppm)</span>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    max="15"
-                    value={freeChlorine}
-                    onChange={(e) => setFreeChlorine(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-center text-sm font-bold focus:border-cyan-500"
-                  />
-                  <span className="block text-[10px] text-center text-slate-500">3.0 - 5.0</span>
+              {/* Chlorine Input */}
+              <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-200">כלור חופשי / ברום (ppm)</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                    <input
+                      type="checkbox"
+                      checked={clUnknown}
+                      onChange={(e) => setClUnknown(e.target.checked)}
+                      className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                    />
+                    <span>לא יודע / לא נבדק</span>
+                  </label>
                 </div>
+                {!clUnknown ? (
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="15"
+                      value={freeChlorine}
+                      onChange={(e) => setFreeChlorine(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center focus:border-cyan-500"
+                    />
+                    <span className="text-[10px] text-slate-500 shrink-0">מומלץ: 3.0-5.0</span>
+                  </div>
+                ) : (
+                  <div className="text-center py-1 text-xs text-amber-400/80 font-medium">
+                    לא ידוע (ה-AI ימליץ לפי מראה המים)
+                  </div>
+                )}
+              </div>
 
-                <div className="space-y-1">
-                  <span className="text-[11px] text-slate-400">בסיסיות TA (ppm)</span>
-                  <input
-                    type="number"
-                    step="5"
-                    min="0"
-                    max="300"
-                    value={alkalinity}
-                    onChange={(e) => setAlkalinity(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-center text-sm font-bold focus:border-cyan-500"
-                  />
-                  <span className="block text-[10px] text-center text-slate-500">80 - 120</span>
+              {/* Alkalinity Input */}
+              <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-200">בסיסיות כוללת (TA ppm)</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                    <input
+                      type="checkbox"
+                      checked={alkUnknown}
+                      onChange={(e) => setAlkUnknown(e.target.checked)}
+                      className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                    />
+                    <span>לא יודע / לא נבדק</span>
+                  </label>
                 </div>
+                {!alkUnknown ? (
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      step="5"
+                      min="0"
+                      max="300"
+                      value={alkalinity}
+                      onChange={(e) => setAlkalinity(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center focus:border-cyan-500"
+                    />
+                    <span className="text-[10px] text-slate-500 shrink-0">מומלץ: 80-120</span>
+                  </div>
+                ) : (
+                  <div className="text-center py-1 text-xs text-amber-400/80 font-medium">
+                    לא ידוע (ה-AI ימליץ לפי שגרה)
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Free text description */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">תיאור נוסף של הבעיה או שינוי לאחרונה</label>
+              <label className="text-xs font-semibold text-slate-300">3. תיאור חופשי של המצב</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="למשל: היו 5 אנשים בסופש והמים נהיו עכורים, או שפכתי בטעות יותר מדי כלור..."
+                placeholder="למשל: היו 4 מתרחצים אתמול, המים נראים מעט אטומים, לא החלפתי פילטר שבועיים..."
                 rows={2}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500"
               />
@@ -229,7 +298,7 @@ export default function WaterDoctorPage() {
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Gemini מנתח את המים ומחשב מינונים...</span>
+                  <span>Gemini מנתח את ההיסטוריה ומחשב מינונים...</span>
                 </>
               ) : (
                 <>
@@ -251,7 +320,7 @@ export default function WaterDoctorPage() {
               <div className="space-y-1 max-w-sm">
                 <h3 className="text-lg font-bold text-white">האבחון יופיע כאן</h3>
                 <p className="text-xs text-slate-400">
-                  מלא את נתוני המים ולחץ על "אבחן מים" לקבלת הוראות מינון מותאמות בדיוק לליטרים בג'קוזי שלך.
+                  מלא את מה שידוע לך ולחץ על "אבחן מים". ה-AI יספק תוכנית מינון מדויקת בגרמים גם אם לא בדקת את כל הערכים.
                 </p>
               </div>
             </div>
@@ -300,6 +369,24 @@ export default function WaterDoctorPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Historical Insights and Missing Test Alerts */}
+              {(diagnosis.historicalInsights?.length > 0 || diagnosis.missingTestsAlerts?.length > 0) && (
+                <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-400">
+                    <History className="w-4 h-4" />
+                    <span>תובנות היסטוריות ופערי זמנים:</span>
+                  </div>
+                  <ul className="space-y-1 text-xs text-slate-300 list-disc list-inside">
+                    {diagnosis.historicalInsights?.map((item: string, idx: number) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                    {diagnosis.missingTestsAlerts?.map((item: string, idx: number) => (
+                      <li key={idx} className="text-amber-300 font-medium">⚠️ {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Step By Step Treatment Plan */}
               <div className="space-y-4">

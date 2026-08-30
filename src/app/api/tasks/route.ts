@@ -53,7 +53,20 @@ export async function PUT(req: NextRequest) {
     const user = await getSessionUser(req);
     if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
 
-    const { id, isCompleted, markDoneAndReschedule, nextDueDate, title, description, priority } = await req.json();
+    const {
+      id,
+      isCompleted,
+      markDoneAndReschedule,
+      nextDueDate,
+      title,
+      description,
+      priority,
+      valueBefore,
+      valueAfter,
+      amountAdded,
+      chemicalUsed,
+      notes,
+    } = await req.json();
 
     if (!id) {
       return NextResponse.json({ error: "מזהה משימה חסר" }, { status: 400 });
@@ -70,21 +83,33 @@ export async function PUT(req: NextRequest) {
     let updateData: any = {};
 
     if (markDoneAndReschedule) {
-      // Mark as done today, calculate next recurring date
       const now = new Date();
       const nextDate = new Date(now.getTime() + existing.frequencyDays * 24 * 60 * 60 * 1000);
       updateData = {
         lastDoneDate: now,
         nextDueDate: nextDate,
         isCompleted: false,
+        lastValueBefore: valueBefore || null,
+        lastValueAfter: valueAfter || null,
+        lastAmountAdded: amountAdded || null,
+        lastChemicalUsed: chemicalUsed || null,
       };
 
-      // Also log this in the diary!
+      // Automatically register in personal Diary with structured results!
+      let detailedSummary = `בוצע טיפול שגרתי: ${existing.title}.`;
+      if (valueBefore) detailedSummary += `\n• מדידה לפני הטיפול: ${valueBefore}`;
+      if (amountAdded) detailedSummary += `\n• מה הוסף / בוצע: ${amountAdded}`;
+      if (valueAfter) detailedSummary += `\n• תוצאה ומדידה אחרי: ${valueAfter}`;
+      if (notes) detailedSummary += `\n• הערות: ${notes}`;
+
       await prisma.diaryEntry.create({
         data: {
           userId: user.id,
-          title: `בוצע טיפול: ${existing.title}`,
-          content: existing.description || "בוצע טיפול תחזוקה שוטף על פי לוח הזמנים.",
+          title: `בוצע: ${existing.title}`,
+          content: detailedSummary,
+          valueBefore: valueBefore || null,
+          valueAfter: valueAfter || null,
+          chemicalsAdded: amountAdded || null,
           waterQualityRating: 5,
         },
       });

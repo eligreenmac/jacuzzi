@@ -47,7 +47,7 @@ model ChemicalInventory {
   id           String   @id @default(uuid())
   userId       String
   name         String
-  category     String   @default("OTHER") // SANITIZER, PH_PLUS, PH_MINUS, SHOCK, CLARIFIER, ANTI_FOAM, ALGAECIDE, TEST_STRIPS, CLEANER, OTHER
+  category     String   @default("OTHER") // SANITIZER, PH_MINUS, PH_PLUS, SHOCK, ANTI_FOAM, CLARIFIER, TEST_STRIPS, CLEANER, OTHER
   quantity     Float    @default(0)
   unit         String   @default("GRAMS") // GRAMS, ML, TABLETS, STRIPS, PIECES
   minThreshold Float    @default(100)
@@ -72,6 +72,9 @@ model WaterLog {
   aiDiagnosis       String?
   aiRecommendations String?
   actionsTaken      String?
+  valueBefore       String?  // e.g. "pH 7.9, כלור 0.5"
+  valueAfter        String?  // e.g. "pH 7.4, כלור 3.5"
+  amountAdded       String?  // e.g. "25 גרם pH Minus, 15 גרם כלור"
   createdAt         DateTime @default(now())
 
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -88,6 +91,13 @@ model MaintenanceTask {
   nextDueDate   DateTime
   isCompleted   Boolean   @default(false)
   priority      String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  
+  // Numerical / structured treatment logging fields
+  lastValueBefore String?
+  lastValueAfter  String?
+  lastAmountAdded String?
+  lastChemicalUsed String?
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -100,7 +110,9 @@ model DiaryEntry {
   entryDate          DateTime @default(now())
   title              String
   content            String
-  chemicalsAdded     String?  // JSON or text of chemicals added
+  chemicalsAdded     String?  // JSON or text
+  valueBefore        String?
+  valueAfter         String?
   waterQualityRating Int?     @default(5) // 1 to 5 stars
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

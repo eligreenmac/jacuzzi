@@ -17,6 +17,9 @@ export async function POST(req: NextRequest) {
       alkalinity,
       imageBase64,
       imageMimeType,
+      valueBefore,
+      valueAfter,
+      amountAdded,
       saveToLog = true,
     } = body;
 
@@ -28,18 +31,69 @@ export async function POST(req: NextRequest) {
       where: { userId: user.id },
     });
 
+    // Query recent history for time-series context
+    const recentLogs = await prisma.waterLog.findMany({
+      where: { userId: user.id },
+      orderBy: { testedAt: "desc" },
+      take: 10,
+    });
+
+    const recentTasks = await prisma.maintenanceTask.findMany({
+      where: { userId: user.id },
+      orderBy: { lastDoneDate: "desc" },
+      take: 10,
+    });
+
+    // Calculate time elapsed
+    const now = Date.now();
+    const lastPhLog = recentLogs.find((l) => l.ph !== null && l.ph !== undefined);
+    const lastFilterTask = recentTasks.find((t) => t.title.includes("פילטר") && t.lastDoneDate);
+    const lastShockTask = recentTasks.find((t) => (t.title.includes("שוק") || t.title.includes("חיטוי")) && t.lastDoneDate);
+
+    const daysSinceLastPhTest = lastPhLog
+      ? Math.floor((now - new Date(lastPhLog.testedAt).getTime()) / (1000 * 60 * 60 * 24))
+      : undefined;
+
+    const daysSinceLastFilterWash = lastFilterTask?.lastDoneDate
+      ? Math.floor((now - new Date(lastFilterTask.lastDoneDate).getTime()) / (1000 * 60 * 60 * 24))
+      : undefined;
+
+    const daysSinceLastShock = lastShockTask?.lastDoneDate
+      ? Math.floor((now - new Date(lastShockTask.lastDoneDate).getTime()) / (1000 * 60 * 60 * 24))
+      : undefined;
+
+    const historySummary = recentLogs.map((l) => ({
+      date: l.testedAt,
+      type: "WATER_TEST",
+      ph: l.ph,
+      freeChlorine: l.freeChlorine,
+      valueBefore: l.valueBefore,
+      valueAfter: l.valueAfter,
+      actionTaken: l.actionsTaken,
+    }));
+
     const volumeLiters = jacuzzi?.volumeLiters || 1200;
     const sanitizationType = jacuzzi?.sanitizationType || "CHLORINE";
     const lastRefillDate = jacuzzi?.lastRefillDate || new Date();
+
+    const parsedPh = ph === "UNKNOWN" || ph === "" || ph === undefined || ph === null ? "UNKNOWN" : parseFloat(ph);
+    const parsedCl =
+      freeChlorine === "UNKNOWN" || freeChlorine === "" || freeChlorine === undefined || freeChlorine === null
+        ? "UNKNOWN"
+        : parseFloat(freeChlorine);
+    const parsedAlk =
+      alkalinity === "UNKNOWN" || alkalinity === "" || alkalinity === undefined || alkalinity === null
+        ? "UNKNOWN"
+        : parseFloat(alkalinity);
 
     const diagnosis = await analyzeWaterWithGemini({
       volumeLiters,
       sanitizationType,
       waterClarity: waterClarity || "CLEAR",
       description,
-      ph: ph !== undefined && ph !== "" ? parseFloat(ph) : undefined,
-      freeChlorine: freeChlorine !== undefined && freeChlorine !== "" ? parseFloat(freeChlorine) : undefined,
-      alkalinity: alkalinity !== undefined && alkalinity !== "" ? parseFloat(alkalinity) : undefined,
+      ph: parsedPh,
+      freeChlorine: parsedCl,
+      alkalinity: parsedAlk,
       lastRefillDate,
       imageBase64,
       imageMimeType,
@@ -49,6 +103,10 @@ export async function POST(req: NextRequest) {
         quantity: i.quantity,
         unit: i.unit,
       })),
+      history: historySummary,
+      daysSinceLastPhTest,
+      daysSinceLastFilterWash,
+      daysSinceLastShock,
     });
 
     // Save to WaterLog if requested
@@ -56,14 +114,17 @@ export async function POST(req: NextRequest) {
       await prisma.waterLog.create({
         data: {
           userId: user.id,
-          ph: ph !== undefined && ph !== "" ? parseFloat(ph) : null,
-          freeChlorine: freeChlorine !== undefined && freeChlorine !== "" ? parseFloat(freeChlorine) : null,
-          alkalinity: alkalinity !== undefined && alkalinity !== "" ? parseFloat(alkalinity) : null,
+          ph: typeof parsedPh === "number" ? parsedPh : null,
+          freeChlorine: typeof parsedCl === "number" ? parsedCl : null,
+          alkalinity: typeof parsedAlk === "number" ? parsedAlk : null,
           waterClarity: waterClarity || "CLEAR",
           description: description || null,
           imageUrl: imageBase64 ? imageBase64.substring(0, 200) + "...[truncated]" : null,
           aiDiagnosis: diagnosis.waterStatusSummary,
           aiRecommendations: JSON.stringify(diagnosis),
+          valueBefore: valueBefore || null,
+          valueAfter: valueAfter || null,
+          amountAdded: amountAdded || null,
         },
       });
     }
@@ -72,6 +133,11 @@ export async function POST(req: NextRequest) {
       success: true,
       diagnosis,
       jacuzzi,
+      metrics: {
+        daysSinceLastPhTest,
+        daysSinceLastFilterWash,
+        daysSinceLastShock,
+      },
     });
   } catch (error: any) {
     console.error("Diagnosis error:", error);
