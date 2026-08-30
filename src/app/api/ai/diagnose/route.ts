@@ -89,6 +89,50 @@ export async function POST(req: NextRequest) {
     // Sort ledger newest first
     addedChemicalsLedger.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+    // Extract unexecuted recommendations from previous logs (to inform future AI)
+    const pendingUnexecutedRecommendations: Array<{
+      testDate: Date | string;
+      stepNumber: number;
+      title: string;
+      chemical: string;
+      amount: string;
+      instructions: string;
+      reasonUnexecuted: string;
+    }> = [];
+
+    for (const log of recentLogs) {
+      if (log.aiRecommendations) {
+        try {
+          const rec = JSON.parse(log.aiRecommendations);
+          if (rec.stepByStepPlan && Array.isArray(rec.stepByStepPlan)) {
+            for (const s of rec.stepByStepPlan) {
+              if (!s.isExecuted && s.chemical && s.chemical !== "ללא חומר" && s.chemical !== "תחזוקה רגילה") {
+                const hasInInventory = inventory.some((inv) =>
+                  inv.name.toLowerCase().includes(s.chemical.toLowerCase()) ||
+                  s.chemical.toLowerCase().includes(inv.name.toLowerCase()) ||
+                  (s.chemical.includes("בסיסיות") && inv.category === "PH_PLUS") ||
+                  (s.chemical.includes("קצף") && inv.category === "ANTI_FOAM") ||
+                  (s.chemical.includes("שוק") && inv.category === "SHOCK")
+                );
+
+                pendingUnexecutedRecommendations.push({
+                  testDate: log.testedAt,
+                  stepNumber: s.stepNumber || 1,
+                  title: s.title,
+                  chemical: s.chemical,
+                  amount: s.amount || "",
+                  instructions: s.instructions || "",
+                  reasonUnexecuted: !hasInInventory
+                    ? "חומר חסר בארון החומרים"
+                    : "טרם סומן כבוצע",
+                });
+              }
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
     // Calculate time elapsed
     const now = Date.now();
     const lastPhLog = recentLogs.find((l) => l.ph !== null && l.ph !== undefined);
@@ -139,6 +183,7 @@ export async function POST(req: NextRequest) {
         unit: i.unit,
       })),
       addedChemicalsLedger,
+      pendingUnexecutedRecommendations: pendingUnexecutedRecommendations.slice(0, 5),
       daysSinceLastPhTest,
       daysSinceLastFilterWash,
       daysSinceLastShock,

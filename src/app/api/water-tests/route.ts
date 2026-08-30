@@ -56,7 +56,86 @@ export async function POST(req: NextRequest) {
       where: { userId: user.id },
     });
 
-    // Auto-generate rich AI diagnosis & chemical inventory matching
+    const recentLogs = await prisma.waterLog.findMany({
+      where: { userId: user.id },
+      orderBy: { testedAt: "desc" },
+      take: 10,
+    });
+
+    const recentDiary = await prisma.diaryEntry.findMany({
+      where: { userId: user.id },
+      orderBy: { entryDate: "desc" },
+      take: 15,
+    });
+
+    // Build chronological chemical addition ledger
+    const addedChemicalsLedger: Array<{
+      date: Date | string;
+      chemical: string;
+      amount?: string | null;
+      valueBefore?: string | null;
+      valueAfter?: string | null;
+      notes?: string | null;
+    }> = [];
+
+    for (const d of recentDiary) {
+      if (d.chemicalsAdded) {
+        addedChemicalsLedger.push({
+          date: d.entryDate,
+          chemical: d.chemicalsAdded,
+          amount: d.chemicalsAdded,
+          valueBefore: d.valueBefore,
+          valueAfter: d.valueAfter,
+          notes: d.title + ": " + d.content,
+        });
+      }
+    }
+
+    // Extract unexecuted recommendations from previous logs
+    const pendingUnexecutedRecommendations: Array<{
+      testDate: Date | string;
+      stepNumber: number;
+      title: string;
+      chemical: string;
+      amount: string;
+      instructions: string;
+      reasonUnexecuted: string;
+    }> = [];
+
+    for (const log of recentLogs) {
+      if (log.aiRecommendations) {
+        try {
+          const rec = JSON.parse(log.aiRecommendations);
+          if (rec.stepByStepPlan && Array.isArray(rec.stepByStepPlan)) {
+            for (const s of rec.stepByStepPlan) {
+              if (!s.isExecuted && s.chemical && s.chemical !== "ללא חומר" && s.chemical !== "תחזוקה רגילה") {
+                const hasInInventory = inventory.some((inv) =>
+                  inv.name.toLowerCase().includes(s.chemical.toLowerCase()) ||
+                  s.chemical.toLowerCase().includes(inv.name.toLowerCase()) ||
+                  (s.chemical.includes("בסיסיות") && inv.category === "PH_PLUS") ||
+                  (s.chemical.includes("קצף") && inv.category === "ANTI_FOAM") ||
+                  (s.chemical.includes("שוק") && inv.category === "SHOCK")
+                );
+
+                pendingUnexecutedRecommendations.push({
+                  testDate: log.testedAt,
+                  stepNumber: s.stepNumber || 1,
+                  title: s.title,
+                  chemical: s.chemical,
+                  amount: s.amount || "",
+                  instructions: s.instructions || "",
+                  reasonUnexecuted: !hasInInventory
+                    ? "חומר חסר בארון החומרים"
+                    : "טרם סומן כבוצע",
+                });
+              }
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    // Auto-generate rich AI diagnosis factoring in unexecuted treatments
     const diagnosis = await analyzeWaterWithGemini({
       volumeLiters: jacuzzi?.volumeLiters || 1200,
       sanitizationType: jacuzzi?.sanitizationType || "CHLORINE",
@@ -71,6 +150,8 @@ export async function POST(req: NextRequest) {
         quantity: i.quantity,
         unit: i.unit,
       })),
+      addedChemicalsLedger,
+      pendingUnexecutedRecommendations: pendingUnexecutedRecommendations.slice(0, 5),
     });
 
     const newTest = await prisma.waterLog.create({
@@ -146,6 +227,83 @@ export async function PUT(req: NextRequest) {
       where: { userId: user.id },
     });
 
+    const recentLogs = await prisma.waterLog.findMany({
+      where: { userId: user.id, id: { not: id } },
+      orderBy: { testedAt: "desc" },
+      take: 10,
+    });
+
+    const recentDiary = await prisma.diaryEntry.findMany({
+      where: { userId: user.id },
+      orderBy: { entryDate: "desc" },
+      take: 15,
+    });
+
+    const addedChemicalsLedger: Array<{
+      date: Date | string;
+      chemical: string;
+      amount?: string | null;
+      valueBefore?: string | null;
+      valueAfter?: string | null;
+      notes?: string | null;
+    }> = [];
+
+    for (const d of recentDiary) {
+      if (d.chemicalsAdded) {
+        addedChemicalsLedger.push({
+          date: d.entryDate,
+          chemical: d.chemicalsAdded,
+          amount: d.chemicalsAdded,
+          valueBefore: d.valueBefore,
+          valueAfter: d.valueAfter,
+          notes: d.title + ": " + d.content,
+        });
+      }
+    }
+
+    const pendingUnexecutedRecommendations: Array<{
+      testDate: Date | string;
+      stepNumber: number;
+      title: string;
+      chemical: string;
+      amount: string;
+      instructions: string;
+      reasonUnexecuted: string;
+    }> = [];
+
+    for (const log of recentLogs) {
+      if (log.aiRecommendations) {
+        try {
+          const rec = JSON.parse(log.aiRecommendations);
+          if (rec.stepByStepPlan && Array.isArray(rec.stepByStepPlan)) {
+            for (const s of rec.stepByStepPlan) {
+              if (!s.isExecuted && s.chemical && s.chemical !== "ללא חומר" && s.chemical !== "תחזוקה רגילה") {
+                const hasInInventory = inventory.some((inv) =>
+                  inv.name.toLowerCase().includes(s.chemical.toLowerCase()) ||
+                  s.chemical.toLowerCase().includes(inv.name.toLowerCase()) ||
+                  (s.chemical.includes("בסיסיות") && inv.category === "PH_PLUS") ||
+                  (s.chemical.includes("קצף") && inv.category === "ANTI_FOAM") ||
+                  (s.chemical.includes("שוק") && inv.category === "SHOCK")
+                );
+
+                pendingUnexecutedRecommendations.push({
+                  testDate: log.testedAt,
+                  stepNumber: s.stepNumber || 1,
+                  title: s.title,
+                  chemical: s.chemical,
+                  amount: s.amount || "",
+                  instructions: s.instructions || "",
+                  reasonUnexecuted: !hasInInventory
+                    ? "חומר חסר בארון החומרים"
+                    : "טרם סומן כבוצע",
+                });
+              }
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
     // Auto-generate rich AI diagnosis & chemical inventory matching
     const diagnosis = await analyzeWaterWithGemini({
       volumeLiters: jacuzzi?.volumeLiters || 1200,
@@ -161,6 +319,8 @@ export async function PUT(req: NextRequest) {
         quantity: i.quantity,
         unit: i.unit,
       })),
+      addedChemicalsLedger,
+      pendingUnexecutedRecommendations: pendingUnexecutedRecommendations.slice(0, 5),
     });
 
     const updated = await prisma.waterLog.update({

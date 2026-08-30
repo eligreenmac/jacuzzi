@@ -36,6 +36,16 @@ export interface ChemicalAdditionLedgerEntry {
   notes?: string | null;
 }
 
+export interface PendingUnexecutedRecommendation {
+  testDate: string | Date;
+  stepNumber: number;
+  title: string;
+  chemical: string;
+  amount: string;
+  instructions: string;
+  reasonUnexecuted: string;
+}
+
 export interface DiagnoseRequest {
   volumeLiters: number;
   sanitizationType: string;
@@ -58,6 +68,7 @@ export interface DiagnoseRequest {
     valueAfter?: string | null;
   }>;
   addedChemicalsLedger?: ChemicalAdditionLedgerEntry[];
+  pendingUnexecutedRecommendations?: PendingUnexecutedRecommendation[];
   daysSinceLastPhTest?: number;
   daysSinceLastFilterWash?: number;
   daysSinceLastShock?: number;
@@ -224,6 +235,9 @@ export async function analyzeWaterWithGemini(data: DiagnoseRequest): Promise<Dia
 === היסטוריית חומרים ומינונים שהוכנסו לג'קוזי (Chemical Additions Ledger) ===
 ${JSON.stringify(data.addedChemicalsLedger || [], null, 2)}
 
+=== המלצות ומשימות מבדיקות קודמות שטרם סומנו כבוצעו (Pending / Unexecuted Treatments) ===
+${JSON.stringify(data.pendingUnexecutedRecommendations || [], null, 2)}
+
 - פערי זמנים מבדיקות קודמות:
   * ימים שעברו מבדיקת pH אחרונה: ${data.daysSinceLastPhTest ?? "לא ידוע"}
   * ימים שעברו משטיפת פילטר אחרונה: ${data.daysSinceLastFilterWash ?? "לא ידוע"}
@@ -233,13 +247,16 @@ ${JSON.stringify(data.addedChemicalsLedger || [], null, 2)}
 ${JSON.stringify(data.inventory || [], null, 2)}
 
 הנחיות חובה לבניית האבחון:
-1. **ניתוח שורש הבעיה (rootCauseAnalysis)**: הסבר למשתמש בשפה בהירה ומקצועית מדוע התופעה הזו נוצרה (למשל: סבונים ושמנים בבגדי ים, מתח פנים חלש מבסיסיות נמוכה, קורוזיה של גוף חימום מ-pH חומצי, או עומס מוצקים מומסים TDS).
-2. **תוכנית פעולה משולבת (stepByStepPlan)**:
+1. **התחשבות בפעולות קודמות שלא בוצעו (Pending Actions)**:
+   - אם מופיעות המלצות/משימות מבדיקות קודמות שטרם סומנו כבוצעו (למשל: לא היה חומר במלאי או טרם בוצע):
+   - אסור בשום אופן להניח שהבעיה נפתרה! עליך להתייחס לכך מפורשות באבחון, בתובנות ההיסטוריות (historicalInsights) ובשורש הבעיה: ציין שהטיפול הקודם עדיין חסר ולכן הבעיה עדיין קיימת, הדגש את החומר שחסר לרכישה, והתאם את ההמלצות החדשות.
+2. **ניתוח שורש הבעיה (rootCauseAnalysis)**: הסבר למשתמש בשפה בהירה ומקצועית מדוע התופעה הזו נוצרה (למשל: סבונים ושמנים בבגדי ים, מתח פנים חלש מבסיסיות נמוכה, קורוזיה של גוף חימום מ-pH חומצי, או עומס מוצקים מומסים TDS).
+3. **תוכנית פעולה משולבת (stepByStepPlan)**:
    - כלול שלב ל**טיפול בשורש הבעיה** (כגון שוק MPS לפירוק שומנים, העלאת בסיסיות לייצוב ה-pH, שטיפת פילטר).
    - אם ממליץ על טיפול נקודתי (כמו מסיר קצף או מצליל), ציין את תופעות הלוואי (סיליקון מצטבר / סתימת פילטר) וחייב שטיפת פילטר בהמשך!
-3. **חובת פעולות המשך (followUpRequirements)**: מה חובה לעשות בעוד 12-24 שעות (שטיפת פילטר, בדיקה חוזרת).
-4. **הנחיות מניעה (preventionGuidelines)**: איך למנוע מהבעיה לחזור שוב.
-5. **התאמה לארון חומרים ורכישה ברשת**: עבור כל שלב בדוק האם קיים בארון (inInventory), ואם חסר ספק מילות חיפוש והמלצת רכישה.
+4. **חובת פעולות המשך (followUpRequirements)**: מה חובה לעשות בעוד 12-24 שעות (שטיפת פילטר, בדיקה חוזרת).
+5. **הנחיות מניעה (preventionGuidelines)**: איך למנוע מהבעיה לחזור שוב.
+6. **התאמה לארון חומרים ורכישה ברשת**: עבור כל שלב בדוק האם קיים בארון (inInventory), ואם חסר ספק מילות חיפוש והמלצת רכישה.
 
 החזר אך ורק תשובת JSON תקנית במבנה:
 {
@@ -754,6 +771,15 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
       instructions: "המים שלך במצב תקין ומאוזנים! המשך בבדיקה שבועית רגילה ושטיפת פילטר.",
       inInventory: true,
     });
+  }
+
+  // Factor in pending / unexecuted previous recommendations
+  if (data.pendingUnexecutedRecommendations && data.pendingUnexecutedRecommendations.length > 0) {
+    for (const pending of data.pendingUnexecutedRecommendations) {
+      historicalInsights.push(
+        `⚠️ שים לב: בבדיקה הקודמת (${new Date(pending.testDate).toLocaleDateString("he-IL")}) הומלץ על "${pending.title}" (${pending.amount}), אך הפעולה טרם סומנה כבוצעה (${pending.reasonUnexecuted}). מומלץ להשלים את הטיפול בהקדם.`
+      );
+    }
   }
 
   const res: DiagnosisResponse = {
