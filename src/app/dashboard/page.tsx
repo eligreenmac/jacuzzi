@@ -11,6 +11,8 @@ import {
   ArrowLeft,
   RefreshCw,
   FlaskConical,
+  CheckCircle2,
+  Check,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -61,6 +63,7 @@ export default function DashboardPage() {
 
   // Filter urgent & upcoming tasks
   const pendingTasks = tasks.filter((t: any) => !t.isCompleted);
+  const completedTasks = tasks.filter((t: any) => t.isCompleted);
   const lowStockChemicals = chemicals.filter((c: any) => c.quantity <= (c.minThreshold || 100));
 
   return (
@@ -226,44 +229,88 @@ export default function DashboardPage() {
                   <p className="text-[11px] text-slate-400">מעקב שגרה, שטיפות ותחזוקה</p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-950 text-sky-300 border border-sky-800">
-                {pendingTasks.length} משימות
-              </span>
+              <div className="flex items-center gap-1.5">
+                {completedTasks.length > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    <span>{completedTasks.length} בוצעו</span>
+                  </span>
+                )}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-950 text-sky-300 border border-sky-800">
+                  {pendingTasks.length} פתוחות
+                </span>
+              </div>
             </div>
 
             <div className="space-y-2.5">
-              {pendingTasks.slice(0, 3).map((task: any) => {
-                const isOverdue = new Date(task.nextDueDate).getTime() < Date.now();
-                return (
-                  <div
-                    key={task.id}
-                    className="p-3 rounded-xl bg-slate-950/70 border border-slate-850 hover:border-slate-700 transition-all space-y-1"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="font-bold text-white text-xs truncate">{task.title}</h4>
-                      <span
-                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                          task.priority === "URGENT" || isOverdue
-                            ? "bg-rose-950 text-rose-300 border border-rose-800"
-                            : task.priority === "HIGH"
-                            ? "bg-amber-950 text-amber-300 border border-amber-800"
-                            : "bg-slate-900 text-slate-400 border border-slate-700"
+              {tasks.length > 0 ? (
+                (() => {
+                  // Show pending first, then completed tasks
+                  const displayTasks = [...pendingTasks, ...completedTasks].slice(0, 3);
+                  return displayTasks.map((task: any) => {
+                    const isDone = task.isCompleted;
+                    const isOverdue = !isDone && new Date(task.nextDueDate).getTime() < Date.now();
+                    return (
+                      <div
+                        key={task.id}
+                        className={`p-3 rounded-xl border transition-all space-y-1 ${
+                          isDone
+                            ? "bg-emerald-950/20 border-emerald-900/50 hover:border-emerald-800/80"
+                            : "bg-slate-950/70 border-slate-850 hover:border-slate-700"
                         }`}
                       >
-                        {isOverdue ? "באיחור" : task.category === "WEEKLY" ? "שבועי" : task.category === "MONTHLY" ? "חודשי" : "תקופתי"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span>תאריך יעד: {new Date(task.nextDueDate).toLocaleDateString("he-IL")}</span>
-                    </div>
-                  </div>
-                );
-              })}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {isDone ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            ) : (
+                              <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                            )}
+                            <h4 className={`font-bold text-xs truncate ${isDone ? "text-slate-300 line-through decoration-emerald-500/50" : "text-white"}`}>
+                              {task.title}
+                            </h4>
+                          </div>
 
-              {pendingTasks.length === 0 && (
+                          {isDone ? (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 shrink-0 flex items-center gap-1">
+                              <span>✓</span>
+                              <span>בוצע</span>
+                            </span>
+                          ) : (
+                            <span
+                              className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                                task.priority === "URGENT" || isOverdue
+                                  ? "bg-rose-950 text-rose-300 border border-rose-800"
+                                  : task.priority === "HIGH"
+                                  ? "bg-amber-950 text-amber-300 border border-amber-800"
+                                  : "bg-slate-900 text-slate-400 border border-slate-700"
+                              }`}
+                            >
+                              {isOverdue ? "באיחור" : task.category === "WEEKLY" ? "שבועי" : task.category === "MONTHLY" ? "חודשי" : "תקופתי"}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 pr-5">
+                          {isDone ? (
+                            <span className="text-emerald-400/90 flex items-center gap-1">
+                              <span>✓</span>
+                              <span>
+                                בוצע בתאריך: {task.lastDoneDate ? new Date(task.lastDoneDate).toLocaleDateString("he-IL") : new Date(task.updatedAt || task.nextDueDate).toLocaleDateString("he-IL")}
+                              </span>
+                            </span>
+                          ) : (
+                            <span>תאריך יעד: {new Date(task.nextDueDate).toLocaleDateString("he-IL")}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()
+              ) : (
                 <div className="text-center py-6 text-slate-400 text-xs space-y-1">
-                  <p>🎉 כל המשימות השגרתיות הושלמו!</p>
-                  <p className="text-[11px] text-slate-500">הג'קוזי מתוחזק כהלכה.</p>
+                  <p>אין משימות להצגה כרגע.</p>
+                  <p className="text-[11px] text-slate-500">הוסף משימות ראשונות ביומן.</p>
                 </div>
               )}
             </div>
