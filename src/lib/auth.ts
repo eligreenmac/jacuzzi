@@ -5,7 +5,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "./prisma";
 
 const JWT_SECRET = process.env.JWT_SECRET || "jacuzzi_super_secret_fallback_key_2026";
-const COOKIE_NAME = "jacuzzi_session";
+export const SESSION_COOKIE_NAME = "jacuzzi_session";
+export const COOKIE_NAME = SESSION_COOKIE_NAME;
 
 export interface UserSessionPayload {
   userId: string;
@@ -70,5 +71,3 @@ export async function getSessionUser(req?: NextRequest) {
   const { passwordHash: _, ...safeUser } = user;
   return safeUser;
 }
-
-export const SESSION_COOKIE_NAME = COOKIE_NAME;
