@@ -21,7 +21,124 @@ export interface ChemicalItem {
   unit: string;
 }
 
-// Recommended base maintenance tasks when a Jacuzzi is registered
+export interface SafetyCheckResult {
+  isOverdose: boolean;
+  severity: "CRITICAL" | "WARNING" | "NORMAL";
+  title: string;
+  whatHappened: string;
+  immediateActions: string[];
+  whatNotToDo: string[];
+}
+
+/**
+ * Check if a chemical addition is an excessive/abnormal overdose for the tub volume
+ */
+export function checkChemicalOverdoseSafety(
+  chemicalName: string,
+  category: string,
+  amount: number,
+  volumeLiters = 1200
+): SafetyCheckResult {
+  const normalizedName = (chemicalName || "").toLowerCase();
+  const cat = (category || "").toUpperCase();
+  const volumeFactor = Math.max(0.5, volumeLiters / 1000);
+
+  // 1. Chlorine / Sanitizer Overdose
+  if (cat === "SANITIZER" || normalizedName.includes("כלור") || normalizedName.includes("chlorine")) {
+    const maxSafeDose = Math.round(25 * volumeFactor); // e.g. 30g for 1200L
+    if (amount > maxSafeDose) {
+      return {
+        isOverdose: true,
+        severity: amount > maxSafeDose * 1.8 ? "CRITICAL" : "WARNING",
+        title: "🚨 אזהרת בטיחות: מינון כלור חריג וגבוה!",
+        whatHappened: `הוספת כמות של ${amount} גרם כלור לג'קוזי בנפח ${volumeLiters} ליטר (המינון המקסימלי הבטוח לפעם אחת הוא ${maxSafeDose} גרם). רמת הכלור עלולה לזנק מעל 10-15 ppm.`,
+        immediateActions: [
+          "הסר מיד את המכסה התרמי והשאר את הג'קוזי פתוח לחלוטין.",
+          "הפעל את כל משאבות הסירקולציה והג'טים בעוצמה מקסימלית למשך 45-60 דקות כדי לאפשר לכלור להתנדף באוויר.",
+          "אם הכמות חריגה מאוד (מעל פי 2 מהמומלץ), שקול לרוקן 30%-50% מהמים ולמלא מים מתוקים ונקיים.",
+          "בדוק שוב את רמת הכלור עם מקלון בדיקה בעוד מספר שעות עד שתרד חזרה ל-3-5 ppm.",
+        ],
+        whatNotToDo: [
+          "⛔ חל איסור מוחלט על רחצה במים! מגע עלול לגרום לכוויות כימיות בעור, גירוי קשה בעיניים וצריבה בדרכי הנשימה.",
+          "⛔ אין לסגור את המכסה התרמי (אדי הכלור יפגעו במכסה ובכיסוי).",
+          "⛔ אין להוסיף חומרים נוספים או חומצות במקביל.",
+        ],
+      };
+    }
+  }
+
+  // 2. pH Minus / Acid Overdose
+  if (cat === "PH_MINUS" || normalizedName.includes("minus") || normalizedName.includes("חומצה") || normalizedName.includes("מוריד")) {
+    const maxSafeDose = Math.round(35 * volumeFactor); // e.g. 42g for 1200L
+    if (amount > maxSafeDose) {
+      return {
+        isOverdose: true,
+        severity: "CRITICAL",
+        title: "🚨 אזהרת בטיחות: מינון מוריד pH (חומצה) חריג!",
+        whatHappened: `הוספת ${amount} גרם של מוריד pH. כמות זו עלולה לרסק את רמת החומציות מתחת ל-6.5 ולגרום למים חומציים וקורוזיביים.`,
+        immediateActions: [
+          "הפעל סירקולציה ומשאבות ג'טים לערבוב מלא של המים.",
+          "המתן שעה ובדוק שוב את רמת ה-pH והבסיסיות (TA) עם מקלון בדיקה.",
+          "אם ה-pH צנח מתחת ל-7.0, יש להוסיף בהדרגה pH Plus או תוסף בסיסיות (Alkalinity Increaser) לאיזון.",
+        ],
+        whatNotToDo: [
+          "⛔ חל איסור רחצה במים חומציים! הם גורמים לגירוי וצריבה עזה בעיניים ובעור.",
+          "⛔ אל תשאיר את המשאבות כבויות - חומצה מרוכזת ששוקעת עלולה לפגוע בגופי החימום ובאטמי המשאבה.",
+        ],
+      };
+    }
+  }
+
+  // 3. Shock Overdose
+  if (cat === "SHOCK" || normalizedName.includes("שוק") || normalizedName.includes("shock")) {
+    const maxSafeDose = Math.round(45 * volumeFactor);
+    if (amount > maxSafeDose) {
+      return {
+        isOverdose: true,
+        severity: "WARNING",
+        title: "⚠️ התראה: מינון שוק מחמצן גבוה מהרגיל",
+        whatHappened: `הוספת ${amount} גרם שוק (מעל הרף המומלץ של ${maxSafeDose} גרם ל-${volumeLiters} ליטר).`,
+        immediateActions: [
+          "השאר את המכסה פתוח לחצי שעה עם משאבות פועלות.",
+          "המתן 8-12 שעות לפני בדיקה ורחצה.",
+        ],
+        whatNotToDo: [
+          "⛔ אין להתרחץ ב-6 השעות הקרובות.",
+          "⛔ אין להוסיף שוק נוסף בימים הקרובים.",
+        ],
+      };
+    }
+  }
+
+  // 4. Anti-Foam Overdose
+  if (cat === "ANTI_FOAM" || normalizedName.includes("קצף") || normalizedName.includes("foam")) {
+    if (amount > 50) {
+      return {
+        isOverdose: true,
+        severity: "WARNING",
+        title: "⚠️ התראה: עודף מסיר קצף (Anti-Foam)",
+        whatHappened: `הוספת ${amount} מ"ל של מסיר קצף. שימוש בכמות מופרזת עלול לגרום למים להפוך לשומניים ועכורים ולסתום את נקבוביות הפילטר.`,
+        immediateActions: [
+          "הפעל את הסינון למשך 4 שעות.",
+          "שטוף את הפילטר היטב בזרם מים חזק בעוד 24 שעות להסרת עודפי סיליקון.",
+        ],
+        whatNotToDo: [
+          "⛔ אל תוסיף עוד מסיר קצף גם אם הקצף לא נעלם מיד.",
+        ],
+      };
+    }
+  }
+
+  return {
+    isOverdose: false,
+    severity: "NORMAL",
+    title: "מינון תקין",
+    whatHappened: "הכמות בטווח הבטיחותי התקין לנפח הג'קוזי שלך.",
+    immediateActions: [],
+    whatNotToDo: [],
+  };
+}
+
 export function getDefaultMaintenanceTasks(jacuzzi: JacuzziParameters) {
   const now = new Date();
   
@@ -78,7 +195,6 @@ export function getDefaultMaintenanceTasks(jacuzzi: JacuzziParameters) {
 }
 
 export function calculateShockDose(volumeLiters: number): number {
-  // ~15g of MPS shock or Dichlor per 1000 liters
   return Math.round((volumeLiters / 1000) * 15);
 }
 
@@ -87,7 +203,6 @@ export function calculatePhAdjustment(volumeLiters: number, currentPh: number, t
   if (Math.abs(diff) < 0.1) return null;
 
   if (diff > 0) {
-    // pH is too high -> need pH Minus (approx 12g per 1000L to drop by 0.2)
     const dosesOfPointTwo = diff / 0.2;
     const grams = Math.round(dosesOfPointTwo * (volumeLiters / 1000) * 12);
     return {
@@ -97,7 +212,6 @@ export function calculatePhAdjustment(volumeLiters: number, currentPh: number, t
       instruction: `הוסף כ-${grams} גרם pH Minus כשהג'טים פועלים והמתן 30 דקות לפני בדיקה חוזרת. מומלץ להמיס קודם בדלי מים.`,
     };
   } else {
-    // pH is too low -> need pH Plus (approx 10g per 1000L to raise by 0.2)
     const dosesOfPointTwo = Math.abs(diff) / 0.2;
     const grams = Math.round(dosesOfPointTwo * (volumeLiters / 1000) * 10);
     return {
@@ -113,7 +227,6 @@ export function calculateChlorineDose(volumeLiters: number, currentPpm: number, 
   const diff = targetPpm - currentPpm;
   if (diff <= 0) return null;
 
-  // Approx 2g of Dichlor per 1000L raises Free Chlorine by ~1.0 ppm
   const grams = Math.round(diff * (volumeLiters / 1000) * 2.2);
   return {
     action: "ADD_CHLORINE",
@@ -123,7 +236,6 @@ export function calculateChlorineDose(volumeLiters: number, currentPpm: number, 
   };
 }
 
-// Essential chemicals checklist for every Jacuzzi owner
 export const ESSENTIAL_CHEMICAL_CATEGORIES = [
   {
     category: "SANITIZER",

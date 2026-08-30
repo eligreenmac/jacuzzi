@@ -9,6 +9,7 @@ import {
   Clock,
   Plus,
   Trash2,
+  Edit2,
   Send,
   Sparkles,
   Star,
@@ -19,6 +20,8 @@ import {
   Package,
   Globe,
   Info,
+  ShieldAlert,
+  Save,
 } from "lucide-react";
 
 export default function CalendarPage() {
@@ -32,7 +35,7 @@ export default function CalendarPage() {
   // Selected Day Details Modal
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
-  // Task Completion with Inventory Deduction Modal
+  // Task Completion Modal
   const [completingTask, setCompletingTask] = useState<any | null>(null);
   const [chemicalSource, setChemicalSource] = useState<"INVENTORY" | "EXTERNAL">("INVENTORY");
   const [selectedChemicalId, setSelectedChemicalId] = useState("");
@@ -44,6 +47,20 @@ export default function CalendarPage() {
     notes: "",
   });
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
+
+  // Emergency Overdose Warning Modal State
+  const [overdoseAlert, setOverdoseAlert] = useState<any | null>(null);
+
+  // Edit Task Modal State
+  const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [editTaskForm, setEditTaskForm] = useState({
+    title: "",
+    description: "",
+    category: "WEEKLY",
+    frequencyDays: "7",
+    priority: "MEDIUM",
+    nextDueDate: "",
+  });
 
   // Add Task Modal
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -211,7 +228,7 @@ export default function CalendarPage() {
     try {
       const isFromInventory = chemicalSource === "INVENTORY" && selectedChemicalId;
 
-      await fetch("/api/tasks", {
+      const res = await fetch("/api/tasks", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -221,11 +238,18 @@ export default function CalendarPage() {
           valueAfter: completionForm.valueAfter,
           notes: completionForm.notes,
           chemicalInventoryId: isFromInventory ? selectedChemicalId : null,
-          deductAmount: isFromInventory ? deductAmount : null,
+          deductAmount: deductAmount,
           chemicalUsed: !isFromInventory ? externalChemicalName : null,
           amountAdded: !isFromInventory ? `${deductAmount} גרם/מ"ל` : null,
         }),
       });
+
+      const data = await res.json();
+
+      // Check if backend flagged an overdose!
+      if (data.safetyCheck) {
+        setOverdoseAlert(data.safetyCheck);
+      }
 
       setCompletingTask(null);
       loadData();
@@ -233,6 +257,55 @@ export default function CalendarPage() {
       console.error(err);
     } finally {
       setIsSubmittingCompletion(false);
+    }
+  };
+
+  // Open Edit Task Modal
+  const openEditTaskModal = (task: any) => {
+    setEditingTask(task);
+    setEditTaskForm({
+      title: task.title || "",
+      description: task.description || "",
+      category: task.category || "WEEKLY",
+      frequencyDays: task.frequencyDays?.toString() || "7",
+      priority: task.priority || "MEDIUM",
+      nextDueDate: task.nextDueDate ? new Date(task.nextDueDate).toISOString().split("T")[0] : "",
+    });
+  };
+
+  const handleSaveEditTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTask) return;
+
+    try {
+      await fetch("/api/tasks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingTask.id,
+          title: editTaskForm.title,
+          description: editTaskForm.description,
+          category: editTaskForm.category,
+          frequencyDays: editTaskForm.frequencyDays,
+          priority: editTaskForm.priority,
+          nextDueDate: editTaskForm.nextDueDate ? new Date(editTaskForm.nextDueDate).toISOString() : undefined,
+        }),
+      });
+
+      setEditingTask(null);
+      loadData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    if (!confirm("האם למחוק משימה זו ורשומותיה ממסד הנתונים?")) return;
+    try {
+      await fetch(`/api/tasks?id=${id}&restoreInventory=true`, { method: "DELETE" });
+      loadData();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -282,6 +355,16 @@ export default function CalendarPage() {
     }
   };
 
+  const handleDeleteDiaryEntry = async (id: string) => {
+    if (!confirm("האם למחוק רשומה זו מהיומן?")) return;
+    try {
+      await fetch(`/api/log?id=${id}`, { method: "DELETE" });
+      loadData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSendEmailReminder = async () => {
     setEmailSending(true);
     setEmailResult(null);
@@ -317,7 +400,7 @@ export default function CalendarPage() {
             <span>לוח שנה ויומן טיפולים חודשי</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            מעקב טיפולים מחזורי, הפחתת חומרים מארון הכימיקלים, ותיעוד תוצאות מספריות.
+            מעקב טיפולים מחזורי, הפחתת חומרים מארון הכימיקלים, התראות בטיחות ועריכת משימות.
           </p>
         </div>
 
@@ -429,7 +512,7 @@ export default function CalendarPage() {
                       : isToday
                       ? "bg-slate-950/90 border-cyan-500/60 shadow-cyan-950/20"
                       : cell.isCurrentMonth
-                      ? "bg-slate-950/60 border-slate-850 hover:border-slate-700"
+                      ? "bg-slate-950/60 border-slate-855 hover:border-slate-700"
                       : "bg-slate-950/20 border-slate-900 text-slate-600"
                   }`}
                 >
@@ -563,9 +646,27 @@ export default function CalendarPage() {
                           className="bg-slate-950 border border-cyan-800/60 rounded-2xl p-4 space-y-3 flex flex-col justify-between"
                         >
                           <div className="space-y-1">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
-                              {task.category === "WEEKLY" ? "שבועי" : task.category === "MONTHLY" ? "חודשי" : "תקופתי"}
-                            </span>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                                {task.category === "WEEKLY" ? "שבועי" : task.category === "MONTHLY" ? "חודשי" : "תקופתי"}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => openEditTaskModal(task)}
+                                  className="p-1 text-slate-400 hover:text-cyan-300"
+                                  title="ערוך משימה"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTask(task.id)}
+                                  className="p-1 text-slate-400 hover:text-rose-400"
+                                  title="מחק משימה"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
                             <h4 className="font-bold text-white text-sm pt-1">{task.title}</h4>
                             {task.description && <p className="text-xs text-slate-400">{task.description}</p>}
                           </div>
@@ -596,9 +697,18 @@ export default function CalendarPage() {
                           key={task.id}
                           className="bg-slate-950/80 border border-emerald-900/60 rounded-2xl p-4 space-y-2 text-xs"
                         >
-                          <div className="font-bold text-emerald-300 text-sm flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>{task.title}</span>
+                          <div className="flex items-center justify-between">
+                            <div className="font-bold text-emerald-300 text-sm flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>{task.title}</span>
+                            </div>
+                            <button
+                              onClick={() => openEditTaskModal(task)}
+                              className="text-slate-400 hover:text-cyan-300 p-1"
+                              title="ערוך פרטי ביצוע"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
 
                           {task.lastChemicalUsed && (
@@ -637,7 +747,16 @@ export default function CalendarPage() {
                     <div className="space-y-2">
                       {dayEntries.map((e) => (
                         <div key={e.id} className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-1">
-                          <h4 className="font-bold text-white text-sm">{e.title}</h4>
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-white text-sm">{e.title}</h4>
+                            <button
+                              onClick={() => handleDeleteDiaryEntry(e.id)}
+                              className="text-slate-500 hover:text-rose-400 p-1"
+                              title="מחק רשומה"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                           <p className="text-xs text-slate-300 whitespace-pre-wrap">{e.content}</p>
                         </div>
                       ))}
@@ -647,6 +766,61 @@ export default function CalendarPage() {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Emergency Overdose Alert Modal */}
+      {overdoseAlert && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-slate-900 border-2 border-rose-600 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl shadow-rose-950/50">
+            <div className="flex items-center gap-3 border-b border-rose-900/60 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-600/20 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/40">
+                <ShieldAlert className="w-7 h-7 animate-bounce" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-rose-300">{overdoseAlert.title}</h2>
+                <p className="text-xs text-slate-300 font-medium">זיהוי מינון כימיקלים חריג בג'קוזי</p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-900/60 text-xs text-rose-200 leading-relaxed">
+              {overdoseAlert.whatHappened}
+            </div>
+
+            {/* Immediate actions */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4" />
+                <span>פעולות מיידיות לטיפול:</span>
+              </h3>
+              <ul className="space-y-1.5 text-xs text-slate-200 list-disc list-inside">
+                {overdoseAlert.immediateActions?.map((action: string, idx: number) => (
+                  <li key={idx} className="font-semibold">{action}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/* What not to do */}
+            <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <h3 className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4" />
+                <span>מה חל איסור לעשות כעת (הנחיות בריאות ומים):</span>
+              </h3>
+              <ul className="space-y-1 text-xs text-rose-300">
+                {overdoseAlert.whatNotToDo?.map((item: string, idx: number) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <button
+              onClick={() => setOverdoseAlert(null)}
+              className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-rose-600/30 transition-all flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>הבנתי, אני נוקט בפעולות הבטיחות כעת</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -757,7 +931,7 @@ export default function CalendarPage() {
                       required
                       value={externalChemicalName}
                       onChange={(e) => setExternalChemicalName(e.target.value)}
-                      placeholder="למשל: כלור טבליות של השכן, חומצת מלח..."
+                      placeholder="למשל: כלור טבליות, חומצת מלח..."
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
                     />
                   </div>
@@ -825,7 +999,101 @@ export default function CalendarPage() {
                   disabled={isSubmittingCompletion}
                   className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2"
                 >
-                  {isSubmittingCompletion ? "שומר ומעדכן מלאי..." : "שמור טיפול ועדכן מלאי"}
+                  {isSubmittingCompletion ? "שומר ובודק בטיחות..." : "שמור טיפול ועדכן מלאי"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Task */}
+      {editingTask && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Edit2 className="w-4 h-4 text-cyan-400" />
+                <span>עריכת משימת תחזוקה</span>
+              </h2>
+              <button onClick={() => setEditingTask(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditTask} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">כותרת המשימה</label>
+                <input
+                  type="text"
+                  required
+                  value={editTaskForm.title}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, title: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">תדירות (ימים)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editTaskForm.frequencyDays}
+                    onChange={(e) => setEditTaskForm({ ...editTaskForm, frequencyDays: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">עדיפות</label>
+                  <select
+                    value={editTaskForm.priority}
+                    onChange={(e) => setEditTaskForm({ ...editTaskForm, priority: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                  >
+                    <option value="LOW">רגילה</option>
+                    <option value="MEDIUM">בינונית</option>
+                    <option value="HIGH">גבוהה</option>
+                    <option value="URGENT">דחופה</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">תאריך יעד הבא</label>
+                <input
+                  type="date"
+                  value={editTaskForm.nextDueDate}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, nextDueDate: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">פירוט והוראות ביצוע</label>
+                <textarea
+                  value={editTaskForm.description}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, description: e.target.value })}
+                  rows={2}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingTask(null)}
+                  className="px-4 py-2 text-xs text-slate-400"
+                >
+                  ביטול
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>שמור שינויים</span>
                 </button>
               </div>
             </form>
@@ -938,7 +1206,6 @@ export default function CalendarPage() {
                 />
               </div>
 
-              {/* Chemical deduction option in Diary */}
               <div className="space-y-2 bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
                 <label className="text-xs font-semibold text-slate-300 block">האם נוסף חומר לג'קוזי בטיפול זה?</label>
                 <div className="grid grid-cols-3 gap-1.5 text-center text-xs">
@@ -994,7 +1261,7 @@ export default function CalendarPage() {
                     <input
                       type="number"
                       min="1"
-                      placeholder="כמות (ג'/מ''ל)"
+                      placeholder="כמות"
                       value={noteDeductAmount}
                       onChange={(e) => setNoteDeductAmount(e.target.value)}
                       className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white font-bold"
