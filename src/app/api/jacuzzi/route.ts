@@ -35,15 +35,24 @@ export async function PUT(req: NextRequest) {
       lastDeepCleanDate,
       emailNotificationsEnabled,
       notificationEmail,
+      notifySameDayTasks,
+      notifyOverdueTasks,
     } = data;
 
     // Update user notifications if provided
-    if (emailNotificationsEnabled !== undefined || notificationEmail !== undefined) {
+    if (
+      emailNotificationsEnabled !== undefined ||
+      notificationEmail !== undefined ||
+      notifySameDayTasks !== undefined ||
+      notifyOverdueTasks !== undefined
+    ) {
       await prisma.user.update({
         where: { id: user.id },
         data: {
           emailNotificationsEnabled: emailNotificationsEnabled !== undefined ? Boolean(emailNotificationsEnabled) : undefined,
-          notificationEmail: notificationEmail || undefined,
+          notifySameDayTasks: notifySameDayTasks !== undefined ? Boolean(notifySameDayTasks) : undefined,
+          notifyOverdueTasks: notifyOverdueTasks !== undefined ? Boolean(notifyOverdueTasks) : undefined,
+          notificationEmail: notificationEmail !== undefined ? notificationEmail : undefined,
         },
       });
     }

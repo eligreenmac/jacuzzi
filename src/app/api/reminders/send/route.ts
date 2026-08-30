@@ -72,31 +72,41 @@ async function processReminders(req: NextRequest) {
       const email = u.notificationEmail || u.email;
       if (!email) continue;
 
-      // Filter and annotate tasks
-      const overdueOrDueTasks: TaskEmailItem[] = u.tasks.map((t) => {
-        const dueDate = new Date(t.nextDueDate);
-        const dueToday = isSameDay(dueDate, now);
-        const overdue = dueDate < startOfToday;
-        const diffMs = startOfToday.getTime() - dueDate.getTime();
-        const overdueDays = overdue ? Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24))) : 0;
+      const notifySameDay = u.notifySameDayTasks ?? true;
+      const notifyOverdue = u.notifyOverdueTasks ?? true;
 
-        return {
-          title: t.title,
-          description: t.description,
-          dueDate: t.nextDueDate,
-          priority: t.priority,
-          isDueToday: dueToday,
-          isOverdue: overdue,
-          overdueDays: overdueDays,
-        };
-      });
+      // Filter and annotate tasks according to user granular preferences
+      const overdueOrDueTasks: TaskEmailItem[] = u.tasks
+        .map((t) => {
+          const dueDate = new Date(t.nextDueDate);
+          const dueToday = isSameDay(dueDate, now);
+          const overdue = dueDate < startOfToday;
+          const diffMs = startOfToday.getTime() - dueDate.getTime();
+          const overdueDays = overdue ? Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24))) : 0;
 
-      // If user has NO overdue/due tasks and didn't request a full manual reminder
+          return {
+            title: t.title,
+            description: t.description,
+            dueDate: t.nextDueDate,
+            priority: t.priority,
+            isDueToday: dueToday,
+            isOverdue: overdue,
+            overdueDays: overdueDays,
+          };
+        })
+        .filter((item) => {
+          if (sendAll) return true; // Explicit manual full test
+          if (item.isDueToday && notifySameDay) return true;
+          if (item.isOverdue && notifyOverdue) return true;
+          return false;
+        });
+
+      // If user has NO overdue/due tasks matching their preferences
       if (overdueOrDueTasks.length === 0) {
         results.push({
           email,
           skipped: true,
-          message: "אין משימות שלא סומנו כבוצע ופג תוקפן להיום.",
+          message: "אין משימות תואמות להגדרות ההתראות שנבחרו (היום/באיחור).",
           tasksDueCount: 0,
         });
         continue;

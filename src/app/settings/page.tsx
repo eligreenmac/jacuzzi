@@ -27,6 +27,8 @@ export default function SettingsPage() {
     lastRefillDate: "",
     lastDeepCleanDate: "",
     emailNotificationsEnabled: true,
+    notifySameDayTasks: true,
+    notifyOverdueTasks: true,
     notificationEmail: "",
   });
 
@@ -54,6 +56,8 @@ export default function SettingsPage() {
           lastRefillDate: j?.lastRefillDate ? new Date(j.lastRefillDate).toISOString().split("T")[0] : "",
           lastDeepCleanDate: j?.lastDeepCleanDate ? new Date(j.lastDeepCleanDate).toISOString().split("T")[0] : "",
           emailNotificationsEnabled: data.user.emailNotificationsEnabled ?? true,
+          notifySameDayTasks: data.user.notifySameDayTasks ?? true,
+          notifyOverdueTasks: data.user.notifyOverdueTasks ?? true,
           notificationEmail: data.user.notificationEmail || data.user.email || "",
         });
       }
@@ -291,8 +295,9 @@ export default function SettingsPage() {
             <span>הגדרות התראות ותזכורות במייל</span>
           </h2>
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
+          <div className="space-y-5">
+            {/* Master Switch */}
+            <div className="flex items-center gap-3 p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800">
               <input
                 type="checkbox"
                 id="emailToggle"
@@ -301,9 +306,50 @@ export default function SettingsPage() {
                 className="w-5 h-5 accent-cyan-500 rounded cursor-pointer"
               />
               <label htmlFor="emailToggle" className="text-sm font-bold text-white cursor-pointer">
-                אפשר שליחת תזכורות אוטומטיות למייל עבור משימות שגרתיות
+                הפעל שליחת תזכורות אוטומטיות למייל
               </label>
             </div>
+
+            {/* Granular Notification Types */}
+            {formData.emailNotificationsEnabled && (
+              <div className="space-y-3 pr-2 pl-2 border-r-2 border-cyan-500/40 mr-1">
+                <div className="text-xs font-bold text-slate-300">בחר אילו מיילים תרצה לקבל:</div>
+
+                {/* Option 1: Same Day */}
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-950/50 border border-slate-850 hover:border-slate-700 transition-colors">
+                  <input
+                    type="checkbox"
+                    id="notifySameDay"
+                    checked={formData.notifySameDayTasks}
+                    onChange={(e) => setFormData({ ...formData, notifySameDayTasks: e.target.checked })}
+                    className="w-4 h-4 mt-0.5 accent-cyan-500 rounded cursor-pointer shrink-0"
+                  />
+                  <label htmlFor="notifySameDay" className="text-xs text-slate-300 cursor-pointer space-y-0.5 block">
+                    <span className="font-bold text-white block">📅 משימות שיש לבצע באותו היום</span>
+                    <span className="text-[11px] text-slate-400 block">
+                      קבלת מייל בבוקר המועד עם רשימת המשימות, הבדיקות והטיפולים המתוכננים להיום.
+                    </span>
+                  </label>
+                </div>
+
+                {/* Option 2: Overdue / Next Day */}
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-950/50 border border-slate-850 hover:border-slate-700 transition-colors">
+                  <input
+                    type="checkbox"
+                    id="notifyOverdue"
+                    checked={formData.notifyOverdueTasks}
+                    onChange={(e) => setFormData({ ...formData, notifyOverdueTasks: e.target.checked })}
+                    className="w-4 h-4 mt-0.5 accent-amber-500 rounded cursor-pointer shrink-0"
+                  />
+                  <label htmlFor="notifyOverdue" className="text-xs text-slate-300 cursor-pointer space-y-0.5 block">
+                    <span className="font-bold text-amber-300 block">⚠️ משימות פג תוקף / שלא בוצעו (שליחה יום למחרת)</span>
+                    <span className="text-[11px] text-slate-400 block">
+                      קבלת התראת תזכורת על משימות שמועדן עבר ועדיין לא סומנו כבוצעו.
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1.5 max-w-md">
               <label className="text-xs font-semibold text-slate-300">כתובת אימייל לקבלת התראות</label>
@@ -313,7 +359,7 @@ export default function SettingsPage() {
                 value={formData.notificationEmail}
                 onChange={(e) => setFormData({ ...formData, notificationEmail: e.target.value })}
                 placeholder="your-email@example.com"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm focus:border-cyan-500"
               />
             </div>
 
