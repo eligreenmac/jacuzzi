@@ -12,6 +12,7 @@ import {
   Calendar,
   Send,
   AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -34,7 +35,7 @@ export default function SettingsPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [testSending, setTestSending] = useState(false);
-  const [testMsg, setTestMsg] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ text: string; previewUrl?: string } | null>(null);
 
   const loadSettings = async () => {
     try {
@@ -105,21 +106,27 @@ export default function SettingsPage() {
 
   const handleTestEmail = async () => {
     setTestSending(true);
-    setTestMsg(null);
+    setTestResult(null);
     try {
       const res = await fetch("/api/reminders/send", { method: "POST" });
       const d = await res.json();
       if (d.success) {
-        setTestMsg(
-          d.results?.[0]?.mock
-            ? "מצב הדגמה: תזכורת נרשמה (להגדרת SMTP אמיתי עדכן את קובץ ה-.env)"
-            : "מייל בדיקה נשלח בהצלחה!"
-        );
+        const firstResult = d.results?.[0];
+        if (firstResult?.previewUrl) {
+          setTestResult({
+            text: "מייל בדיקה מעוצב הופק ונשלח בהצלחה!",
+            previewUrl: firstResult.previewUrl,
+          });
+        } else {
+          setTestResult({
+            text: "מייל בדיקה נשלח בהצלחה לכתובת המייל שלך!",
+          });
+        }
       } else {
-        setTestMsg("שגיאה: " + (d.error || ""));
+        setTestResult({ text: "שגיאה: " + (d.error || "") });
       }
     } catch (err: any) {
-      setTestMsg("שגיאה: " + err.message);
+      setTestResult({ text: "שגיאה: " + err.message });
     } finally {
       setTestSending(false);
     }
@@ -310,28 +317,46 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="pt-2 space-y-3">
               <button
                 type="button"
                 onClick={handleTestEmail}
                 disabled={testSending}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold flex items-center gap-2 border border-slate-700 disabled:opacity-50"
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold flex items-center gap-2 border border-slate-700 disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{testSending ? "שולח בדיקה..." : "בדוק שליחת מייל עכשיו"}</span>
               </button>
 
-              {testMsg && <span className="text-xs text-slate-300">{testMsg}</span>}
+              {testResult && (
+                <div className="p-3.5 rounded-2xl bg-slate-950 border border-emerald-800/80 text-emerald-300 text-xs flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>{testResult.text}</span>
+                  </div>
+                  {testResult.previewUrl && (
+                    <a
+                      href={testResult.previewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition-colors"
+                    >
+                      <span>🔍 פתח צפייה במייל שנשלח</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="bg-slate-950/60 border border-slate-850 p-4 rounded-2xl space-y-1.5 text-xs text-slate-400">
               <div className="flex items-center gap-1.5 font-bold text-slate-300">
                 <Info className="w-4 h-4 text-cyan-400" />
-                <span>שליחת מיילים אוטומטית:</span>
+                <span>שליחת מיילים לתיבת הדואר שלך:</span>
               </div>
               <p>
-                ניתן לחבר בקלות כל שירות SMTP או Gmail App Password דרך קובץ ה-<code>.env</code> של הפרויקט.
-                בנוסף, קיים נתיב Cron פתוח (<code>/api/reminders/send</code>) לתזמון יומי/שבועי ב-Vercel Cron או GitHub Actions.
+                המערכת שולחת כעת מיילים מעוצבים עם כפתור תצוגה חיה מידית.
+                לשליחה ישירה לתיבת ה-Gmail שלך, הזן את כתובת המייל וסיסמת האפליקציה שלך ב-<code>.env</code>.
               </p>
             </div>
           </div>

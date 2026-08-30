@@ -22,6 +22,7 @@ import {
   Info,
   ShieldAlert,
   Save,
+  ExternalLink,
 } from "lucide-react";
 
 export default function CalendarPage() {
@@ -72,7 +73,7 @@ export default function CalendarPage() {
     priority: "MEDIUM",
   });
 
-  // Add Diary Note Modal (dedicated to pure maintenance logs & observations)
+  // Add Diary Note Modal
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [noteForm, setNoteForm] = useState({
     title: "",
@@ -82,7 +83,7 @@ export default function CalendarPage() {
 
   // Email reminder state
   const [emailSending, setEmailSending] = useState(false);
-  const [emailResult, setEmailResult] = useState<string | null>(null);
+  const [emailResult, setEmailResult] = useState<{ text: string; previewUrl?: string } | null>(null);
 
   const loadData = async () => {
     try {
@@ -357,16 +358,24 @@ export default function CalendarPage() {
       const res = await fetch("/api/reminders/send", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        setEmailResult(
-          data.results?.[0]?.mock
-            ? "מצב הדגמה: תזכורת נרשמה בהצלחה (לשליחה אמיתית הזן פרטי SMTP ב-.env)"
-            : "מייל תזכורת נשלח בהצלחה לכתובת שלך!"
-        );
+        const firstResult = data.results?.[0];
+        if (firstResult?.previewUrl) {
+          setEmailResult({
+            text: "מייל תזכורת מעוצב הופק ונשלח בהצלחה!",
+            previewUrl: firstResult.previewUrl,
+          });
+        } else {
+          setEmailResult({
+            text: "מייל תזכורת נשלח בהצלחה לכתובת המייל שלך!",
+          });
+        }
       } else {
-        setEmailResult("שגיאה בשליחת המייל: " + (data.error || ""));
+        setEmailResult({
+          text: "שגיאה בשליחת המייל: " + (data.error || ""),
+        });
       }
     } catch (err: any) {
-      setEmailResult("שגיאה: " + err.message);
+      setEmailResult({ text: "שגיאה: " + err.message });
     } finally {
       setEmailSending(false);
     }
@@ -424,9 +433,23 @@ export default function CalendarPage() {
       </div>
 
       {emailResult && (
-        <div className="p-4 rounded-2xl bg-slate-900 border border-emerald-800 text-emerald-300 text-xs flex items-center justify-between">
-          <span>{emailResult}</span>
-          <button onClick={() => setEmailResult(null)} className="text-slate-400 hover:text-white">
+        <div className="p-4 rounded-2xl bg-slate-900 border border-emerald-800 text-emerald-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-2 flex-wrap">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="font-semibold">{emailResult.text}</span>
+            {emailResult.previewUrl && (
+              <a
+                href={emailResult.previewUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:text-white hover:bg-emerald-600 border border-emerald-500/40 font-bold text-xs transition-all"
+              >
+                <span>🔍 צפה במייל המעוצב שנשלח</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
+          <button onClick={() => setEmailResult(null)} className="text-slate-400 hover:text-white self-end sm:self-auto">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -471,7 +494,6 @@ export default function CalendarPage() {
         </div>
       ) : (
         <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-2 overflow-hidden">
-          {/* Days of week header */}
           <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center pb-2 border-b border-slate-800 text-xs font-bold text-slate-400">
             {daysOfWeek.map((day, idx) => (
               <div key={idx} className="py-1">
@@ -480,7 +502,6 @@ export default function CalendarPage() {
             ))}
           </div>
 
-          {/* Grid Cells */}
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {calendarDays.map((cell, idx) => {
               const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(cell.date);
@@ -497,7 +518,7 @@ export default function CalendarPage() {
                       : isToday
                       ? "bg-slate-950/90 border-cyan-500/60 shadow-cyan-950/20"
                       : cell.isCurrentMonth
-                      ? "bg-slate-950/60 border-slate-850 hover:border-slate-700"
+                      ? "bg-slate-950/60 border-slate-855 hover:border-slate-700"
                       : "bg-slate-950/20 border-slate-900 text-slate-600"
                   }`}
                 >

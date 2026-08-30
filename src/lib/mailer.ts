@@ -12,31 +12,59 @@ export interface SendReminderEmailParams {
   jacuzziName?: string;
 }
 
-export function getMailTransporter() {
+export async function getMailTransporter() {
   const host = process.env.SMTP_HOST || "smtp.gmail.com";
   const port = parseInt(process.env.SMTP_PORT || "465", 10);
   const secure = process.env.SMTP_SECURE === "true" || port === 465;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
 
-  if (!user || !pass) {
-    return null;
+  if (user && pass) {
+    return {
+      transporter: nodemailer.createTransport({
+        host,
+        port,
+        secure,
+        auth: {
+          user,
+          pass,
+        },
+      }),
+      isTestAccount: false,
+    };
   }
 
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: {
-      user,
-      pass,
-    },
-  });
+  // Create an automatic Ethereal test account for instant live preview if SMTP is not yet configured
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    const testTransporter = nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+    return {
+      transporter: testTransporter,
+      isTestAccount: true,
+    };
+  } catch (err) {
+    console.error("Failed to create test account:", err);
+    return null;
+  }
 }
 
-export async function sendMaintenanceReminderEmail(params: SendReminderEmailParams): Promise<{ success: boolean; messageId?: string; mock?: boolean; error?: string }> {
-  const transporter = getMailTransporter();
-  const from = process.env.SMTP_FROM || `"Jacuzzi Spa Master" <${process.env.SMTP_USER || "noreply@jacuzzi.com"}>`;
+export async function sendMaintenanceReminderEmail(params: SendReminderEmailParams): Promise<{
+  success: boolean;
+  messageId?: string;
+  previewUrl?: string | false;
+  mock?: boolean;
+  error?: string;
+}> {
+  const transporterData = await getMailTransporter();
+  const from = process.env.SMTP_FROM || `"Jacuzzi Spa Master" <${process.env.SMTP_USER || "noreply@jacuzzi-spa.com"}>`;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const tasksHtml = params.tasks
@@ -108,20 +136,25 @@ export async function sendMaintenanceReminderEmail(params: SendReminderEmailPara
   </html>
   `;
 
-  if (!transporter) {
-    console.log(`[SMTP Mock Mode] Email would be sent to: ${params.to}`);
-    console.log(`[SMTP Tasks count]: ${params.tasks.length}`);
+  if (!transporterData) {
     return { success: true, mock: true };
   }
 
   try {
-    const info = await transporter.sendMail({
+    const info = await transporterData.transporter.sendMail({
       from,
       to: params.to,
       subject: `💧 תזכורת טיפול לג'קוזי: ${params.tasks[0]?.title || "משימות פתוחות"}`,
       html: emailHtml,
     });
-    return { success: true, messageId: info.messageId };
+
+    const previewUrl = transporterData.isTestAccount ? nodemailer.getTestMessageUrl(info) : undefined;
+
+    return {
+      success: true,
+      messageId: info.messageId,
+      previewUrl,
+    };
   } catch (err: any) {
     console.error("Failed to send email via SMTP:", err);
     return { success: false, error: err.message };
