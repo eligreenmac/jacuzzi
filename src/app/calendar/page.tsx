@@ -60,6 +60,7 @@ const ALKALINITY_RANGES = [
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<"WEEK" | "MONTH">("WEEK");
   const [tasks, setTasks] = useState<any[]>([]);
   const [entries, setEntries] = useState<any[]>([]);
   const [waterLogs, setWaterLogs] = useState<any[]>([]);
@@ -316,16 +317,44 @@ export default function CalendarPage() {
     loadData();
   }, []);
 
-  // Month navigation
+  // Week & Month navigation
   const nextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
   const prevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
+  const nextWeek = () => {
+    const next = new Date(currentDate);
+    next.setDate(currentDate.getDate() + 7);
+    setCurrentDate(next);
+  };
+  const prevWeek = () => {
+    const prev = new Date(currentDate);
+    prev.setDate(currentDate.getDate() - 7);
+    setCurrentDate(prev);
+  };
   const goToToday = () => {
     setCurrentDate(new Date());
   };
+
+  const getWeekDays = (baseDate: Date) => {
+    const current = new Date(baseDate);
+    const day = current.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const sunday = new Date(current);
+    sunday.setDate(current.getDate() - day);
+    sunday.setHours(0, 0, 0, 0);
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + i);
+      return d;
+    });
+  };
+
+  const weekDays = getWeekDays(currentDate);
+  const startOfWeek = weekDays[0];
+  const endOfWeek = weekDays[6];
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -706,10 +735,10 @@ export default function CalendarPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
             <CalendarIcon className="w-8 h-8 text-cyan-400" />
-            <span>לוח שנה ויומן תחזוקה חודשי</span>
+            <span>לוח שנה ויומן תחזוקה שבועי</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            מעקב טיפולים מחזורי, איפוס ועריכת משימות, התראות במייל, ועדכון מלאי אוטומטי.
+            מעקב טיפולים מחזורי, סקירה שבועית מפורטת, עדכון מלאי אוטומטי ואופטימיזציית AI.
           </p>
         </div>
 
@@ -823,44 +852,239 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Month Navigation Bar */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-5 flex items-center justify-between shadow-xl">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <h2 className="text-xl sm:text-2xl font-black text-white">
-            {hebrewMonths[month]} {year}
+      {/* Calendar Navigation Bar with Weekly / Monthly switch */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-5 flex items-center justify-between shadow-xl flex-wrap gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+          <h2 className="text-lg sm:text-2xl font-black text-white">
+            {viewMode === "WEEK"
+              ? `שבוע: ${startOfWeek.toLocaleDateString("he-IL", { day: "numeric", month: "short" })} – ${endOfWeek.toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "numeric" })}`
+              : `${hebrewMonths[month]} ${year}`}
           </h2>
           <button
             onClick={goToToday}
-            className="text-xs px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg border border-slate-700 font-semibold transition-colors"
+            className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-xl border border-slate-700 font-bold transition-colors"
           >
-            היום
+            {viewMode === "WEEK" ? "השבוע הנוכחי" : "היום"}
           </button>
         </div>
 
-        <div className="flex items-center gap-1">
-          <button
-            onClick={prevMonth}
-            className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
-            title="חודש קודם"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <button
-            onClick={nextMonth}
-            className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
-            title="חודש הבא"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* View Mode Toggle */}
+          <div className="flex items-center p-1 bg-slate-950 rounded-2xl border border-slate-800 text-xs">
+            <button
+              type="button"
+              onClick={() => setViewMode("WEEK")}
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                viewMode === "WEEK"
+                  ? "bg-cyan-500 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              תצוגה שבועית
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("MONTH")}
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                viewMode === "MONTH"
+                  ? "bg-cyan-500 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              תצוגה חודשית
+            </button>
+          </div>
+
+          {/* Navigation Arrows */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={viewMode === "WEEK" ? prevWeek : prevMonth}
+              className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
+              title={viewMode === "WEEK" ? "שבוע קודם" : "חודש קודם"}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            <button
+              onClick={viewMode === "WEEK" ? nextWeek : nextMonth}
+              className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
+              title={viewMode === "WEEK" ? "שבוע הבא" : "חודש הבא"}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Monthly Calendar Grid */}
+      {/* Calendar Grid Section */}
       {loading ? (
         <div className="text-center py-24 text-cyan-400">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto" />
         </div>
+      ) : viewMode === "WEEK" ? (
+        /* WEEKLY 7-DAY SPACIOUS VIEW */
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-3 items-stretch">
+          {weekDays.map((dayDate, idx) => {
+            const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(dayDate);
+            const isToday = isSameDay(dayDate, new Date());
+            const isSelected = selectedDay && isSameDay(dayDate, selectedDay);
+            const dayName = daysOfWeek[dayDate.getDay()];
+            const pendingDayTasks = dayTasks.filter((t: any) => !t.isCompleted);
+
+            return (
+              <div
+                key={idx}
+                onClick={() => setSelectedDay(dayDate)}
+                className={`p-3.5 rounded-3xl border flex flex-col justify-between transition-all min-h-[420px] shadow-lg cursor-pointer ${
+                  isSelected
+                    ? "bg-cyan-950/30 border-cyan-400 ring-1 ring-cyan-400 shadow-cyan-950/30"
+                    : isToday
+                    ? "bg-slate-900/95 border-cyan-500/80 shadow-cyan-950/30"
+                    : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+                }`}
+              >
+                {/* Day Header */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                    <div>
+                      <div className="text-xs font-bold text-slate-300">יום {dayName}</div>
+                      <div className="text-sm font-black text-white">
+                        {dayDate.toLocaleDateString("he-IL", { day: "numeric", month: "numeric" })}
+                      </div>
+                    </div>
+                    {isToday ? (
+                      <span className="text-[10px] font-black bg-cyan-500 text-slate-950 px-2 py-0.5 rounded-full shadow">
+                        היום
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDay(dayDate);
+                          setIsTaskModalOpen(true);
+                        }}
+                        className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-cyan-300 hover:bg-slate-700 transition-all text-xs"
+                        title="הוסף משימה ליום זה"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Day Events List */}
+                  <div className="space-y-2">
+                    {/* Pending Tasks */}
+                    {pendingDayTasks.map((t: any) => {
+                      const isFuture = isTaskFuture(t);
+                      return (
+                        <div
+                          key={t.id}
+                          className="p-2.5 rounded-2xl bg-slate-950/90 border border-slate-800 hover:border-cyan-700 transition-all space-y-1.5 text-xs shadow-sm"
+                        >
+                          <div className="flex items-start justify-between gap-1">
+                            <span className="font-bold text-white leading-tight">
+                              {t.title}
+                            </span>
+                            <span
+                              className={`text-[8px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                                t.priority === "URGENT"
+                                  ? "bg-rose-950 text-rose-300 border border-rose-800"
+                                  : t.priority === "HIGH"
+                                  ? "bg-amber-950 text-amber-300 border border-amber-800"
+                                  : "bg-slate-900 text-slate-400 border border-slate-700"
+                              }`}
+                            >
+                              {t.priority === "URGENT" ? "דחוף" : t.priority === "HIGH" ? "גבוה" : "שגרתי"}
+                            </span>
+                          </div>
+
+                          {/* Complete / Lock Button */}
+                          {isFuture ? (
+                            <div className="text-[10px] text-slate-500 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800 flex items-center justify-center gap-1">
+                              <Lock className="w-2.5 h-2.5" />
+                              <span>נעול עד המועד</span>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCompletionModal(t);
+                              }}
+                              className="w-full py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-[10px] font-bold shadow flex items-center justify-center gap-1 transition-all hover:scale-[1.02]"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>סמן ביצוע</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Completed Tasks */}
+                    {doneTasks.map((t: any) => (
+                      <div
+                        key={`done-${t.id}`}
+                        className="p-2 rounded-2xl bg-emerald-950/25 border border-emerald-900/50 text-[10px] text-emerald-300 flex items-center justify-between gap-1 font-semibold"
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span className="truncate">{t.title}</span>
+                        </div>
+                        <span className="text-[8px] bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800 shrink-0">
+                          בוצע ✓
+                        </span>
+                      </div>
+                    ))}
+
+                    {/* Water Tests */}
+                    {dayWaterLogs.map((w: any) => (
+                      <div
+                        key={w.id}
+                        className="p-2 rounded-2xl bg-cyan-950/30 border border-cyan-900/50 text-[10px] text-cyan-300 space-y-0.5"
+                      >
+                        <div className="flex items-center gap-1 font-bold">
+                          <FlaskConical className="w-3 h-3 text-cyan-400 shrink-0" />
+                          <span>בדיקת מים</span>
+                        </div>
+                        <div className="text-[9px] text-slate-300 flex items-center gap-1.5 flex-wrap">
+                          {w.ph && <span>pH: {w.ph}</span>}
+                          {w.freeChlorine && <span>חיטוי: {w.freeChlorine}</span>}
+                          {w.alkalinity && <span>TA: {w.alkalinity}</span>}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Diary Notes */}
+                    {dayEntries.map((e: any) => (
+                      <div
+                        key={e.id}
+                        className="p-2 rounded-2xl bg-purple-950/25 border border-purple-900/50 text-[10px] text-purple-300 flex items-center gap-1.5 truncate"
+                        title={e.title}
+                      >
+                        <BookOpen className="w-3 h-3 text-purple-400 shrink-0" />
+                        <span className="truncate">{e.title}</span>
+                      </div>
+                    ))}
+
+                    {pendingDayTasks.length === 0 && doneTasks.length === 0 && dayWaterLogs.length === 0 && dayEntries.length === 0 && (
+                      <div className="text-center py-10 text-slate-500 text-[11px] border border-dashed border-slate-800/70 rounded-2xl">
+                        <span>אין משימות</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Day Footer Status */}
+                <div className="pt-2 border-t border-slate-850 text-[10px] text-slate-400 text-center font-medium">
+                  {pendingDayTasks.length > 0 ? `${pendingDayTasks.length} משימות להשלמה` : "✓ יום פנוי ומאוזן"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
+        /* MONTHLY GRID VIEW */
         <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-2 overflow-hidden">
           <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center pb-2 border-b border-slate-800 text-xs font-bold text-slate-400">
             {daysOfWeek.map((day, idx) => (
