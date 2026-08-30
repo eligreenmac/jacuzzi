@@ -1,0 +1,20 @@
+name: Daily Jacuzzi Overdue Reminder
+
+on:
+  schedule:
+    # Runs every day at 08:00 AM UTC (11:00 AM Israel time)
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Jacuzzi Reminders Endpoint
+        run: |
+          if [ -n "${{ secrets.APP_URL }}" ]; then
+            curl -X GET "${{ secrets.APP_URL }}/api/reminders/send" \
+              -H "x-cron-key: ${{ secrets.CRON_SECRET || 'jacuzzi-cron-2026' }}"
+          else
+            echo "APP_URL secret is not set yet. Set APP_URL in GitHub Secrets once deployed."
+          fi
