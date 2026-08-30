@@ -1,15 +1,20 @@
 import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
+export interface TaskEmailItem {
+  title: string;
+  description?: string | null;
+  dueDate: Date | string;
+  priority?: string;
+  isOverdue?: boolean;
+  isDueToday?: boolean;
+  overdueDays?: number;
+}
+
 export interface SendReminderEmailParams {
   to: string;
   userName?: string;
-  tasks: Array<{
-    title: string;
-    description?: string | null;
-    dueDate: Date | string;
-    priority?: string;
-  }>;
+  tasks: TaskEmailItem[];
   jacuzziName?: string;
 }
 
@@ -24,25 +29,45 @@ export async function sendMaintenanceReminderEmail(params: SendReminderEmailPara
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const tasksHtml = params.tasks
-    .map(
-      (t) => `
-      <div style="background-color: #f0fdf4; border-right: 4px solid #10b981; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; direction: rtl; text-align: right;">
-        <h4 style="margin: 0 0 4px 0; color: #065f46; font-size: 16px;">💧 ${t.title}</h4>
-        <p style="margin: 0 0 6px 0; color: #4b5563; font-size: 14px;">${t.description || "ללא פירוט נוסף"}</p>
-        <span style="display: inline-block; font-size: 12px; color: #047857; background: #d1fae5; padding: 2px 8px; border-radius: 9999px;">
-          תאריך יעד: ${new Date(t.dueDate).toLocaleDateString("he-IL")}
-        </span>
+    .map((t) => {
+      const isUrgentOrOverdue = t.isOverdue || t.isDueToday;
+      const badgeBg = t.isOverdue ? "#fee2e2" : t.isDueToday ? "#fef3c7" : "#d1fae5";
+      const badgeColor = t.isOverdue ? "#991b1b" : t.isDueToday ? "#92400e" : "#065f46";
+      const borderColor = t.isOverdue ? "#ef4444" : t.isDueToday ? "#f59e0b" : "#10b981";
+      const statusText = t.isOverdue
+        ? `🚨 פג תוקף! באיחור של ${t.overdueDays || 1} ימים`
+        : t.isDueToday
+        ? `⏰ מועד ביצוע: היום!`
+        : `תאריך יעד: ${new Date(t.dueDate).toLocaleDateString("he-IL")}`;
+
+      return `
+      <div style="background-color: ${isUrgentOrOverdue ? "#fffaf0" : "#f0fdf4"}; border-right: 4px solid ${borderColor}; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; direction: rtl; text-align: right; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <h4 style="margin: 0; color: #111827; font-size: 16px; font-weight: bold;">💧 ${t.title}</h4>
+        </div>
+        <p style="margin: 0 0 10px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">${t.description || "ללא פירוט נוסף"}</p>
+        <div>
+          <span style="display: inline-block; font-size: 12px; font-weight: bold; color: ${badgeColor}; background: ${badgeBg}; padding: 3px 10px; border-radius: 9999px;">
+            ${statusText}
+          </span>
+        </div>
       </div>
-    `
-    )
+    `;
+    })
     .join("");
+
+  const hasOverdue = params.tasks.some((t) => t.isOverdue || t.isDueToday);
+  const subjectPrefix = hasOverdue ? "🚨 התראת משימות שפגו תוקף בג'קוזי" : "💧 תזכורת טיפול לג'קוזי";
+  const headerSubtitle = hasOverdue
+    ? "נמצאו משימות שלא סומנו כבוצע ומועדן פג היום או בעבר!"
+    : `תזכורת תחזוקה תקופתית עבור ${params.jacuzziName || "הג'קוזי שלך"}`;
 
   const emailHtml = `
   <!DOCTYPE html>
   <html lang="he" dir="rtl">
   <head>
     <meta charset="utf-8">
-    <title>תזכורת טיפול לג'קוזי שלך</title>
+    <title>${subjectPrefix}</title>
   </head>
   <body style="font-family: Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 24px; direction: rtl; text-align: right;">
     <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -50,10 +75,10 @@ export async function sendMaintenanceReminderEmail(params: SendReminderEmailPara
         <td align="center">
           <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
             <!-- Header -->
-            <tr style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+            <tr style="background: ${hasOverdue ? "linear-gradient(135deg, #e11d48 0%, #be123c 100%)" : "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)"};">
               <td style="padding: 28px 24px; text-align: center; color: #ffffff;">
-                <h1 style="margin: 0; font-size: 24px;">✨ Jacuzzi Spa Master</h1>
-                <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 15px;">תזכורת תחזוקה תקופתית עבור ${params.jacuzziName || "הג'קוזי שלך"}</p>
+                <h1 style="margin: 0; font-size: 24px;">${hasOverdue ? "⚠️ התראת תחזוקה לג'קוזי" : "✨ Jacuzzi Spa Master"}</h1>
+                <p style="margin: 8px 0 0 0; opacity: 0.95; font-size: 15px;">${headerSubtitle}</p>
               </td>
             </tr>
             <!-- Content -->
@@ -63,8 +88,9 @@ export async function sendMaintenanceReminderEmail(params: SendReminderEmailPara
                   שלום ${params.userName || "יקר"},
                 </p>
                 <p style="font-size: 15px; color: #4b5563; line-height: 1.6;">
-                  זה הזמן להעניק לג'קוזי קצת אהבה כדי לשמור על מים צלולים, נקיים ובטוחים לרחצה.
-                  להלן המשימות הממתינות לביצוע:
+                  ${hasOverdue
+                    ? "המערכת זיהתה שישנן משימות טיפול חיוניות לג'קוזי שלא סומנו כבוצע ופג תוקפן להיום. מומלץ לבצען בהקדם לשמירה על צלילות המים ובריאות המתרחצים:"
+                    : "זה הזמן להעניק לג'קוזי קצת אהבה כדי לשמור על מים צלולים ונקיים. להלן המשימות הממתינות לביצוע:"}
                 </p>
 
                 <div style="margin: 20px 0;">
@@ -72,8 +98,8 @@ export async function sendMaintenanceReminderEmail(params: SendReminderEmailPara
                 </div>
 
                 <div style="text-align: center; margin: 28px 0 12px 0;">
-                  <a href="${appUrl}/calendar" style="background-color: #0284c7; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-block;">
-                    כניסה ליומן הטיפולים וסימון ביצוע
+                  <a href="${appUrl}/calendar" style="background-color: ${hasOverdue ? "#e11d48" : "#0284c7"}; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    כניסה ליומן הטיפולים לסימון ביצוע ועדכון מלאי
                   </a>
                 </div>
               </td>
@@ -102,7 +128,7 @@ export async function sendMaintenanceReminderEmail(params: SendReminderEmailPara
       const { data, error } = await resend.emails.send({
         from: fromEmail,
         to: [params.to],
-        subject: `💧 תזכורת טיפול לג'קוזי: ${params.tasks[0]?.title || "משימות פתוחות"}`,
+        subject: `${subjectPrefix}: ${params.tasks[0]?.title || "משימות לביצוע"}`,
         html: emailHtml,
       });
 
@@ -140,7 +166,7 @@ export async function sendMaintenanceReminderEmail(params: SendReminderEmailPara
       const info = await transporter.sendMail({
         from,
         to: params.to,
-        subject: `💧 תזכורת טיפול לג'קוזי: ${params.tasks[0]?.title || "משימות פתוחות"}`,
+        subject: `${subjectPrefix}: ${params.tasks[0]?.title || "משימות לביצוע"}`,
         html: emailHtml,
       });
 
@@ -170,7 +196,7 @@ export async function sendMaintenanceReminderEmail(params: SendReminderEmailPara
     const info = await testTransporter.sendMail({
       from: `"Jacuzzi Spa Master" <noreply@jacuzzi-spa.com>`,
       to: params.to,
-      subject: `💧 תזכורת טיפול לג'קוזי: ${params.tasks[0]?.title || "משימות פתוחות"}`,
+      subject: `${subjectPrefix}: ${params.tasks[0]?.title || "משימות לביצוע"}`,
       html: emailHtml,
     });
 

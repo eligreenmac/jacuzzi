@@ -1,32 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendMaintenanceReminderEmail } from "@/lib/mailer";
+import { sendMaintenanceReminderEmail, TaskEmailItem } from "@/lib/mailer";
 
-export async function POST(req: NextRequest) {
+function isSameDay(d1: Date, d2: Date) {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+}
+
+async function processReminders(req: NextRequest) {
   try {
     const user = await getSessionUser(req);
+    const { searchParams } = new URL(req.url);
+    const sendAll = searchParams.get("sendAll") === "true";
+
     let targetUsers = [];
 
+    const now = new Date();
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+
     if (user) {
-      // User requested explicit reminder for themselves
+      // User triggered for themselves
       const fullUser = await prisma.user.findUnique({
         where: { id: user.id },
         include: {
           jacuzzi: true,
           tasks: {
-            where: { isCompleted: false },
+            where: {
+              isCompleted: false,
+              ...(sendAll ? {} : { nextDueDate: { lte: endOfToday } }),
+            },
             orderBy: { nextDueDate: "asc" },
           },
         },
       });
       if (fullUser) targetUsers.push(fullUser);
     } else {
-      // Cron / Background automated trigger: find all users with email notifications enabled
+      // Automated Cron / Background trigger: find users with email notifications enabled
       const authKey = req.headers.get("x-cron-key");
       const expectedKey = process.env.CRON_SECRET || "jacuzzi-cron-2026";
-      
-      if (authKey !== expectedKey) {
+
+      // If called with a cron key or from internal scheduler
+      if (authKey && authKey !== expectedKey) {
         return NextResponse.json({ error: "לא מורשה" }, { status: 401 });
       }
 
@@ -39,9 +58,7 @@ export async function POST(req: NextRequest) {
           tasks: {
             where: {
               isCompleted: false,
-              nextDueDate: {
-                lte: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Due in the next 2 days or overdue
-              },
+              nextDueDate: { lte: endOfToday }, // Tasks that expired or are due today!
             },
             orderBy: { nextDueDate: "asc" },
           },
@@ -55,35 +72,56 @@ export async function POST(req: NextRequest) {
       const email = u.notificationEmail || u.email;
       if (!email) continue;
 
-      const tasksToSend = u.tasks.length > 0
-        ? u.tasks.map((t) => ({
-            title: t.title,
-            description: t.description,
-            dueDate: t.nextDueDate,
-            priority: t.priority,
-          }))
-        : [
-            {
-              title: "בדיקת שגרה וצלילות מים",
-              description: "כל המשימות מעודכנות! מומלץ לבדוק את צלילות המים ורמת החיטוי בסופ\"ש.",
-              dueDate: new Date(),
-              priority: "LOW",
-            },
-          ];
+      // Filter and annotate tasks
+      const overdueOrDueTasks: TaskEmailItem[] = u.tasks.map((t) => {
+        const dueDate = new Date(t.nextDueDate);
+        const dueToday = isSameDay(dueDate, now);
+        const overdue = dueDate < startOfToday;
+        const diffMs = startOfToday.getTime() - dueDate.getTime();
+        const overdueDays = overdue ? Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24))) : 0;
+
+        return {
+          title: t.title,
+          description: t.description,
+          dueDate: t.nextDueDate,
+          priority: t.priority,
+          isDueToday: dueToday,
+          isOverdue: overdue,
+          overdueDays: overdueDays,
+        };
+      });
+
+      // If user has NO overdue/due tasks and didn't request a full manual reminder
+      if (overdueOrDueTasks.length === 0) {
+        results.push({
+          email,
+          skipped: true,
+          message: "אין משימות שלא סומנו כבוצע ופג תוקפן להיום.",
+          tasksDueCount: 0,
+        });
+        continue;
+      }
 
       const res = await sendMaintenanceReminderEmail({
         to: email,
         userName: u.name || "משתמש ג'קוזי",
         jacuzziName: u.jacuzzi?.name || "הג'קוזי שלך",
-        tasks: tasksToSend,
+        tasks: overdueOrDueTasks,
       });
 
       results.push({
         email,
         success: res.success,
-        mock: res.mock,
+        provider: res.provider,
+        previewUrl: res.previewUrl,
         error: res.error,
-        tasksCount: tasksToSend.length,
+        tasksDueCount: overdueOrDueTasks.length,
+        dueTasks: overdueOrDueTasks.map((t) => ({
+          title: t.title,
+          isDueToday: t.isDueToday,
+          isOverdue: t.isOverdue,
+          overdueDays: t.overdueDays,
+        })),
       });
     }
 
@@ -96,4 +134,12 @@ export async function POST(req: NextRequest) {
     console.error("Reminder dispatch error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+export async function POST(req: NextRequest) {
+  return processReminders(req);
+}
+
+export async function GET(req: NextRequest) {
+  return processReminders(req);
 }

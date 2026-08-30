@@ -83,7 +83,7 @@ export default function CalendarPage() {
 
   // Email reminder state
   const [emailSending, setEmailSending] = useState(false);
-  const [emailResult, setEmailResult] = useState<{ text: string; previewUrl?: string } | null>(null);
+  const [emailResult, setEmailResult] = useState<{ text: string; previewUrl?: string; isWarning?: boolean } | null>(null);
 
   const loadData = async () => {
     try {
@@ -351,6 +351,7 @@ export default function CalendarPage() {
     }
   };
 
+  // Automated Task Expiration Email Check
   const handleSendEmailReminder = async () => {
     setEmailSending(true);
     setEmailResult(null);
@@ -359,23 +360,31 @@ export default function CalendarPage() {
       const data = await res.json();
       if (data.success) {
         const firstResult = data.results?.[0];
-        if (firstResult?.previewUrl) {
+        if (firstResult?.skipped) {
           setEmailResult({
-            text: "מייל תזכורת מעוצב הופק ונשלח בהצלחה!",
+            text: "כל המשימות מעודכנות! אין משימות שלא סומנו כבוצע ופג תוקפן להיום.",
+            isWarning: false,
+          });
+        } else if (firstResult?.success) {
+          setEmailResult({
+            text: `נשלח מייל התראה על ${firstResult.tasksDueCount} משימות שפגו תוקף / מיועדות להיום!`,
             previewUrl: firstResult.previewUrl,
+            isWarning: true,
           });
         } else {
           setEmailResult({
-            text: "מייל תזכורת נשלח בהצלחה לכתובת המייל שלך!",
+            text: firstResult?.error || "שגיאה בשליחת המייל",
+            isWarning: true,
           });
         }
       } else {
         setEmailResult({
-          text: "שגיאה בשליחת המייל: " + (data.error || ""),
+          text: "שגיאה בבדיקת משימות: " + (data.error || ""),
+          isWarning: true,
         });
       }
     } catch (err: any) {
-      setEmailResult({ text: "שגיאה: " + err.message });
+      setEmailResult({ text: "שגיאה: " + err.message, isWarning: true });
     } finally {
       setEmailSending(false);
     }
@@ -383,6 +392,14 @@ export default function CalendarPage() {
 
   const selectedChemObject = chemicals.find((c) => c.id === selectedChemicalId);
   const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+
+  // Count overdue/due tasks for today
+  const todayDate = new Date();
+  const dueTodayOrOverdueCount = tasks.filter((t) => {
+    if (t.isCompleted) return false;
+    const d = new Date(t.nextDueDate);
+    return isSameDay(d, todayDate) || d < todayDate;
+  }).length;
 
   return (
     <div className="space-y-6 pb-12">
@@ -394,7 +411,7 @@ export default function CalendarPage() {
             <span>לוח שנה ויומן תחזוקה חודשי</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            מעקב טיפולים מחזורי, עדכון מלאי אוטומטי בעת ביצוע, והתראות בטיחות.
+            מעקב טיפולים מחזורי, התראות אוטומטיות במייל על משימות שפגו תוקף, ועדכון מלאי.
           </p>
         </div>
 
@@ -424,25 +441,45 @@ export default function CalendarPage() {
           <button
             onClick={handleSendEmailReminder}
             disabled={emailSending}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-xs shadow-lg transition-all disabled:opacity-50 ${
+              dueTodayOrOverdueCount > 0
+                ? "bg-rose-600 hover:bg-rose-500 shadow-rose-600/30 animate-pulse"
+                : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20"
+            }`}
           >
             <Send className="w-4 h-4" />
-            <span>{emailSending ? "שולח..." : "שלח תזכורת למייל"}</span>
+            <span>
+              {emailSending
+                ? "בודק משימות ושולח..."
+                : dueTodayOrOverdueCount > 0
+                ? `שלח התראה (${dueTodayOrOverdueCount} פג תוקף)`
+                : "בדוק ושלח התראות פג תוקף"}
+            </span>
           </button>
         </div>
       </div>
 
       {emailResult && (
-        <div className="p-4 rounded-2xl bg-slate-900 border border-emerald-800 text-emerald-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+        <div
+          className={`p-4 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg ${
+            emailResult.isWarning
+              ? "bg-slate-900 border-rose-800 text-rose-300"
+              : "bg-slate-900 border-emerald-800 text-emerald-300"
+          }`}
+        >
           <div className="flex items-center gap-2 flex-wrap">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            {emailResult.isWarning ? (
+              <AlertTriangle className="w-4 h-4 text-rose-400" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            )}
             <span className="font-semibold">{emailResult.text}</span>
             {emailResult.previewUrl && (
               <a
                 href={emailResult.previewUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:text-white hover:bg-emerald-600 border border-emerald-500/40 font-bold text-xs transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:text-white hover:bg-cyan-600 border border-cyan-500/40 font-bold text-xs transition-all"
               >
                 <span>🔍 צפה במייל המעוצב שנשלח</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -504,7 +541,7 @@ export default function CalendarPage() {
 
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {calendarDays.map((cell, idx) => {
-              const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(cell.date);
+              const { dayTasks, doneTasks, dayEntries } = getEventsForDay(cell.date);
               const isToday = isSameDay(cell.date, new Date());
               const isSelected = selectedDay && isSameDay(cell.date, selectedDay);
 
