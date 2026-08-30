@@ -29,10 +29,41 @@ export async function POST(req: NextRequest) {
     const user = await getSessionUser(req);
     if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
 
-    const { title, content, entryDate, chemicalsAdded, waterQualityRating } = await req.json();
+    const {
+      title,
+      content,
+      entryDate,
+      chemicalsAdded,
+      valueBefore,
+      valueAfter,
+      waterQualityRating,
+      chemicalInventoryId,
+      deductAmount,
+    } = await req.json();
 
     if (!title || !content) {
       return NextResponse.json({ error: "כותרת ותוכן הם שדות חובה" }, { status: 400 });
+    }
+
+    let finalChemicalString = chemicalsAdded || "";
+
+    // Deduct from inventory if chosen
+    if (chemicalInventoryId && deductAmount && parseFloat(deductAmount) > 0) {
+      const chem = await prisma.chemicalInventory.findFirst({
+        where: { id: chemicalInventoryId, userId: user.id },
+      });
+
+      if (chem) {
+        const amountToDeduct = parseFloat(deductAmount);
+        const newQuantity = Math.max(0, chem.quantity - amountToDeduct);
+
+        await prisma.chemicalInventory.update({
+          where: { id: chem.id },
+          data: { quantity: newQuantity },
+        });
+
+        finalChemicalString = `${chem.name}: ${amountToDeduct} ${chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit}`;
+      }
     }
 
     const entry = await prisma.diaryEntry.create({
@@ -41,7 +72,9 @@ export async function POST(req: NextRequest) {
         title,
         content,
         entryDate: entryDate ? new Date(entryDate) : new Date(),
-        chemicalsAdded: chemicalsAdded ? JSON.stringify(chemicalsAdded) : null,
+        chemicalsAdded: finalChemicalString || null,
+        valueBefore: valueBefore || null,
+        valueAfter: valueAfter || null,
         waterQualityRating: waterQualityRating ? parseInt(waterQualityRating, 10) : 5,
       },
     });

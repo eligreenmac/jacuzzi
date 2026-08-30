@@ -16,9 +16,9 @@ import {
   BookOpen,
   AlertTriangle,
   X,
-  Zap,
+  Package,
+  Globe,
   Info,
-  CalendarCheck,
 } from "lucide-react";
 
 export default function CalendarPage() {
@@ -26,16 +26,20 @@ export default function CalendarPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [entries, setEntries] = useState<any[]>([]);
   const [waterLogs, setWaterLogs] = useState<any[]>([]);
+  const [chemicals, setChemicals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Selected Day Details Modal
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
-  // Task Completion with Numerical Results Modal
+  // Task Completion with Inventory Deduction Modal
   const [completingTask, setCompletingTask] = useState<any | null>(null);
+  const [chemicalSource, setChemicalSource] = useState<"INVENTORY" | "EXTERNAL">("INVENTORY");
+  const [selectedChemicalId, setSelectedChemicalId] = useState("");
+  const [deductAmount, setDeductAmount] = useState("20");
+  const [externalChemicalName, setExternalChemicalName] = useState("");
   const [completionForm, setCompletionForm] = useState({
     valueBefore: "",
-    amountAdded: "",
     valueAfter: "",
     notes: "",
   });
@@ -53,9 +57,15 @@ export default function CalendarPage() {
 
   // Add Diary Note Modal
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [noteChemicalSource, setNoteChemicalSource] = useState<"NONE" | "INVENTORY" | "EXTERNAL">("NONE");
+  const [noteChemicalId, setNoteChemicalId] = useState("");
+  const [noteDeductAmount, setNoteDeductAmount] = useState("20");
+  const [noteExternalChem, setNoteExternalChem] = useState("");
   const [noteForm, setNoteForm] = useState({
     title: "",
     content: "",
+    valueBefore: "",
+    valueAfter: "",
     waterQualityRating: "5",
   });
 
@@ -65,7 +75,11 @@ export default function CalendarPage() {
 
   const loadData = async () => {
     try {
-      const [tasksRes, logsRes] = await Promise.all([fetch("/api/tasks"), fetch("/api/log")]);
+      const [tasksRes, logsRes, chemRes] = await Promise.all([
+        fetch("/api/tasks"),
+        fetch("/api/log"),
+        fetch("/api/chemicals"),
+      ]);
 
       if (tasksRes.ok) {
         const tData = await tasksRes.json();
@@ -75,6 +89,14 @@ export default function CalendarPage() {
         const lData = await logsRes.json();
         setEntries(lData.entries || []);
         setWaterLogs(lData.waterLogs || []);
+      }
+      if (chemRes.ok) {
+        const cData = await chemRes.json();
+        const chems = cData.chemicals || [];
+        setChemicals(chems);
+        if (chems.length > 0 && !selectedChemicalId) {
+          setSelectedChemicalId(chems[0].id);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -98,7 +120,6 @@ export default function CalendarPage() {
     setCurrentDate(new Date());
   };
 
-  // Calendar calculations
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -117,13 +138,12 @@ export default function CalendarPage() {
     "דצמבר",
   ];
 
-  const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Sunday
+  const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
   const calendarDays = [];
 
-  // Previous month trailing days
   for (let i = firstDayIndex - 1; i >= 0; i--) {
     calendarDays.push({
       date: new Date(year, month - 1, daysInPrevMonth - i),
@@ -131,7 +151,6 @@ export default function CalendarPage() {
     });
   }
 
-  // Current month days
   for (let i = 1; i <= daysInMonth; i++) {
     calendarDays.push({
       date: new Date(year, month, i),
@@ -139,7 +158,6 @@ export default function CalendarPage() {
     });
   }
 
-  // Next month leading days to complete grid (multiples of 7)
   const remainingCells = (7 - (calendarDays.length % 7)) % 7;
   for (let i = 1; i <= remainingCells; i++) {
     calendarDays.push({
@@ -167,15 +185,22 @@ export default function CalendarPage() {
     return { dayTasks, doneTasks, dayEntries, dayWaterLogs };
   };
 
-  // Open Structured Completion Modal
+  // Open Completion Modal
   const openCompletionModal = (task: any) => {
     setCompletingTask(task);
     setCompletionForm({
       valueBefore: "",
-      amountAdded: "",
       valueAfter: "",
       notes: "",
     });
+    setDeductAmount("20");
+    setExternalChemicalName("");
+    if (chemicals.length > 0) {
+      setChemicalSource("INVENTORY");
+      setSelectedChemicalId(chemicals[0].id);
+    } else {
+      setChemicalSource("EXTERNAL");
+    }
   };
 
   const handleSaveCompletion = async (e: React.FormEvent) => {
@@ -184,6 +209,8 @@ export default function CalendarPage() {
 
     setIsSubmittingCompletion(true);
     try {
+      const isFromInventory = chemicalSource === "INVENTORY" && selectedChemicalId;
+
       await fetch("/api/tasks", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -191,9 +218,12 @@ export default function CalendarPage() {
           id: completingTask.id,
           markDoneAndReschedule: true,
           valueBefore: completionForm.valueBefore,
-          amountAdded: completionForm.amountAdded,
           valueAfter: completionForm.valueAfter,
           notes: completionForm.notes,
+          chemicalInventoryId: isFromInventory ? selectedChemicalId : null,
+          deductAmount: isFromInventory ? deductAmount : null,
+          chemicalUsed: !isFromInventory ? externalChemicalName : null,
+          amountAdded: !isFromInventory ? `${deductAmount} גרם/מ"ל` : null,
         }),
       });
 
@@ -229,12 +259,20 @@ export default function CalendarPage() {
     e.preventDefault();
     try {
       const targetDate = selectedDay || new Date();
+      const isFromInventory = noteChemicalSource === "INVENTORY" && noteChemicalId;
+
       await fetch("/api/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...noteForm,
           entryDate: targetDate.toISOString(),
+          chemicalInventoryId: isFromInventory ? noteChemicalId : null,
+          deductAmount: isFromInventory ? noteDeductAmount : null,
+          chemicalsAdded:
+            noteChemicalSource === "EXTERNAL"
+              ? `${noteExternalChem}: ${noteDeductAmount} גרם/מ"ל`
+              : null,
         }),
       });
       setIsNoteModalOpen(false);
@@ -266,6 +304,7 @@ export default function CalendarPage() {
     }
   };
 
+  const selectedChemObject = chemicals.find((c) => c.id === selectedChemicalId);
   const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
   return (
@@ -278,7 +317,7 @@ export default function CalendarPage() {
             <span>לוח שנה ויומן טיפולים חודשי</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            תצוגת לוח שנה חודשית מלאה למעקב טיפולים מחזוריים, תוצאות מספריות והערות יומן.
+            מעקב טיפולים מחזורי, הפחתת חומרים מארון הכימיקלים, ותיעוד תוצאות מספריות.
           </p>
         </div>
 
@@ -379,8 +418,6 @@ export default function CalendarPage() {
               const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(cell.date);
               const isToday = isSameDay(cell.date, new Date());
               const isSelected = selectedDay && isSameDay(cell.date, selectedDay);
-              const hasEvents =
-                dayTasks.length > 0 || doneTasks.length > 0 || dayEntries.length > 0 || dayWaterLogs.length > 0;
 
               return (
                 <div
@@ -396,7 +433,6 @@ export default function CalendarPage() {
                       : "bg-slate-950/20 border-slate-900 text-slate-600"
                   }`}
                 >
-                  {/* Top: Day Number & Indicators */}
                   <div className="flex items-center justify-between">
                     <span
                       className={`text-xs font-bold px-1.5 py-0.5 rounded-lg ${
@@ -417,9 +453,7 @@ export default function CalendarPage() {
                     )}
                   </div>
 
-                  {/* Events list badges in cell */}
                   <div className="space-y-1 my-1 overflow-hidden">
-                    {/* Scheduled Tasks */}
                     {dayTasks.map((t) => (
                       <div
                         key={t.id}
@@ -431,7 +465,6 @@ export default function CalendarPage() {
                       </div>
                     ))}
 
-                    {/* Completed Tasks with Results */}
                     {doneTasks.map((t) => (
                       <div
                         key={`done-${t.id}`}
@@ -443,7 +476,6 @@ export default function CalendarPage() {
                       </div>
                     ))}
 
-                    {/* Diary Entries */}
                     {dayEntries.map((e) => (
                       <div
                         key={e.id}
@@ -456,7 +488,6 @@ export default function CalendarPage() {
                     ))}
                   </div>
 
-                  {/* Dot counters for mobile */}
                   <div className="sm:hidden flex items-center gap-1 justify-end">
                     {dayTasks.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />}
                     {doneTasks.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
@@ -469,7 +500,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Selected Day Details Drawer / Modal */}
+      {/* Selected Day Details Drawer */}
       {selectedDay && (
         <div className="bg-slate-900/90 border border-cyan-800/50 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
@@ -518,7 +549,6 @@ export default function CalendarPage() {
 
             return (
               <div className="space-y-6">
-                {/* Pending Tasks */}
                 {dayTasks.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
@@ -545,7 +575,7 @@ export default function CalendarPage() {
                             className="w-full py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all"
                           >
                             <CheckCircle2 className="w-4 h-4" />
-                            <span>סמן כבוצע והזן תוצאות מספריות</span>
+                            <span>סמן כבוצע ובחר חומר מהארון</span>
                           </button>
                         </div>
                       ))}
@@ -553,7 +583,6 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                {/* Completed treatments with historical values */}
                 {doneTasks.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
@@ -572,17 +601,17 @@ export default function CalendarPage() {
                             <span>{task.title}</span>
                           </div>
 
+                          {task.lastChemicalUsed && (
+                            <div className="text-cyan-300 font-semibold">
+                              <span className="text-slate-500">חומר שהוסף: </span>
+                              {task.lastChemicalUsed} ({task.lastAmountAdded || ""})
+                            </div>
+                          )}
+
                           {task.lastValueBefore && (
                             <div className="text-slate-300">
                               <span className="text-slate-500">לפני: </span>
                               {task.lastValueBefore}
-                            </div>
-                          )}
-
-                          {task.lastAmountAdded && (
-                            <div className="text-cyan-300 font-semibold">
-                              <span className="text-slate-500">מה הוסף / בוצע: </span>
-                              {task.lastAmountAdded}
                             </div>
                           )}
 
@@ -598,7 +627,6 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                {/* Diary Entries */}
                 {dayEntries.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
@@ -622,57 +650,155 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Modal: Task Completion with Numerical Results */}
+      {/* Modal: Task Completion with Chemical Inventory Deduction */}
       {completingTask && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-cyan-800/80 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2 text-cyan-400">
                 <CheckCircle2 className="w-6 h-6" />
-                <h2 className="text-lg font-bold text-white">תיעוד תוצאות טיפול: {completingTask.title}</h2>
+                <h2 className="text-lg font-bold text-white">תיעוד טיפול: {completingTask.title}</h2>
               </div>
               <button onClick={() => setCompletingTask(null)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-300">
-              הזן את הערכים המספריים של המדידה לפני ואחרי. הנתונים ישמרו בהיסטוריית ה-AI לחישוב מגמות ותזכורות עתידיות.
-            </p>
+            <form onSubmit={handleSaveCompletion} className="space-y-5">
+              {/* Chemical selection source */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300">1. מאיזה מקור נלקח החומר שהוספת?</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setChemicalSource("INVENTORY")}
+                    className={`p-3 rounded-2xl border text-right transition-all flex items-center gap-2 ${
+                      chemicalSource === "INVENTORY"
+                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold"
+                        : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                    }`}
+                  >
+                    <Package className="w-4 h-4 shrink-0" />
+                    <div className="text-xs">
+                      <div>מארון החומרים שלי</div>
+                      <div className="text-[10px] opacity-70 font-normal">מפחית מלאי אוטומטית</div>
+                    </div>
+                  </button>
 
-            <form onSubmit={handleSaveCompletion} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">1. מדידה לפני הטיפול (אם רלוונטי)</label>
-                <input
-                  type="text"
-                  value={completionForm.valueBefore}
-                  onChange={(e) => setCompletionForm({ ...completionForm, valueBefore: e.target.value })}
-                  placeholder="למשל: pH היה 7.9, כלור היה 0.5 ppm"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs focus:border-cyan-500"
-                />
+                  <button
+                    type="button"
+                    onClick={() => setChemicalSource("EXTERNAL")}
+                    className={`p-3 rounded-2xl border text-right transition-all flex items-center gap-2 ${
+                      chemicalSource === "EXTERNAL"
+                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold"
+                        : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                    }`}
+                  >
+                    <Globe className="w-4 h-4 shrink-0" />
+                    <div className="text-xs">
+                      <div>ממקור חיצוני / אחר</div>
+                      <div className="text-[10px] opacity-70 font-normal">לא משפיע על הארון</div>
+                    </div>
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">2. מה נעשה / כמה הוספת (כמות וחומר)</label>
-                <input
-                  type="text"
-                  required
-                  value={completionForm.amountAdded}
-                  onChange={(e) => setCompletionForm({ ...completionForm, amountAdded: e.target.value })}
-                  placeholder="למשל: הוספתי 25 גרם pH Minus, שטפתי פילטר בזרם מים"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs font-bold text-cyan-300 focus:border-cyan-500"
-                />
-              </div>
+              {/* Inventory picker */}
+              {chemicalSource === "INVENTORY" ? (
+                <div className="space-y-3 bg-slate-950/80 p-4 rounded-2xl border border-cyan-900/60">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-300">בחר חומר מתוך הארון שלך:</label>
+                    {chemicals.length === 0 ? (
+                      <div className="text-xs text-amber-400 p-2">אין חומרים בארון כרגע. באפשרותך לבחור "מקור חיצוני".</div>
+                    ) : (
+                      <select
+                        value={selectedChemicalId}
+                        onChange={(e) => setSelectedChemicalId(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs font-semibold focus:border-cyan-500"
+                      >
+                        {chemicals.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} (נותרו: {c.quantity} {c.unit === "GRAMS" ? 'גר\'' : c.unit === "ML" ? 'מ"ל' : c.unit})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">3. תוצאה ומדידה סופית אחרי</label>
-                <input
-                  type="text"
-                  value={completionForm.valueAfter}
-                  onChange={(e) => setCompletionForm({ ...completionForm, valueAfter: e.target.value })}
-                  placeholder="למשל: pH ירד ל-7.4, המים צלולים"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs text-emerald-300 font-semibold focus:border-cyan-500"
-                />
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-300">כמות שהוספת לג'קוזי:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        value={deductAmount}
+                        onChange={(e) => setDeductAmount(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold text-sm text-cyan-300"
+                      />
+                    </div>
+
+                    {selectedChemObject && (
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-slate-400">יתרה חדשה בארון:</label>
+                        <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-emerald-400">
+                          {Math.max(0, selectedChemObject.quantity - (parseFloat(deductAmount) || 0))} {selectedChemObject.unit === "GRAMS" ? 'גר\'' : selectedChemObject.unit === "ML" ? 'מ"ל' : selectedChemObject.unit}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-300">שם החומר ממקור חיצוני:</label>
+                    <input
+                      type="text"
+                      required
+                      value={externalChemicalName}
+                      onChange={(e) => setExternalChemicalName(e.target.value)}
+                      placeholder="למשל: כלור טבליות של השכן, חומצת מלח..."
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-300">כמות שהוספת:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={deductAmount}
+                      onChange={(e) => setDeductAmount(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Measurements Before & After */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">2. מדידה לפני הטיפול</label>
+                  <input
+                    type="text"
+                    value={completionForm.valueBefore}
+                    onChange={(e) => setCompletionForm({ ...completionForm, valueBefore: e.target.value })}
+                    placeholder="למשל: pH 7.9, כלור 0.5"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-cyan-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">3. תוצאה אחרי הטיפול</label>
+                  <input
+                    type="text"
+                    value={completionForm.valueAfter}
+                    onChange={(e) => setCompletionForm({ ...completionForm, valueAfter: e.target.value })}
+                    placeholder="למשל: pH 7.3, מים צלולים"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs text-emerald-300 font-semibold focus:border-cyan-500"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -681,7 +807,7 @@ export default function CalendarPage() {
                   value={completionForm.notes}
                   onChange={(e) => setCompletionForm({ ...completionForm, notes: e.target.value })}
                   rows={2}
-                  placeholder="הערות אישיות..."
+                  placeholder="הערות ליומן..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
                 />
               </div>
@@ -699,7 +825,7 @@ export default function CalendarPage() {
                   disabled={isSubmittingCompletion}
                   className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2"
                 >
-                  {isSubmittingCompletion ? "שומר טיפול..." : "שמור טיפול ותזמן לפעם הבאה"}
+                  {isSubmittingCompletion ? "שומר ומעדכן מלאי..." : "שמור טיפול ועדכן מלאי"}
                 </button>
               </div>
             </form>
@@ -788,12 +914,12 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Modal: Add Diary Note */}
+      {/* Modal: Add Diary Note with Chemical Deduction */}
       {isNoteModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-lg font-bold text-white">רישום הערה ביומן</h2>
+              <h2 className="text-lg font-bold text-white">רישום הערה / טיפול ביומן</h2>
               <button onClick={() => setIsNoteModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -810,6 +936,90 @@ export default function CalendarPage() {
                   placeholder="למשל: טיפול שוק אחרי אירוח, שטיפת פילטר"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
                 />
+              </div>
+
+              {/* Chemical deduction option in Diary */}
+              <div className="space-y-2 bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
+                <label className="text-xs font-semibold text-slate-300 block">האם נוסף חומר לג'קוזי בטיפול זה?</label>
+                <div className="grid grid-cols-3 gap-1.5 text-center text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setNoteChemicalSource("NONE")}
+                    className={`py-1.5 rounded-lg border ${
+                      noteChemicalSource === "NONE"
+                        ? "bg-slate-800 border-cyan-500 text-white font-bold"
+                        : "bg-slate-900 border-slate-800 text-slate-400"
+                    }`}
+                  >
+                    ללא חומר
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNoteChemicalSource("INVENTORY")}
+                    className={`py-1.5 rounded-lg border ${
+                      noteChemicalSource === "INVENTORY"
+                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold"
+                        : "bg-slate-900 border-slate-800 text-slate-400"
+                    }`}
+                  >
+                    מהארון שלי
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNoteChemicalSource("EXTERNAL")}
+                    className={`py-1.5 rounded-lg border ${
+                      noteChemicalSource === "EXTERNAL"
+                        ? "bg-purple-500/20 border-purple-400 text-purple-300 font-bold"
+                        : "bg-slate-900 border-slate-800 text-slate-400"
+                    }`}
+                  >
+                    מקור חיצוני
+                  </button>
+                </div>
+
+                {noteChemicalSource === "INVENTORY" && chemicals.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <select
+                      value={noteChemicalId || chemicals[0].id}
+                      onChange={(e) => setNoteChemicalId(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white"
+                    >
+                      {chemicals.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.quantity} {c.unit === "GRAMS" ? "ג'" : 'מ"ל'})
+                        </option>
+                      ))}
+                    </select>
+
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="כמות (ג'/מ''ל)"
+                      value={noteDeductAmount}
+                      onChange={(e) => setNoteDeductAmount(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white font-bold"
+                    />
+                  </div>
+                )}
+
+                {noteChemicalSource === "EXTERNAL" && (
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <input
+                      type="text"
+                      placeholder="שם החומר"
+                      value={noteExternalChem}
+                      onChange={(e) => setNoteExternalChem(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white"
+                    />
+                    <input
+                      type="number"
+                      placeholder="כמות"
+                      value={noteDeductAmount}
+                      onChange={(e) => setNoteDeductAmount(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">

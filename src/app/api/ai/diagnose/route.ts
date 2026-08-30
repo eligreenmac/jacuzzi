@@ -44,6 +44,51 @@ export async function POST(req: NextRequest) {
       take: 10,
     });
 
+    const recentDiary = await prisma.diaryEntry.findMany({
+      where: { userId: user.id },
+      orderBy: { entryDate: "desc" },
+      take: 15,
+    });
+
+    // Build chronological chemical addition ledger
+    const addedChemicalsLedger: Array<{
+      date: Date | string;
+      chemical: string;
+      amount?: string | null;
+      valueBefore?: string | null;
+      valueAfter?: string | null;
+      notes?: string | null;
+    }> = [];
+
+    for (const d of recentDiary) {
+      if (d.chemicalsAdded) {
+        addedChemicalsLedger.push({
+          date: d.entryDate,
+          chemical: d.chemicalsAdded,
+          amount: d.chemicalsAdded,
+          valueBefore: d.valueBefore,
+          valueAfter: d.valueAfter,
+          notes: d.title + ": " + d.content,
+        });
+      }
+    }
+
+    for (const t of recentTasks) {
+      if (t.lastChemicalUsed && t.lastDoneDate) {
+        addedChemicalsLedger.push({
+          date: t.lastDoneDate,
+          chemical: t.lastChemicalUsed,
+          amount: t.lastAmountAdded,
+          valueBefore: t.lastValueBefore,
+          valueAfter: t.lastValueAfter,
+          notes: t.title,
+        });
+      }
+    }
+
+    // Sort ledger newest first
+    addedChemicalsLedger.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
     // Calculate time elapsed
     const now = Date.now();
     const lastPhLog = recentLogs.find((l) => l.ph !== null && l.ph !== undefined);
@@ -61,16 +106,6 @@ export async function POST(req: NextRequest) {
     const daysSinceLastShock = lastShockTask?.lastDoneDate
       ? Math.floor((now - new Date(lastShockTask.lastDoneDate).getTime()) / (1000 * 60 * 60 * 24))
       : undefined;
-
-    const historySummary = recentLogs.map((l) => ({
-      date: l.testedAt,
-      type: "WATER_TEST",
-      ph: l.ph,
-      freeChlorine: l.freeChlorine,
-      valueBefore: l.valueBefore,
-      valueAfter: l.valueAfter,
-      actionTaken: l.actionsTaken,
-    }));
 
     const volumeLiters = jacuzzi?.volumeLiters || 1200;
     const sanitizationType = jacuzzi?.sanitizationType || "CHLORINE";
@@ -103,7 +138,7 @@ export async function POST(req: NextRequest) {
         quantity: i.quantity,
         unit: i.unit,
       })),
-      history: historySummary,
+      addedChemicalsLedger,
       daysSinceLastPhTest,
       daysSinceLastFilterWash,
       daysSinceLastShock,
@@ -133,6 +168,7 @@ export async function POST(req: NextRequest) {
       success: true,
       diagnosis,
       jacuzzi,
+      addedChemicalsLedger: addedChemicalsLedger.slice(0, 5),
       metrics: {
         daysSinceLastPhTest,
         daysSinceLastFilterWash,

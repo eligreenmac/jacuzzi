@@ -18,6 +18,7 @@ import {
   Zap,
   History,
   Info,
+  Package,
 } from "lucide-react";
 
 export default function WaterDoctorPage() {
@@ -39,6 +40,7 @@ export default function WaterDoctorPage() {
 
   const [loading, setLoading] = useState(false);
   const [diagnosis, setDiagnosis] = useState<any>(null);
+  const [addedLedger, setAddedLedger] = useState<any[]>([]);
   const [savedToLog, setSavedToLog] = useState(false);
   const [error, setError] = useState("");
 
@@ -80,6 +82,7 @@ export default function WaterDoctorPage() {
       if (!res.ok) throw new Error(data.error || "שגיאה באבחון");
 
       setDiagnosis(data.diagnosis);
+      setAddedLedger(data.addedChemicalsLedger || []);
       setSavedToLog(true);
     } catch (err: any) {
       setError(err.message);
@@ -103,11 +106,11 @@ export default function WaterDoctorPage() {
       <div className="text-center max-w-2xl mx-auto space-y-2">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-bold border border-cyan-500/20">
           <Sparkles className="w-4 h-4" />
-          <span>מופעל על ידי Gemini 3.7 AI • שקלול מגמות היסטוריות ואיזון מותאם</span>
+          <span>מופעל על ידי Gemini 3.7 AI • שקלול מלא של חומרים שהוספו ומניעת מינון יתר</span>
         </div>
         <h1 className="text-3xl font-black text-white">רופא המים של הג'קוזי</h1>
         <p className="text-sm text-slate-300">
-          תאר את מצב המים, הזן ערכים שידועים לך (או סמן "לא יודע"), וקבל מרשם מדויק בגרמים לאיזון וחיטוי מושלם.
+          תאר את מצב המים, הזן ערכים שידועים לך (או סמן "לא יודע"), וה-AI יחשב מינונים בהתחשב בחומרים שכבר הוכנסו לג'קוזי.
         </p>
       </div>
 
@@ -260,7 +263,7 @@ export default function WaterDoctorPage() {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="למשל: היו 4 מתרחצים אתמול, המים נראים מעט אטומים, לא החלפתי פילטר שבועיים..."
+                placeholder="למשל: היו 4 מתרחצים אתמול, המים נראים מעט אטומים..."
                 rows={2}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500"
               />
@@ -320,7 +323,7 @@ export default function WaterDoctorPage() {
               <div className="space-y-1 max-w-sm">
                 <h3 className="text-lg font-bold text-white">האבחון יופיע כאן</h3>
                 <p className="text-xs text-slate-400">
-                  מלא את מה שידוע לך ולחץ על "אבחן מים". ה-AI יספק תוכנית מינון מדויקת בגרמים גם אם לא בדקת את כל הערכים.
+                  מלא את מה שידוע לך ולחץ על "אבחן מים". ה-AI ישקלל את כל החומרים שכבר הוספת בעבר לג'קוזי ואת המועדים המדויקים.
                 </p>
               </div>
             </div>
@@ -369,6 +372,35 @@ export default function WaterDoctorPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Chemical Ledger Analysis (What was already added) */}
+              {(diagnosis.recentAdditionsAnalysis?.length > 0 || addedLedger.length > 0) && (
+                <div className="bg-cyan-950/40 border border-cyan-800/80 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-300">
+                    <Package className="w-4 h-4" />
+                    <span>חומרים שהוכנסו לג'קוזי ונלקחו בחשבון בחישוב ה-AI:</span>
+                  </div>
+
+                  {diagnosis.recentAdditionsAnalysis?.map((item: string, idx: number) => (
+                    <div key={idx} className="text-xs text-slate-200">
+                      💡 {item}
+                    </div>
+                  ))}
+
+                  {addedLedger.length > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap pt-1">
+                      {addedLedger.map((add, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded-md bg-slate-900 border border-cyan-800 text-[11px] text-cyan-300"
+                        >
+                          {add.chemical} ({add.amount || ""}) • {new Date(add.date).toLocaleDateString("he-IL")}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Historical Insights and Missing Test Alerts */}
               {(diagnosis.historicalInsights?.length > 0 || diagnosis.missingTestsAlerts?.length > 0) && (

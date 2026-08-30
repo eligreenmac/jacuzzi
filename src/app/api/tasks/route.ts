@@ -65,6 +65,8 @@ export async function PUT(req: NextRequest) {
       valueAfter,
       amountAdded,
       chemicalUsed,
+      chemicalInventoryId,
+      deductAmount,
       notes,
     } = await req.json();
 
@@ -81,24 +83,47 @@ export async function PUT(req: NextRequest) {
     }
 
     let updateData: any = {};
+    let deductedChemicalName = "";
+
+    // If chemical was selected from inventory, deduct the quantity
+    if (markDoneAndReschedule && chemicalInventoryId && deductAmount && parseFloat(deductAmount) > 0) {
+      const chem = await prisma.chemicalInventory.findFirst({
+        where: { id: chemicalInventoryId, userId: user.id },
+      });
+
+      if (chem) {
+        deductedChemicalName = chem.name;
+        const amountToDeduct = parseFloat(deductAmount);
+        const newQuantity = Math.max(0, chem.quantity - amountToDeduct);
+
+        await prisma.chemicalInventory.update({
+          where: { id: chem.id },
+          data: { quantity: newQuantity },
+        });
+      }
+    }
 
     if (markDoneAndReschedule) {
       const now = new Date();
       const nextDate = new Date(now.getTime() + existing.frequencyDays * 24 * 60 * 60 * 1000);
+      
+      const effectiveChemical = deductedChemicalName || chemicalUsed || null;
+      const effectiveAmount = amountAdded || (deductAmount ? `${deductAmount} גרם/מ"ל` : null);
+
       updateData = {
         lastDoneDate: now,
         nextDueDate: nextDate,
         isCompleted: false,
         lastValueBefore: valueBefore || null,
         lastValueAfter: valueAfter || null,
-        lastAmountAdded: amountAdded || null,
-        lastChemicalUsed: chemicalUsed || null,
+        lastAmountAdded: effectiveAmount,
+        lastChemicalUsed: effectiveChemical,
       };
 
       // Automatically register in personal Diary with structured results!
-      let detailedSummary = `בוצע טיפול שגרתי: ${existing.title}.`;
+      let detailedSummary = `בוצע טיפול: ${existing.title}.`;
+      if (effectiveChemical) detailedSummary += `\n• חומר בשימוש: ${effectiveChemical} (${effectiveAmount || ""})`;
       if (valueBefore) detailedSummary += `\n• מדידה לפני הטיפול: ${valueBefore}`;
-      if (amountAdded) detailedSummary += `\n• מה הוסף / בוצע: ${amountAdded}`;
       if (valueAfter) detailedSummary += `\n• תוצאה ומדידה אחרי: ${valueAfter}`;
       if (notes) detailedSummary += `\n• הערות: ${notes}`;
 
@@ -109,7 +134,7 @@ export async function PUT(req: NextRequest) {
           content: detailedSummary,
           valueBefore: valueBefore || null,
           valueAfter: valueAfter || null,
-          chemicalsAdded: amountAdded || null,
+          chemicalsAdded: effectiveChemical ? `${effectiveChemical}: ${effectiveAmount || ""}` : null,
           waterQualityRating: 5,
         },
       });
@@ -128,6 +153,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, task: updated });
   } catch (error: any) {
+    console.error("Task update error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

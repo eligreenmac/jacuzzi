@@ -27,6 +27,15 @@ export interface IdentifyChemicalResponse {
   safetyNotes: string;
 }
 
+export interface ChemicalAdditionLedgerEntry {
+  date: string | Date;
+  chemical: string;
+  amount?: string | null;
+  valueBefore?: string | null;
+  valueAfter?: string | null;
+  notes?: string | null;
+}
+
 export interface DiagnoseRequest {
   volumeLiters: number;
   sanitizationType: string;
@@ -48,6 +57,7 @@ export interface DiagnoseRequest {
     valueBefore?: string | null;
     valueAfter?: string | null;
   }>;
+  addedChemicalsLedger?: ChemicalAdditionLedgerEntry[];
   daysSinceLastPhTest?: number;
   daysSinceLastFilterWash?: number;
   daysSinceLastShock?: number;
@@ -64,6 +74,7 @@ export interface DiagnosisResponse {
     instructions: string;
     safetyWarning?: string;
   }>;
+  recentAdditionsAnalysis?: string[];
   historicalInsights?: string[];
   missingTestsAlerts?: string[];
   generalTips: string[];
@@ -148,7 +159,7 @@ export async function identifyChemicalFromImage(
     }
   }
 
-  // Smart fallback if API key not available
+  // Smart fallback
   return {
     identified: true,
     name: "כימיקל ג'קוזי (זוהה מצילום)",
@@ -162,7 +173,7 @@ export async function identifyChemicalFromImage(
 }
 
 /**
- * Water Diagnosis with Time-Series History, Missing Test Handling & Volume Scaling
+ * Water Diagnosis with Time-Series History, Chemical Additions Ledger & Volume Scaling
  */
 export async function analyzeWaterWithGemini(data: DiagnoseRequest): Promise<DiagnosisResponse> {
   const ai = getAiClient();
@@ -190,20 +201,24 @@ export async function analyzeWaterWithGemini(data: DiagnoseRequest): Promise<Dia
   * כלור חופשי: ${clDisplay}
   * בסיסיות (TA): ${alkDisplay}
 - תיאור חופשי מהמשתמש: "${data.description || "ללא תיאור נוסף"}".
-- זמנים שעברו מפעולות קודמות:
+
+=== היסטוריית חומרים ומינונים שהוכנסו לג'קוזי (Chemical Additions Ledger) ===
+להלן רשימת כל החומרים, המינונים והמועדים שבהם המשתמש כבר הוסיף חומרים לג'קוזי שלו:
+${JSON.stringify(data.addedChemicalsLedger || [], null, 2)}
+
+- פערי זמנים מבדיקות קודמות:
   * ימים שעברו מבדיקת pH אחרונה: ${data.daysSinceLastPhTest ?? "לא ידוע"}
   * ימים שעברו משטיפת פילטר אחרונה: ${data.daysSinceLastFilterWash ?? "לא ידוע"}
   * ימים שעברו משוק אחרון: ${data.daysSinceLastShock ?? "לא ידוע"}
-- היסטוריית טיפולים ומדידות אחרונות:
-${JSON.stringify(data.history || [], null, 2)}
+
 - מלאי חומרים זמין בארון המשתמש:
 ${JSON.stringify(data.inventory || [], null, 2)}
 
-הנחיות חשובות:
-1. שים לב: אם ערך מסוים הוא "לא ידוע / לא נבדק", התחשב במראה המים, בהיסטוריה ובזמנים שעברו. ציין בהמלצות שיש לבצע בדיקה בהקדם.
-2. תן תובנות היסטוריות אם ניכרת מגמה (למשל: "ה-pH עולה באופן קבוע כל כמה ימים", "לא ביצעת שטיפת פילטר כבר מעל שבוע").
-3. תן מינונים מדויקים בגרם / מ"ל המחושבים בדיוק עבור נפח ${data.volumeLiters} ליטר.
-4. הערך האם בטוח להתרחץ כרגע.
+הנחיות חובה:
+1. **התחשבות מלאה במה שהוכנס כבר**: נתח את החומרים שהוכנסו לאחרונה לג'קוזי, המועדים והכמויות. אם הוסף חומר לאחרונה (למשל כלור אתמול או מוריד pH לפני יומיים), שקלל זאת בתוכנית כדי למנוע מינוני יתר (overdosing) או תגובות בלתי רצויות.
+2. **ערכים לא ידועים**: אם ערך מסוים לא נבדק ("לא ידוע"), הסתמך על מראה המים והחומרים שהוספו לאחרונה, והנחה לבדוק בהקדם.
+3. **מינונים מותאמים אישית**: ספק מינון מדויק בגרם/מ"ל המחושב בדיוק לפי נפח ${data.volumeLiters} ליטר.
+4. החזר התייחסות מפורשת ב-"recentAdditionsAnalysis" למה שהוסף לאחרונה.
 
 החזר אך ורק תשובת JSON תקנית במבנה:
 {
@@ -212,8 +227,9 @@ ${JSON.stringify(data.inventory || [], null, 2)}
   "safeToBathe": true | false,
   "needsFullDrain": true | false,
   "estimatedRecoveryTime": "למשל: שעתיים / 24 שעות",
+  "recentAdditionsAnalysis": ["התייחסות לחומרים שהוספו לאחרונה והשפעתם"],
   "historicalInsights": ["תובנה על פי ההיסטוריה ופערי הזמנים"],
-  "missingTestsAlerts": ["התראה על בדיקה שלא בוצעה זמן רב אם רלוונטי"],
+  "missingTestsAlerts": ["התראה על בדיקה שלא בוצעה זמן רב"],
   "stepByStepPlan": [
     {
       "stepNumber": 1,
@@ -253,7 +269,6 @@ ${JSON.stringify(data.inventory || [], null, 2)}
     }
   }
 
-  // Fallback rule-based chemical algorithm
   return generateRuleBasedDiagnosis(data);
 }
 
@@ -320,6 +335,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
   const steps: DiagnosisResponse["stepByStepPlan"] = [];
   const historicalInsights: string[] = [];
   const missingTestsAlerts: string[] = [];
+  const recentAdditionsAnalysis: string[] = [];
   let severity: DiagnosisResponse["severity"] = "GOOD";
   let safeToBathe = true;
   let needsFullDrain = false;
@@ -327,7 +343,15 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
 
   let stepCount = 1;
 
-  // Check if any test was unknown
+  // Analyze added chemicals ledger
+  if (data.addedChemicalsLedger && data.addedChemicalsLedger.length > 0) {
+    const lastAddition = data.addedChemicalsLedger[0];
+    const daysAgo = Math.floor((Date.now() - new Date(lastAddition.date).getTime()) / (1000 * 60 * 60 * 24));
+    recentAdditionsAnalysis.push(
+      `הוסף לג'קוזי לאחרונה: ${lastAddition.chemical} (${lastAddition.amount || ""}) לפני ${daysAgo === 0 ? "היום" : `${daysAgo} ימים`}.`
+    );
+  }
+
   if (data.ph === "UNKNOWN" || data.ph === undefined || data.ph === null) {
     missingTestsAlerts.push("רמת ה-pH לא נבדקה כעת. מומלץ לבצע בדיקת מקלון בהקדם לאימות חומציות המים.");
   }
@@ -335,7 +359,6 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     missingTestsAlerts.push("רמת חומר החיטוי (כלור/ברום) לא נבדקה כעת.");
   }
 
-  // Time delta checks
   if (data.daysSinceLastFilterWash && data.daysSinceLastFilterWash >= 7) {
     historicalInsights.push(`חלפו ${data.daysSinceLastFilterWash} ימים משטיפת הפילטר האחרונה - מומלץ לשטוף היום בזרם מים.`);
   }
@@ -343,7 +366,6 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     historicalInsights.push(`בדיקת ה-pH הקודמת בוצעה לפני ${data.daysSinceLastPhTest} ימים.`);
   }
 
-  // 1. Check pH if provided
   if (typeof data.ph === "number") {
     const phAdj = calculatePhAdjustment(data.volumeLiters, data.ph);
     if (phAdj) {
@@ -359,7 +381,6 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     }
   }
 
-  // 2. Check Sanitizer / Chlorine if provided
   if (typeof data.freeChlorine === "number") {
     if (data.freeChlorine < 2.0) {
       const clAdj = calculateChlorineDose(data.volumeLiters, data.freeChlorine);
@@ -388,7 +409,6 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     }
   }
 
-  // 3. Check Water Clarity & Symptoms
   if (data.waterClarity === "GREEN" || data.waterClarity === "BAD_ODOR") {
     severity = "CRITICAL";
     safeToBathe = false;
@@ -445,6 +465,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     safeToBathe,
     needsFullDrain,
     estimatedRecoveryTime,
+    recentAdditionsAnalysis,
     historicalInsights,
     missingTestsAlerts,
     stepByStepPlan: steps,
