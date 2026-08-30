@@ -1025,17 +1025,123 @@ function generateRuleBasedProactiveMaintenance(
 
   // Analyze water change
   if (isWaterChange) {
-    const isFull = text.includes("מלא") || text.includes("הכל") || text.includes("100%") || text.includes("ריקון ומילוי");
+    const isFull = text.includes("מלא") || text.includes("הכל") || text.includes("100%") || text.includes("רוקנתי ומילאתי") || text.includes("ריקון ומילוי");
+    
+    // Extract numeric percentage if specified
+    const pctMatch = text.match(/(\d+)\s*%/);
     if (isFull) {
-      understanding = "ריקון ומילוי מלא של כל מי הג'קוזי (100% מים טריים)";
-      chemicalImpact = "המים טריים לחלוטין. יש לאפשר להם להגיע לטמפרטורת יעד ולהסתחרר 24 שעות. כל משימות החיטוי הישנות נדחות עד לבדיקת בסיס ראשונית.";
-      updateJacuzziRefill = true;
       refillPercentage = 100;
+    } else if (pctMatch) {
+      refillPercentage = Math.min(99, Math.max(5, parseInt(pctMatch[1], 10)));
+    } else if (text.includes("חצי") || text.includes("50")) {
+      refillPercentage = 50;
+    } else if (text.includes("שליש") || text.includes("33") || text.includes("30")) {
+      refillPercentage = 30;
+    } else if (text.includes("רבע") || text.includes("25")) {
+      refillPercentage = 25;
+    } else {
+      refillPercentage = 30;
+    }
+
+    const currentAgeMs = Math.max(0, actionTime - new Date(req.lastRefillDate || actionTime).getTime());
+    const currentAgeDays = Math.round(currentAgeMs / (24 * 3600 * 1000));
+
+    if (refillPercentage >= 95) {
+      refillPercentage = 100;
+      updateJacuzziRefill = true;
+      understanding = "ריקון ומילוי מלא של כל מי הג'קוזי (100% מים חדשים)";
+      chemicalImpact = "המים טריים לחלוטין וגיל המים אופס ל-0 ימים. ה-AI מאפס את כל משימות הטיפול הישנות ומשבץ מחזור בקרות ראשוני חדש למים החדשים.";
+
+      // Shift/schedule full drain task to 90 days from today
+      const nextFullDrainDate = new Date(actionTime + 90 * 24 * 3600 * 1000);
+      let foundFullDrainTask = false;
+      for (const task of req.currentTasks) {
+        if (task.title.includes("ריקון") || task.title.includes("החלפת מים") || task.title.includes("מילוי")) {
+          foundFullDrainTask = true;
+          scheduleShifts.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            currentDueDate: new Date(task.nextDueDate).toISOString(),
+            newDueDate: nextFullDrainDate.toISOString(),
+            shiftDays: 90,
+            reason: "המים הוחלפו במלואם היום - מועד החלפת המים הבאה נקבע לעוד 90 ימים בדיוק.",
+          });
+        }
+      }
+
+      if (!foundFullDrainTask) {
+        newTasksToCreate.push({
+          title: "ריקון, ניקוי צנרת ומילוי מים מחדש (100%)",
+          description: "ריקון מלא של מי הג'קוזי, שטיפת צנרת ומילוי מים טריים",
+          hoursAhead: 90 * 24,
+          dueDate: nextFullDrainDate.toISOString(),
+          priority: "MEDIUM",
+        });
+      }
+
+      // Add startup cycle tasks for new water
+      const day1Due = new Date(actionTime + 24 * 3600 * 1000);
+      const day2Due = new Date(actionTime + 48 * 3600 * 1000);
+      newTasksToCreate.push({
+        title: "בדיקת מקלון ראשונית ואיזון מים טריים (TA & pH)",
+        description: "בדיקת מקלון מקיפה למים החדשים לאחר 24 שעות חימום וסירקולציה. יש לאזן קודם בסיסיות (TA) ל-80-120 ואז pH ל-7.2-7.6.",
+        hoursAhead: 24,
+        dueDate: day1Due.toISOString(),
+        priority: "HIGH",
+      });
+
+      newTasksToCreate.push({
+        title: "בדיקת חיטוי מייצבת ראשונה",
+        description: "בדיקת רמת החיטוי (כלור / ברום) לאחר האיזון הראשוני של המים החדשים.",
+        hoursAhead: 48,
+        dueDate: day2Due.toISOString(),
+        priority: "HIGH",
+      });
     } else {
       // Partial change
-      refillPercentage = text.includes("חצי") || text.includes("50%") ? 50 : text.includes("שליש") || text.includes("30%") ? 30 : 25;
-      understanding = `החלפה חלקית של כ-${refillPercentage}% ממי הג'קוזי (כ-${Math.round((req.volumeLiters * refillPercentage) / 100)} ליטר מים טריים)`;
-      chemicalImpact = "הוספת מים טריים דיללה את ריכוז החיטוי ושינתה מעט את ה-pH והבסיסיות. אין להוסיף ברום/כלור שגרתי מחר אלא לאפשר סירקולציה ולבצע בדיקת מקלון ראשונית.";
+      const newEffectiveAgeDays = Math.round(currentAgeDays * (1 - refillPercentage / 100));
+      const daysGained = Math.max(0, currentAgeDays - newEffectiveAgeDays);
+      const nextFullDrainDays = Math.max(7, 90 - newEffectiveAgeDays);
+      const nextFullDrainDate = new Date(actionTime + nextFullDrainDays * 24 * 3600 * 1000);
+
+      understanding = `החלפה חלקית של ${refillPercentage}% ממי הג'קוזי (כ-${Math.round((req.volumeLiters * refillPercentage) / 100)} ליטר מים טריים)`;
+      chemicalImpact = `החלפת ${refillPercentage}% מהמים דיללה את עומס ה-TDS ושקללה את גיל המים מ-${currentAgeDays} ימים ל-${newEffectiveAgeDays} ימים (הרווחת עוד ${daysGained} ימי חיים למים!). מועד הריקון המלא הבא בלוח השנה נדחה ונקבע לעוד ${nextFullDrainDays} ימים (${nextFullDrainDate.toLocaleDateString("he-IL")}).`;
+
+      // Shift the 100% full replacement task further into the future!
+      let foundFullDrainTask = false;
+      for (const task of req.currentTasks) {
+        if (task.title.includes("ריקון") || task.title.includes("החלפת מים") || task.title.includes("מילוי")) {
+          foundFullDrainTask = true;
+          scheduleShifts.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            currentDueDate: new Date(task.nextDueDate).toISOString(),
+            newDueDate: nextFullDrainDate.toISOString(),
+            shiftDays: daysGained,
+            reason: `החלפת ${refillPercentage}% מים האריכה את חיי המים בעוד ${daysGained} ימים. מועד ההחלפה המלאה נדחה לעוד ${nextFullDrainDays} ימים.`,
+          });
+        }
+      }
+
+      if (!foundFullDrainTask) {
+        newTasksToCreate.push({
+          title: "ריקון, ניקוי צנרת ומילוי מים מחדש (100%)",
+          description: "ריקון מלא של מי הג'קוזי, שטיפת צנרת ומילוי מים טריים",
+          hoursAhead: nextFullDrainDays * 24,
+          dueDate: nextFullDrainDate.toISOString(),
+          priority: "MEDIUM",
+        });
+      }
+
+      // Add baseline test task
+      const baselineDueDate = new Date(actionTime + 16 * 3600 * 1000);
+      newTasksToCreate.push({
+        title: "בדיקת מקלון ראשונית למים החדשים",
+        description: "בדיקת pH, בסיסיות (TA) וחיטוי לאחר סירקולציה של המים שהוחלפו",
+        hoursAhead: 16,
+        dueDate: baselineDueDate.toISOString(),
+        priority: "HIGH",
+      });
     }
 
     // Shift upcoming sanitizer tasks (bromine / chlorine / daily sanitizer)
@@ -1061,16 +1167,6 @@ function generateRuleBasedProactiveMaintenance(
         });
       }
     }
-
-    // Add baseline test task
-    const baselineDueDate = new Date(actionTime + 16 * 3600 * 1000);
-    newTasksToCreate.push({
-      title: "בדיקת מקלון ראשונית למים החדשים",
-      description: "בדיקת pH, בסיסיות (TA) וחיטוי לאחר סירקולציה של המים שהוחלפו",
-      hoursAhead: 16,
-      dueDate: baselineDueDate.toISOString(),
-      priority: "HIGH",
-    });
   }
 
   // Analyze filter wash

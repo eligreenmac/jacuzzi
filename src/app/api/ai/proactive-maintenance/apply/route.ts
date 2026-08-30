@@ -86,7 +86,17 @@ export async function POST(req: NextRequest) {
           where: { userId: user.id },
           data: { lastRefillDate: actionDateObj },
         });
-        updatedWaterAgeMessage = "גיל המים אופס ל-0 ימים (מילוי מלא).";
+
+        // Remove old one-off custom tasks from old water
+        await prisma.maintenanceTask.deleteMany({
+          where: {
+            userId: user.id,
+            category: "CUSTOM",
+            isCompleted: false,
+          },
+        });
+
+        updatedWaterAgeMessage = "גיל המים אופס ל-0 ימים (מילוי מלא) ושובץ מחזור בקרות מים חדש.";
       } else {
         // Partial refill: New effective age = currentAge * (1 - refillPercentage/100)
         const factor = Math.max(0, 1 - refillPct / 100);
