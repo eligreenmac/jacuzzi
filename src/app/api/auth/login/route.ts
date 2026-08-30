@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, ensureDbSchema } from "@/lib/prisma";
 import { hashPassword, verifyPassword, signToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { getDefaultMaintenanceTasks } from "@/lib/jacuzzi-calc";
 
 export async function POST(req: NextRequest) {
   try {
+    await ensureDbSchema();
     const { email, password } = await req.json();
 
     if (!email || !password) {

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, ensureDbSchema } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
+    await ensureDbSchema();
     const user = await getSessionUser(req);
     if (!user) {
       return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
