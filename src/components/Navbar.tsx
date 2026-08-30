@@ -42,10 +42,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/dashboard", label: "לוח בקרה", icon: LayoutDashboard },
-    { href: "/water-tests", label: "בדיקות מים", icon: FlaskConical },
-    { href: "/inventory", label: "ארון חומרים", icon: Package },
     { href: "/water-doctor", label: "רופא מים AI", icon: Sparkles },
-    { href: "/calendar", label: "יומן ותחזוקה", icon: Calendar },
     { href: "/settings", label: "הגדרות", icon: Settings },
   ];
 
