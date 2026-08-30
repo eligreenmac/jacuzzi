@@ -57,6 +57,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const {
       id,
+      resetTask, // Reset completed task back to unperformed & restore inventory!
       isCompleted,
       markDoneAndReschedule,
       nextDueDate,
@@ -91,6 +92,74 @@ export async function PUT(req: NextRequest) {
       where: { userId: user.id },
     });
     const volumeLiters = jacuzzi?.volumeLiters || 1200;
+
+    // === RESET / UNDO TASK COMPLETION ===
+    if (resetTask) {
+      // 1. Restore inventory quantity
+      let restockedAmount = 0;
+      if (existing.lastChemicalInventoryId && existing.lastDeductAmount && existing.lastDeductAmount > 0) {
+        const chem = await prisma.chemicalInventory.findFirst({
+          where: { id: existing.lastChemicalInventoryId, userId: user.id },
+        });
+
+        if (chem) {
+          restockedAmount = existing.lastDeductAmount;
+          await prisma.chemicalInventory.update({
+            where: { id: chem.id },
+            data: { quantity: chem.quantity + existing.lastDeductAmount },
+          });
+        }
+      } else if (existing.lastChemicalUsed && existing.lastAmountAdded) {
+        const numMatch = existing.lastAmountAdded.match(/(\d+(\.\d+)?)/);
+        if (numMatch) {
+          const amountToRestore = parseFloat(numMatch[0]);
+          const chem = await prisma.chemicalInventory.findFirst({
+            where: {
+              userId: user.id,
+              name: { contains: existing.lastChemicalUsed.trim() },
+            },
+          });
+          if (chem) {
+            restockedAmount = amountToRestore;
+            await prisma.chemicalInventory.update({
+              where: { id: chem.id },
+              data: { quantity: chem.quantity + amountToRestore },
+            });
+          }
+        }
+      }
+
+      // 2. Remove corresponding diary entry
+      await prisma.diaryEntry.deleteMany({
+        where: {
+          userId: user.id,
+          title: `בוצע: ${existing.title}`,
+        },
+      });
+
+      // 3. Reset task to unperformed
+      const updated = await prisma.maintenanceTask.update({
+        where: { id },
+        data: {
+          lastDoneDate: null,
+          lastValueBefore: null,
+          lastValueAfter: null,
+          lastAmountAdded: null,
+          lastChemicalUsed: null,
+          lastChemicalInventoryId: null,
+          lastDeductAmount: null,
+          isCompleted: false,
+          nextDueDate: new Date(), // Due now
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        reset: true,
+        restockedAmount,
+        task: updated,
+      });
+    }
 
     let updateData: any = {};
     let deductedChemicalName = "";
@@ -232,7 +301,6 @@ export async function DELETE(req: NextRequest) {
         });
       }
     } else if (existing.lastChemicalUsed && existing.lastAmountAdded) {
-      // Fallback matching by name if lastChemicalInventoryId wasn't set previously
       const numMatch = existing.lastAmountAdded.match(/(\d+(\.\d+)?)/);
       if (numMatch) {
         const amountToRestore = parseFloat(numMatch[0]);

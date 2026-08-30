@@ -10,6 +10,7 @@ import {
   Plus,
   Trash2,
   Edit2,
+  RotateCcw,
   Send,
   Sparkles,
   Star,
@@ -51,6 +52,9 @@ export default function CalendarPage() {
 
   // Emergency Overdose Warning Modal State
   const [overdoseAlert, setOverdoseAlert] = useState<any | null>(null);
+
+  // Notification Banner State
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   // Edit Task Modal State
   const [editingTask, setEditingTask] = useState<any | null>(null);
@@ -246,11 +250,44 @@ export default function CalendarPage() {
       }
 
       setCompletingTask(null);
+      setActionNotice("הטיפול תועד בהצלחה והמלאי עודכן!");
+      setTimeout(() => setActionNotice(null), 4000);
       loadData();
     } catch (err) {
       console.error(err);
     } finally {
       setIsSubmittingCompletion(false);
+    }
+  };
+
+  // Reset / Undo Completed Task
+  const handleResetTask = async (task: any) => {
+    if (!confirm(`האם לאפס את האירוע "${task.title}" (להחזיר למצב טרם בוצע ולהחזיר את החומרים לארון)?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: task.id,
+          resetTask: true,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setActionNotice(
+          data.restockedAmount > 0
+            ? `האירוע אופס בהצלחה! ${data.restockedAmount} גרם/מ"ל הוחזרו חזרה לארון החומרים.`
+            : "האירוע אופס והוחזר למצב טרם בוצע."
+        );
+        setTimeout(() => setActionNotice(null), 5000);
+        loadData();
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -287,6 +324,8 @@ export default function CalendarPage() {
       });
 
       setEditingTask(null);
+      setActionNotice("המשימה עודכנה בהצלחה!");
+      setTimeout(() => setActionNotice(null), 4000);
       loadData();
     } catch (err) {
       console.error(err);
@@ -297,6 +336,8 @@ export default function CalendarPage() {
     if (!confirm("האם למחוק משימה זו? המלאי בארון יוחזר אוטומטית.")) return;
     try {
       await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
+      setActionNotice("המשימה נמחקה והמלאי הוחזר לארון.");
+      setTimeout(() => setActionNotice(null), 4000);
       loadData();
     } catch (err) {
       console.error(err);
@@ -411,7 +452,7 @@ export default function CalendarPage() {
             <span>לוח שנה ויומן תחזוקה חודשי</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            מעקב טיפולים מחזורי, התראות אוטומטיות במייל על משימות שפגו תוקף, ועדכון מלאי.
+            מעקב טיפולים מחזורי, איפוס ועריכת משימות, התראות במייל, ועדכון מלאי אוטומטי.
           </p>
         </div>
 
@@ -458,6 +499,18 @@ export default function CalendarPage() {
           </button>
         </div>
       </div>
+
+      {actionNotice && (
+        <div className="p-4 rounded-2xl bg-slate-900 border border-cyan-700 text-cyan-300 text-xs flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+            <span>{actionNotice}</span>
+          </div>
+          <button onClick={() => setActionNotice(null)} className="text-slate-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {emailResult && (
         <div
@@ -696,14 +749,14 @@ export default function CalendarPage() {
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => openEditTaskModal(task)}
-                                  className="p-1 text-slate-400 hover:text-cyan-300"
+                                  className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-slate-900 rounded-lg transition-colors"
                                   title="ערוך משימה"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteTask(task.id)}
-                                  className="p-1 text-slate-400 hover:text-rose-400"
+                                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition-colors"
                                   title="מחק משימה"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -738,7 +791,7 @@ export default function CalendarPage() {
                       {doneTasks.map((task) => (
                         <div
                           key={task.id}
-                          className="bg-slate-950/80 border border-emerald-900/60 rounded-2xl p-4 space-y-2 text-xs"
+                          className="bg-slate-950/80 border border-emerald-900/60 rounded-2xl p-4 space-y-2.5 text-xs"
                         >
                           <div className="flex items-center justify-between">
                             <div className="font-bold text-emerald-300 text-sm flex items-center gap-1.5">
@@ -746,16 +799,25 @@ export default function CalendarPage() {
                               <span>{task.title}</span>
                             </div>
                             <div className="flex items-center gap-1">
+                              {/* RESET BUTTON */}
+                              <button
+                                onClick={() => handleResetTask(task)}
+                                className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/60 rounded-lg transition-colors flex items-center gap-1 border border-amber-800/40"
+                                title="אפס אירוע (החזר למצב טרם בוצע והחזר חומרים לארון)"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-bold">אפס אירוע</span>
+                              </button>
                               <button
                                 onClick={() => openEditTaskModal(task)}
-                                className="text-slate-400 hover:text-cyan-300 p-1"
+                                className="text-slate-400 hover:text-cyan-300 p-1.5 hover:bg-slate-900 rounded-lg transition-colors"
                                 title="ערוך פרטי ביצוע"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteTask(task.id)}
-                                className="text-slate-400 hover:text-rose-400 p-1"
+                                className="text-slate-400 hover:text-rose-400 p-1.5 hover:bg-slate-900 rounded-lg transition-colors"
                                 title="מחק טיפול והחזר מלאי"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -764,8 +826,8 @@ export default function CalendarPage() {
                           </div>
 
                           {task.lastChemicalUsed && (
-                            <div className="text-cyan-300 font-semibold">
-                              <span className="text-slate-500">חומר שהוסף: </span>
+                            <div className="text-cyan-300 font-semibold bg-cyan-950/40 p-2 rounded-xl border border-cyan-900/50">
+                              <span className="text-slate-400">חומר שהוסף: </span>
                               {task.lastChemicalUsed} ({task.lastAmountAdded || ""})
                             </div>
                           )}
