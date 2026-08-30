@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     });
 
     // 4. Update Jacuzzi water age (Weighted for partial refills or reset for 100% full refills)
-    const refillPct = body.refillPercentage || (updateJacuzziRefill ? 100 : 0);
+    const refillPct = body.refillPercentage !== undefined ? body.refillPercentage : (updateJacuzziRefill ? 100 : 0);
     let updatedWaterAgeMessage = "";
 
     const jacuzzi = await prisma.jacuzzi.findUnique({
@@ -77,9 +77,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (jacuzzi && refillPct > 0) {
-      const currentRefillTime = new Date(jacuzzi.lastRefillDate || jacuzzi.createdAt).getTime();
-      const currentAgeMs = Math.max(0, actionDateObj.getTime() - currentRefillTime);
-
       if (refillPct >= 95 || updateJacuzziRefill) {
         // 100% Full Refill
         await prisma.jacuzzi.update({
@@ -98,18 +95,29 @@ export async function POST(req: NextRequest) {
 
         updatedWaterAgeMessage = "גיל המים אופס ל-0 ימים (מילוי מלא) ושובץ מחזור בקרות מים חדש.";
       } else {
-        // Partial refill: New effective age = currentAge * (1 - refillPercentage/100)
-        const factor = Math.max(0, 1 - refillPct / 100);
-        const newAgeMs = currentAgeMs * factor;
-        const newEffectiveRefillDate = new Date(actionDateObj.getTime() - newAgeMs);
+        // Partial refill: Calculate effective age
+        let currentAgeDays = 0;
+        if (body.currentWaterAgeDays !== undefined && body.currentWaterAgeDays > 0) {
+          currentAgeDays = body.currentWaterAgeDays;
+        } else if (jacuzzi.lastRefillDate) {
+          const currentRefillTime = new Date(jacuzzi.lastRefillDate).getTime();
+          currentAgeDays = Math.max(0, Math.round((actionDateObj.getTime() - currentRefillTime) / (24 * 3600 * 1000)));
+        }
+
+        // If the system had 0 days because it was newly registered today, assume standard 60 days baseline
+        if (currentAgeDays <= 0) {
+          currentAgeDays = 60;
+        }
+
+        const newAgeDays = Math.max(1, Math.round(currentAgeDays * (1 - refillPct / 100)));
+        const newEffectiveRefillDate = new Date(actionDateObj.getTime() - newAgeDays * 24 * 3600 * 1000);
 
         await prisma.jacuzzi.update({
           where: { userId: user.id },
           data: { lastRefillDate: newEffectiveRefillDate },
         });
 
-        const newAgeDays = Math.round(newAgeMs / (24 * 3600 * 1000));
-        updatedWaterAgeMessage = `גיל המים שוקלל מחדש ל-${newAgeDays} ימים (בעקבות החלפת ${refillPct}% מים).`;
+        updatedWaterAgeMessage = `גיל המים שוקלל מחדש מ-${currentAgeDays} ימים ל-${newAgeDays} ימים (הרווחת עוד ${currentAgeDays - newAgeDays} ימים בעקבות החלפת ${refillPct}% מים!).`;
       }
     }
 

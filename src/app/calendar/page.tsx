@@ -128,10 +128,14 @@ export default function CalendarPage() {
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState<{ text: string; previewUrl?: string; isWarning?: boolean } | null>(null);
 
+  // Jacuzzi data for water age
+  const [jacuzzi, setJacuzzi] = useState<any | null>(null);
+
   // Proactive Maintenance (פעולת אחזקה יזומה)
   const [isProactiveModalOpen, setIsProactiveModalOpen] = useState(false);
   const [proactiveText, setProactiveText] = useState("");
   const [proactiveDate, setProactiveDate] = useState(new Date().toISOString().slice(0, 10));
+  const [priorWaterAge, setPriorWaterAge] = useState<number>(60);
   const [isAnalyzingProactive, setIsAnalyzingProactive] = useState(false);
   const [proactiveAnalysis, setProactiveAnalysis] = useState<any | null>(null);
   const [isApplyingProactive, setIsApplyingProactive] = useState(false);
@@ -148,6 +152,7 @@ export default function CalendarPage() {
         body: JSON.stringify({
           freeText: proactiveText,
           actionDate: proactiveDate,
+          currentWaterAgeDays: priorWaterAge,
         }),
       });
 
@@ -173,6 +178,8 @@ export default function CalendarPage() {
         body: JSON.stringify({
           freeText: proactiveText,
           actionDate: proactiveDate,
+          currentWaterAgeDays: priorWaterAge,
+          refillPercentage: proactiveAnalysis.refillPercentage,
           scheduleShifts: proactiveAnalysis.scheduleShifts,
           newTasksToCreate: proactiveAnalysis.newTasksToCreate,
           updateJacuzziRefill: proactiveAnalysis.updateJacuzziRefill,
@@ -265,10 +272,11 @@ export default function CalendarPage() {
 
   const loadData = async () => {
     try {
-      const [tasksRes, logsRes, chemRes] = await Promise.all([
+      const [tasksRes, logsRes, chemRes, jacuzziRes] = await Promise.all([
         fetch("/api/tasks"),
         fetch("/api/log"),
         fetch("/api/chemicals"),
+        fetch("/api/jacuzzi"),
       ]);
 
       if (tasksRes.ok) {
@@ -286,6 +294,15 @@ export default function CalendarPage() {
         setChemicals(chems);
         if (chems.length > 0 && !selectedChemicalId) {
           setSelectedChemicalId(chems[0].id);
+        }
+      }
+      if (jacuzziRes.ok) {
+        const jData = await jacuzziRes.json();
+        const j = jData.jacuzzi || null;
+        setJacuzzi(j);
+        if (j?.lastRefillDate) {
+          const age = Math.max(0, Math.floor((Date.now() - new Date(j.lastRefillDate).getTime()) / (1000 * 60 * 60 * 24)));
+          setPriorWaterAge(age > 0 ? age : 60);
         }
       }
     } catch (err) {
@@ -1773,15 +1790,29 @@ export default function CalendarPage() {
             </div>
 
             <form onSubmit={handleAnalyzeProactive} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">תאריך ביצוע הפעולה</label>
-                <input
-                  type="date"
-                  required
-                  value={proactiveDate}
-                  onChange={(e) => setProactiveDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs font-bold"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">תאריך ביצוע הפעולה</label>
+                  <input
+                    type="date"
+                    required
+                    value={proactiveDate}
+                    onChange={(e) => setProactiveDate(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs font-bold"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">גיל המים לפני הפעולה (ימים)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={priorWaterAge}
+                    onChange={(e) => setPriorWaterAge(parseInt(e.target.value, 10) || 0)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs font-bold"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">

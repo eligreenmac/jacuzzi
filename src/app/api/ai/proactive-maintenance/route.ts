@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
 
     const body = await req.json();
-    const { freeText, actionDate } = body;
+    const { freeText, actionDate, currentWaterAgeDays } = body;
 
     if (!freeText || !freeText.trim()) {
       return NextResponse.json({ error: "נא לתאר את פעולת התחזוקה שביצעת במלל חופשי" }, { status: 400 });
@@ -24,12 +24,22 @@ export async function POST(req: NextRequest) {
       orderBy: { nextDueDate: "asc" },
     });
 
+    // Calculate effective lastRefillDate
+    let calculatedRefillDate: Date;
+    if (currentWaterAgeDays !== undefined && currentWaterAgeDays > 0) {
+      calculatedRefillDate = new Date(Date.now() - currentWaterAgeDays * 24 * 3600 * 1000);
+    } else if (jacuzzi?.lastRefillDate) {
+      calculatedRefillDate = new Date(jacuzzi.lastRefillDate);
+    } else {
+      calculatedRefillDate = new Date(Date.now() - 60 * 24 * 3600 * 1000); // 60 days standard baseline
+    }
+
     const analysis = await analyzeProactiveMaintenance({
       freeText,
       actionDate: actionDate ? new Date(actionDate) : new Date(),
       volumeLiters: jacuzzi?.volumeLiters || 1200,
       sanitizationType: jacuzzi?.sanitizationType || "CHLORINE",
-      lastRefillDate: jacuzzi?.lastRefillDate || new Date(),
+      lastRefillDate: calculatedRefillDate,
       currentTasks: currentTasks.map((t) => ({
         id: t.id,
         title: t.title,
