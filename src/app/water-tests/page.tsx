@@ -82,28 +82,14 @@ export default function WaterTestsPage() {
     description: "",
   });
 
-  const handleExecuteStep = async (testId: string, step: any, recs: any) => {
+  const handleExecuteStep = async (testId: string, step: any, recs: any, isScheduleAction = false) => {
     setExecutingStep(`${testId}-${step.stepNumber}`);
     setActionNotice(null);
 
-    const followUpTasks = [];
-    if (recs?.followUpRequirements && recs.followUpRequirements.length > 0) {
-      for (const req of recs.followUpRequirements) {
-        if (req.includes("פילטר")) {
-          followUpTasks.push({
-            title: "שטיפת פילטר (בעקבות טיפול ביומן)",
-            description: req,
-            hoursAhead: 24,
-          });
-        } else if (req.includes("מקלון") || req.includes("בדיק")) {
-          followUpTasks.push({
-            title: "בדיקת מקלון חוזרת (מעקב)",
-            description: req,
-            hoursAhead: 12,
-          });
-        }
-      }
-    }
+    let hoursAhead = 24;
+    if (step.title.includes("12 שעות") || step.instructions?.includes("12 שעות")) hoursAhead = 12;
+    else if (step.title.includes("6 שעות") || step.instructions?.includes("6 שעות")) hoursAhead = 6;
+    else if (step.title.includes("48 שעות") || step.instructions?.includes("48 שעות")) hoursAhead = 48;
 
     try {
       const res = await fetch("/api/log/execute-recommendation", {
@@ -116,14 +102,15 @@ export default function WaterTestsPage() {
           chemical: step.chemical,
           amount: step.amount,
           instructions: step.instructions,
-          followUpTasks,
+          actionType: isScheduleAction ? "SCHEDULE_FUTURE" : "EXECUTE_NOW",
+          hoursAhead,
         }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "שגיאה בתיעוד הפעולה");
+      if (!res.ok) throw new Error(data.error || "שגיאה בביצוע הפעולה");
 
-      setActionNotice(data.message || "הפעולה בוצעה ותועדה בהצלחה ביומן!");
+      setActionNotice(data.message || (isScheduleAction ? "המשימה תוזמנה בהצלחה ללוח השנה!" : "הפעולה בוצעה ותועדה בהצלחה ביומן!"));
       loadTests();
     } catch (err: any) {
       alert(err.message);
@@ -673,8 +660,8 @@ export default function WaterTestsPage() {
                                     </div>
                                   )}
 
-                                  {/* Action Button: Mark as Done & Log in Diary */}
-                                  <div className="mr-7 pt-1 border-t border-slate-800/60 flex items-center justify-between gap-2">
+                                  {/* Action Button: Schedule Future Task vs Immediate Done */}
+                                  <div className="mr-7 pt-1 border-t border-slate-800/60 flex items-center justify-between gap-2 flex-wrap">
                                     {step.isExecuted ? (
                                       <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-800">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -682,15 +669,44 @@ export default function WaterTestsPage() {
                                           בוצע ותועד ביומן {step.executedAt ? `(${new Date(step.executedAt).toLocaleDateString("he-IL")} ${new Date(step.executedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })})` : "✅"}
                                         </span>
                                       </div>
+                                    ) : step.isScheduled ? (
+                                      <div className="flex items-center justify-between gap-2 w-full flex-wrap">
+                                        <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-[11px] bg-cyan-950/60 px-3 py-1.5 rounded-xl border border-cyan-800">
+                                          <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                                          <span>
+                                            ⏳ תוזמן ללוח השנה {step.scheduledFor ? `ל-${new Date(step.scheduledFor).toLocaleDateString("he-IL")} ${new Date(step.scheduledFor).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                                          </span>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          disabled={executingStep === `${test.id}-${step.stepNumber}`}
+                                          onClick={() => handleExecuteStep(test.id, step, recs, false)}
+                                          className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow flex items-center gap-1 transition-all"
+                                        >
+                                          <CheckCircle2 className="w-3.5 h-3.5" />
+                                          <span>סמן כבוצע כעת</span>
+                                        </button>
+                                      </div>
+                                    ) : step.stepType === "FOLLOW_UP" || step.title.includes("בעוד") || step.title.includes("להמשך") ? (
+                                      <button
+                                        type="button"
+                                        disabled={executingStep === `${test.id}-${step.stepNumber}`}
+                                        onClick={() => handleExecuteStep(test.id, step, recs, true)}
+                                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-[11px] shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
+                                      >
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתזמן ללוח השנה..." : "📅 הכנס ללוח השנה (תזמן ליומן)"}</span>
+                                      </button>
                                     ) : (
                                       <button
                                         type="button"
                                         disabled={executingStep === `${test.id}-${step.stepNumber}`}
-                                        onClick={() => handleExecuteStep(test.id, step, recs)}
+                                        onClick={() => handleExecuteStep(test.id, step, recs, false)}
                                         className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[11px] shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
                                       >
                                         <CheckCircle2 className="w-3.5 h-3.5" />
-                                        <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתעד ביומן ומפחית מהארון..." : "✓ סמן כבוצע ותעד ביומן"}</span>
+                                        <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתעד ביומן ומפחית מהארון..." : "✓ סמן כבוצע כעת ותעד ביומן"}</span>
                                       </button>
                                     )}
                                   </div>
