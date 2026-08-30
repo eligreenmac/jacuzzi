@@ -6,7 +6,7 @@ import {
   ESSENTIAL_CHEMICAL_CATEGORIES,
 } from "./jacuzzi-calc";
 
-const preferredModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const preferredModel = process.env.GEMINI_MODEL || "gemini-3.7-flash";
 
 function getAiClient() {
   const key = process.env.GEMINI_API_KEY || "";
@@ -188,18 +188,19 @@ export async function identifyChemicalFromImage(
 }`;
 
   const apiKeyStr = (process.env.GEMINI_API_KEY || "").trim();
-  const targetModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const targetModel = process.env.GEMINI_MODEL || "gemini-3.7-flash";
   const modelsToTry = [
     targetModel,
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
     "gemini-2.5-flash",
     "gemini-2.0-flash",
-    "gemini-2.5-pro",
-    "gemini-2.0-flash-exp",
   ].filter((m, i, arr) => m && arr.indexOf(m) === i) as string[];
 
   let lastError: any = null;
 
-  // 1. Try via official Google GenAI SDK (Gemini 2.5 / 2.0)
+  // 1. Try via official Google GenAI SDK (Gemini 3.7 / 3.6 / 3.5 / 2.5 Flash)
   for (const model of modelsToTry) {
     try {
       const response = await ai.models.generateContent({
@@ -229,7 +230,7 @@ export async function identifyChemicalFromImage(
     }
   }
 
-  // 2. Direct REST fallback via Google Generative Language API (Gemini 2.5 / 2.0)
+  // 2. Direct REST fallback via Google Generative Language API (Gemini 3.7 / 3.6 / 3.5 / 2.5 Flash)
   if (apiKeyStr) {
     for (const model of modelsToTry) {
       try {
@@ -279,7 +280,7 @@ export async function identifyChemicalFromImage(
   }
 
   throw new Error(
-    `שגיאה בזיהוי התמונה במודל Gemini 2.5 Flash (${lastError?.message || JSON.stringify(lastError) || "שגיאת תקשורת"}). ודא שמפתח ה-GEMINI_API_KEY מוגדר ותקין ב-Vercel.`
+    `שגיאה בזיהוי התמונה במודל Gemini 3.7 Flash (${lastError?.message || JSON.stringify(lastError) || "שגיאת תקשורת"}). ודא שמפתח ה-GEMINI_API_KEY מוגדר ותקין ב-Vercel.`
   );
 }
 
