@@ -12,7 +12,6 @@ import {
   Clock,
   FlaskConical,
   Package,
-  History,
   Camera,
   ArrowRight,
   ShieldCheck,
@@ -20,10 +19,14 @@ import {
   ShoppingCart,
   Search,
   ExternalLink,
-  Check,
   Info,
-  Calendar,
+  HelpCircle,
+  X,
+  Sliders,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
+import { WATER_PARAMETERS_GUIDE, ParameterInfo } from "@/lib/water-parameters-guide";
 
 export default function WaterDoctorPage() {
   const [clarity, setClarity] = useState("CLEAR");
@@ -39,13 +42,32 @@ export default function WaterDoctorPage() {
   const [alkUnknown, setAlkUnknown] = useState(false);
   const [alkalinity, setAlkalinity] = useState("90");
 
+  // Advanced / Lab Measurements
+  const [calciumUnknown, setCalciumUnknown] = useState(true);
+  const [calcium, setCalcium] = useState("180");
+
+  const [cyaUnknown, setCyaUnknown] = useState(true);
+  const [cya, setCya] = useState("40");
+
+  const [tdsUnknown, setTdsUnknown] = useState(true);
+  const [tds, setTds] = useState("1200");
+
+  const [phosphatesUnknown, setPhosphatesUnknown] = useState(true);
+  const [phosphates, setPhosphates] = useState("50");
+
+  const [waterTemp, setWaterTemp] = useState("38");
+
+  const [showAdvancedParams, setShowAdvancedParams] = useState(true);
+
+  // Modal explanation state
+  const [selectedParamModal, setSelectedParamModal] = useState<ParameterInfo | null>(null);
+
   const [imagePreview, setImagePreview] = useState("");
   const [imageMimeType, setImageMimeType] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [diagnosis, setDiagnosis] = useState<any>(null);
   const [addedLedger, setAddedLedger] = useState<any[]>([]);
-  const [savedToLog, setSavedToLog] = useState(false);
   const [error, setError] = useState("");
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +86,6 @@ export default function WaterDoctorPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setSavedToLog(false);
 
     try {
       const res = await fetch("/api/ai/diagnose", {
@@ -76,6 +97,11 @@ export default function WaterDoctorPage() {
           ph: phUnknown ? "UNKNOWN" : ph ? parseFloat(ph) : "UNKNOWN",
           freeChlorine: clUnknown ? "UNKNOWN" : freeChlorine ? parseFloat(freeChlorine) : "UNKNOWN",
           alkalinity: alkUnknown ? "UNKNOWN" : alkalinity ? parseFloat(alkalinity) : "UNKNOWN",
+          calcium: calciumUnknown ? "UNKNOWN" : calcium ? parseFloat(calcium) : "UNKNOWN",
+          cya: cyaUnknown ? "UNKNOWN" : cya ? parseFloat(cya) : "UNKNOWN",
+          tds: tdsUnknown ? "UNKNOWN" : tds ? parseFloat(tds) : "UNKNOWN",
+          phosphates: phosphatesUnknown ? "UNKNOWN" : phosphates ? parseFloat(phosphates) : "UNKNOWN",
+          waterTemp: waterTemp ? parseFloat(waterTemp) : 38,
           imageBase64: imagePreview || undefined,
           imageMimeType: imageMimeType || undefined,
           saveToLog: false, // Pure theoretical sandbox - does not write to system history
@@ -107,24 +133,115 @@ export default function WaterDoctorPage() {
 
   return (
     <div className="space-y-8 pb-12">
+      {/* Parameter Explanation Modal */}
+      {selectedParamModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative text-right">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 text-2xl flex items-center justify-center border border-cyan-500/20">
+                  {selectedParamModal.icon}
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-white">{selectedParamModal.name}</h3>
+                  <p className="text-xs text-slate-400 font-medium">{selectedParamModal.nameEn} • {selectedParamModal.unit}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedParamModal(null)}
+                className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Target Range Pill */}
+            <div className="p-3.5 rounded-2xl bg-cyan-950/50 border border-cyan-800/80 flex items-center justify-between flex-wrap gap-2 text-xs">
+              <span className="font-bold text-cyan-300">🎯 טווח יעד אידיאלי לג'קוזי:</span>
+              <span className="font-black text-cyan-200 bg-cyan-900/60 px-3 py-1 rounded-xl text-sm border border-cyan-700">
+                {selectedParamModal.idealRange}
+              </span>
+            </div>
+
+            {/* Section 1: What is it? */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                <span>💡</span>
+                <span>מה זה אומר בדיוק?</span>
+              </h4>
+              <div className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3.5 rounded-2xl border border-slate-850 whitespace-pre-line">
+                {selectedParamModal.whatIsIt}
+              </div>
+            </div>
+
+            {/* Section 2: Risks if High */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-rose-300 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400" />
+                <span>מה הסכנות כשהערך גבוה מדי?</span>
+              </h4>
+              <div className="text-xs text-rose-200/90 leading-relaxed bg-rose-950/30 p-3.5 rounded-2xl border border-rose-900/50 whitespace-pre-line">
+                {selectedParamModal.risksIfHigh}
+              </div>
+            </div>
+
+            {/* Section 3: Risks if Low */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-amber-300 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                <span>מה הסכנות כשהערך נמוך מדי?</span>
+              </h4>
+              <div className="text-xs text-amber-200/90 leading-relaxed bg-amber-950/30 p-3.5 rounded-2xl border border-amber-900/50 whitespace-pre-line">
+                {selectedParamModal.risksIfLow}
+              </div>
+            </div>
+
+            {/* Section 4: How to Treat */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                <FlaskConical className="w-4 h-4 text-emerald-400" />
+                <span>איך מטפלים ואיך לאזן?</span>
+              </h4>
+              <div className="text-xs text-emerald-200/90 leading-relaxed bg-emerald-950/30 p-3.5 rounded-2xl border border-emerald-900/50 whitespace-pre-line">
+                {selectedParamModal.howToTreat}
+              </div>
+            </div>
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setSelectedParamModal(null)}
+              className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all shadow"
+            >
+              סגור חלון הסבר
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-2">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-bold border border-purple-500/20">
           <Sparkles className="w-4 h-4 text-purple-400" />
           <span>מרחב ייעוץ ובדיקות תיאורטיות (Sandbox) • שיח פתוח ללא שמירה בהיסטוריה</span>
         </div>
-        <h1 className="text-3xl font-black text-white">רופא המים של הג'קוזי (ייעוץ תיאורטי)</h1>
+        <h1 className="text-3xl font-black text-white">רופא המים של הג'קוזי (ייעוץ מורכב ומעמיק)</h1>
         <p className="text-sm text-slate-300">
-          מרחב ייעוץ פתוח לשאלות, תרחישים ובדיקות תיאורטיות. הנתונים כאן <strong>אינם נשמרים בהיסטוריית המערכת</strong> ואינם משפיעים על הנתונים הרשמיים של הג'קוזי.
+          מרחב ייעוץ מדעי ופתוח לכל מדדי המים. לחץ על כפתור <strong>(?)</strong> ליד כל מדד להסבר מעמיק על סכנות ודרכי טיפול.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Input Form (5 Cols) */}
         <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-            <Droplets className="w-5 h-5 text-cyan-400" />
-            <span>הזנת נתוני בדיקה</span>
+          <h2 className="text-lg font-bold text-white flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Droplets className="w-5 h-5 text-cyan-400" />
+              <span>הזנת נתוני בדיקה מתקדמת</span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-normal">לחץ (?) להסבר מדד</span>
           </h2>
 
           <form onSubmit={handleDiagnose} className="space-y-5">
@@ -151,18 +268,29 @@ export default function WaterDoctorPage() {
               </div>
             </div>
 
-            {/* Test strip values with "Unknown" toggles */}
+            {/* Routine Strip Parameters */}
             <div className="space-y-3 pt-2 border-t border-slate-800/80">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-300">
-                  2. ערכי בדיקת מקלון (ניתן לסמן "לא יודע"):
+                <label className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                  <FlaskConical className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>2. בדיקות יסוד שגרתיות (מקלון 3 ב-1)</span>
                 </label>
               </div>
 
               {/* pH Input */}
               <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-200">חומציות (pH)</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-200">חומציות (pH)</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedParamModal(WATER_PARAMETERS_GUIDE.ph)}
+                      className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                      title="לחץ להסבר מלא על pH, סכנות וטיפול"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
                     <input
                       type="checkbox"
@@ -170,7 +298,7 @@ export default function WaterDoctorPage() {
                       onChange={(e) => setPhUnknown(e.target.checked)}
                       className="accent-cyan-500 w-3.5 h-3.5 rounded"
                     />
-                    <span>לא יודע / לא נבדק</span>
+                    <span>לא יודע</span>
                   </label>
                 </div>
                 {!phUnknown ? (
@@ -188,7 +316,7 @@ export default function WaterDoctorPage() {
                   </div>
                 ) : (
                   <div className="text-xs text-amber-400 bg-amber-950/30 p-2 rounded-xl border border-amber-900/50">
-                    ה-AI יסתמך על מראה המים והחומרים שהוספו לאחרונה וימליץ לבדוק מקלון.
+                    ה-AI יסתמך על מראה המים והחומרים שהוספו לאחרונה.
                   </div>
                 )}
               </div>
@@ -196,7 +324,17 @@ export default function WaterDoctorPage() {
               {/* Free Chlorine Input */}
               <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-200">כלור חופשי / ברום (ppm)</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-200">כלור חופשי / ברום (ppm)</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedParamModal(WATER_PARAMETERS_GUIDE.freeChlorine)}
+                      className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                      title="לחץ להסבר מלא על כלור וברום, סכנות וטיפול"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
                     <input
                       type="checkbox"
@@ -204,7 +342,7 @@ export default function WaterDoctorPage() {
                       onChange={(e) => setClUnknown(e.target.checked)}
                       className="accent-cyan-500 w-3.5 h-3.5 rounded"
                     />
-                    <span>לא יודע / לא נבדק</span>
+                    <span>לא יודע</span>
                   </label>
                 </div>
                 {!clUnknown ? (
@@ -230,7 +368,17 @@ export default function WaterDoctorPage() {
               {/* Alkalinity Input */}
               <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-200">בסיסיות כוללת (Total Alkalinity)</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-200">בסיסיות כוללת (TA - ppm)</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedParamModal(WATER_PARAMETERS_GUIDE.alkalinity)}
+                      className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                      title="לחץ להסבר מלא על בסיסיות, סכנות וטיפול"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
                     <input
                       type="checkbox"
@@ -238,7 +386,7 @@ export default function WaterDoctorPage() {
                       onChange={(e) => setAlkUnknown(e.target.checked)}
                       className="accent-cyan-500 w-3.5 h-3.5 rounded"
                     />
-                    <span>לא יודע / לא נבדק</span>
+                    <span>לא יודע</span>
                   </label>
                 </div>
                 {!alkUnknown ? (
@@ -260,11 +408,236 @@ export default function WaterDoctorPage() {
                   </div>
                 )}
               </div>
+
+              {/* Water Temperature */}
+              <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-200">טמפרטורת מים (°C)</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedParamModal(WATER_PARAMETERS_GUIDE.waterTemp)}
+                      className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                      title="לחץ להסבר על טמפרטורה ובטיחות"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <span className="text-[11px] text-slate-400">יעד: 36°C - 39°C</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="20"
+                    max="42"
+                    value={waterTemp}
+                    onChange={(e) => setWaterTemp(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center focus:border-cyan-500"
+                  />
+                  <span className="text-[11px] text-slate-400 whitespace-nowrap">מעלות צלזיוס</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Advanced & Lab Measurements Toggle */}
+            <div className="pt-3 border-t border-slate-800/80 space-y-3">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedParams(!showAdvancedParams)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 text-xs font-bold text-slate-200 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-purple-400" />
+                  <span>3. מדידות מעבדה ומדדים מתקדמים (אופציונלי)</span>
+                </div>
+                {showAdvancedParams ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+              </button>
+
+              {showAdvancedParams && (
+                <div className="space-y-3 pl-1 pr-1 animate-fadeIn">
+                  {/* Calcium Hardness */}
+                  <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-200">קשיות סידן (Calcium Hardness - ppm)</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedParamModal(WATER_PARAMETERS_GUIDE.calcium)}
+                          className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                          title="לחץ להסבר מלא על קשיות סידן, אבנית וקורוזיה"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={calciumUnknown}
+                          onChange={(e) => setCalciumUnknown(e.target.checked)}
+                          className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                        />
+                        <span>לא יודע</span>
+                      </label>
+                    </div>
+                    {!calciumUnknown ? (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          step="10"
+                          min="0"
+                          max="600"
+                          value={calcium}
+                          onChange={(e) => setCalcium(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center focus:border-cyan-500"
+                        />
+                        <span className="text-[11px] text-slate-400 whitespace-nowrap">יעד: 150 - 250</span>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+                        לא צוין • מומלץ לבדוק אחת לחודש למניעת אבנית או שחיקת גופי חימום.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cyanuric Acid (CYA) */}
+                  <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-200">חומצה ציאנורית / מייצב (CYA - ppm)</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedParamModal(WATER_PARAMETERS_GUIDE.cya)}
+                          className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                          title="לחץ להסבר על חומצה ציאנורית ונעילת כלור"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={cyaUnknown}
+                          onChange={(e) => setCyaUnknown(e.target.checked)}
+                          className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                        />
+                        <span>לא יודע</span>
+                      </label>
+                    </div>
+                    {!cyaUnknown ? (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          step="5"
+                          min="0"
+                          max="150"
+                          value={cya}
+                          onChange={(e) => setCya(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center focus:border-cyan-500"
+                        />
+                        <span className="text-[11px] text-slate-400 whitespace-nowrap">יעד: 30 - 50</span>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+                        לא צוין • מזהה תופעת "נעילת כלור" (Chlorine Lock) משימוש ממושך בדיכלור.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Total Dissolved Solids (TDS) */}
+                  <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-200">מוצקים מומסים / מלח (TDS - ppm)</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedParamModal(WATER_PARAMETERS_GUIDE.tds)}
+                          className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                          title="לחץ להסבר על TDS ועומס מים"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={tdsUnknown}
+                          onChange={(e) => setTdsUnknown(e.target.checked)}
+                          className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                        />
+                        <span>לא יודע</span>
+                      </label>
+                    </div>
+                    {!tdsUnknown ? (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          step="50"
+                          min="0"
+                          max="4000"
+                          value={tds}
+                          onChange={(e) => setTds(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center focus:border-cyan-500"
+                        />
+                        <span className="text-[11px] text-slate-400 whitespace-nowrap">יעד: 500 - 1500</span>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+                        לא צוין • מעל 2,000 ppm המים נחשבים "עייפים" ומחייבים החלפת מים.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Phosphates */}
+                  <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-200">פוספטים / זרחן (Phosphates - ppb)</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedParamModal(WATER_PARAMETERS_GUIDE.phosphates)}
+                          className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                          title="לחץ להסבר על פוספטים ומניעת אצות"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={phosphatesUnknown}
+                          onChange={(e) => setPhosphatesUnknown(e.target.checked)}
+                          className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                        />
+                        <span>לא יודע</span>
+                      </label>
+                    </div>
+                    {!phosphatesUnknown ? (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          step="10"
+                          min="0"
+                          max="1000"
+                          value={phosphates}
+                          onChange={(e) => setPhosphates(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center focus:border-cyan-500"
+                        />
+                        <span className="text-[11px] text-slate-400 whitespace-nowrap">יעד: &lt; 100 ppb</span>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+                        לא צוין • מזהה "מזון לאצות" שמחסל במהירות את הכלור במים.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Description */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">3. תיאור נוסף של התופעה (חופשי)</label>
+            <div className="space-y-1 pt-2 border-t border-slate-800/80">
+              <label className="text-xs font-semibold text-slate-300">4. תיאור נוסף של התופעה (חופשי)</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -276,7 +649,7 @@ export default function WaterDoctorPage() {
 
             {/* Photo Upload */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">4. צילום המים או מקלון הבדיקה (אופציונלי)</label>
+              <label className="text-xs font-semibold text-slate-300">5. צילום המים או מקלון הבדיקה (אופציונלי)</label>
               <div className="flex items-center gap-3">
                 <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 p-3 bg-slate-950 border border-dashed border-slate-700 hover:border-cyan-500 rounded-2xl text-xs text-slate-400 hover:text-white transition-all">
                   <Camera className="w-4 h-4 text-cyan-400" />
@@ -305,12 +678,12 @@ export default function WaterDoctorPage() {
               {loading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Gemini מנתח את ההיסטוריה ומחשב מינונים...</span>
+                  <span>Gemini מנתח את כל המדדים וההיסטוריה...</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>אבחן מים וקבל מרשם לטיפול</span>
+                  <span>אבחן מים וקבל מרשם מורכב לטיפול</span>
                 </>
               )}
             </button>
@@ -325,9 +698,9 @@ export default function WaterDoctorPage() {
                 <Sparkles className="w-8 h-8" />
               </div>
               <div className="space-y-1 max-w-sm">
-                <h3 className="text-lg font-bold text-white">האבחון יופיע כאן</h3>
+                <h3 className="text-lg font-bold text-white">האבחון המורכב יופיע כאן</h3>
                 <p className="text-xs text-slate-400">
-                  מלא את מה שידוע לך ולחץ על "אבחן מים". ה-AI יסרוק את ארון החומרים שלך, יציין איזה חומרים זמינים להוספה מיידית, ומה לחפש ברשת לרכישה.
+                  הזן את המדדים הידועים לך ולחץ על "אבחן מים". ה-AI יסרוק את שילוב כל המדדים הכימיים, יזהה שורש בעיה ויספק מרשם טיפול מדויק.
                 </p>
               </div>
             </div>
@@ -348,204 +721,122 @@ export default function WaterDoctorPage() {
                     }`}
                   >
                     {diagnosis.severity === "GOOD"
-                      ? "מצב מצוין"
+                      ? "מים תקינים לחלוטין"
                       : diagnosis.severity === "ATTENTION"
-                      ? "נדרש איזון קל"
+                      ? "דורש תשומת לב קלה"
                       : diagnosis.severity === "WARNING"
-                      ? "אזהרה - דורש טיפול"
-                      : "מצב קריטי - סכנת רחצה"}
+                      ? "אזהרה - נדרש איזון מיידי"
+                      : "קריטי - מים לא ראויים לרחצה"}
                   </span>
-                  <h2 className="text-xl font-bold text-white">{diagnosis.waterStatusSummary}</h2>
+                  <h3 className="text-xl font-black text-white">{diagnosis.waterStatusSummary}</h3>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold ${
+                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 ${
                       diagnosis.safeToBathe
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-                        : "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                        ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
+                        : "bg-rose-950/60 border-rose-800 text-rose-300"
                     }`}
                   >
                     {diagnosis.safeToBathe ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                    <span>{diagnosis.safeToBathe ? "בטוח לרחצה" : "אין להתרחץ כרגע!"}</span>
+                    <span>{diagnosis.safeToBathe ? "בטוח לרחצה" : "אסור לרחצה כעת"}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>זמן שיקום: {diagnosis.estimatedRecoveryTime}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chemical Ledger Analysis (What was already added) */}
-              {(diagnosis.recentAdditionsAnalysis?.length > 0 || addedLedger.length > 0) && (
-                <div className="bg-cyan-950/40 border border-cyan-800/80 rounded-2xl p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-300">
-                    <Package className="w-4 h-4" />
-                    <span>חומרים שהוכנסו לג'קוזי ונלקחו בחשבון בחישוב ה-AI:</span>
-                  </div>
-
-                  {diagnosis.recentAdditionsAnalysis?.map((item: string, idx: number) => (
-                    <div key={idx} className="text-xs text-slate-200">
-                      💡 {item}
-                    </div>
-                  ))}
-
-                  {addedLedger.length > 0 && (
-                    <div className="flex items-center gap-2 flex-wrap pt-1">
-                      {addedLedger.map((add, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-0.5 rounded-md bg-slate-900 border border-cyan-800 text-[11px] text-cyan-300"
-                        >
-                          {add.chemical} ({add.amount || ""}) • {new Date(add.date).toLocaleDateString("he-IL")}
-                        </span>
-                      ))}
+                  {diagnosis.estimatedRecoveryTime && (
+                    <div className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>זמן התאוששות: {diagnosis.estimatedRecoveryTime}</span>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* Root Cause Analysis Banner */}
+              {/* Root Cause Analysis */}
               {diagnosis.rootCauseAnalysis && (
-                <div className="bg-purple-950/40 border border-purple-800/80 rounded-2xl p-4 space-y-1.5 shadow-lg">
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
-                    <Info className="w-4 h-4 text-purple-400" />
-                    <span>ניתוח מקצועי של שורש הבעיה (Root Cause):</span>
+                <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-900/60 space-y-1.5">
+                  <div className="text-xs font-bold text-purple-300 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-purple-400" />
+                    <span>ניתוח שורש הבעיה הכימי (Root Cause Analysis):</span>
                   </div>
-                  <div className="text-xs text-purple-200/90 leading-relaxed pr-6">
+                  <p className="text-xs text-purple-200/90 leading-relaxed">
                     {diagnosis.rootCauseAnalysis}
-                  </div>
+                  </p>
                 </div>
               )}
 
-              {/* Inventory Overview Card: Available in Cabinet vs Missing to Buy */}
-              {diagnosis.inventoryStatus && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Ready in Cabinet */}
-                  <div className="bg-slate-950 p-4 rounded-2xl border border-emerald-900/60 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-emerald-400 border-b border-emerald-950 pb-2">
-                      <div className="flex items-center gap-1.5">
-                        <Package className="w-4 h-4" />
-                        <span>זמין בארון החומרים שלך:</span>
-                      </div>
-                      <span className="text-[10px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-800">
-                        {diagnosis.inventoryStatus.availableInCabinet.length} פריטים
-                      </span>
-                    </div>
-
-                    {diagnosis.inventoryStatus.availableInCabinet.length === 0 ? (
-                      <div className="text-[11px] text-slate-400 py-1">
-                        אין צורך בחומרים נוספים או שאין חומרים תואמים בארון.
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {diagnosis.inventoryStatus.availableInCabinet.map((item: any, idx: number) => (
-                          <div key={idx} className="text-xs text-slate-200 flex items-center justify-between bg-slate-900/80 p-2 rounded-xl border border-slate-850">
-                            <span className="font-semibold">{item.name}</span>
-                            <span className="text-[11px] text-emerald-300 font-bold">נותרו: {item.remaining}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+              {/* History & Additions Insights */}
+              {((diagnosis.historicalInsights && diagnosis.historicalInsights.length > 0) || (diagnosis.recentAdditionsAnalysis && diagnosis.recentAdditionsAnalysis.length > 0)) && (
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="text-xs font-bold text-cyan-300 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-cyan-400" />
+                    <span>תובנות מבוססות היסטוריית טיפולים:</span>
                   </div>
-
-                  {/* Missing to Buy Online */}
-                  <div className="bg-slate-950 p-4 rounded-2xl border border-amber-900/60 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-amber-400 border-b border-amber-950 pb-2">
-                      <div className="flex items-center gap-1.5">
-                        <ShoppingCart className="w-4 h-4" />
-                        <span>חומרים חסרים - לקנייה ברשת:</span>
-                      </div>
-                      <span className="text-[10px] bg-amber-950 text-amber-300 px-2 py-0.5 rounded-full border border-amber-800">
-                        {diagnosis.inventoryStatus.missingToBuy.length} פריטים
-                      </span>
-                    </div>
-
-                    {diagnosis.inventoryStatus.missingToBuy.length === 0 ? (
-                      <div className="text-[11px] text-emerald-400 py-1 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>כל החומרים הנדרשים זמינים בארון שלך!</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {diagnosis.inventoryStatus.missingToBuy.map((item: any, idx: number) => (
-                          <div key={idx} className="text-xs bg-slate-900/80 p-2 rounded-xl border border-slate-850 flex items-center justify-between gap-2">
-                            <div>
-                              <div className="font-semibold text-amber-200">{item.name}</div>
-                              <div className="text-[10px] text-slate-400">חפש: "{item.searchKeywords}"</div>
-                            </div>
-                            <a
-                              href={item.searchUrl || `https://www.google.com/search?q=${encodeURIComponent(item.searchKeywords)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg flex items-center gap-1 transition-all shrink-0"
-                            >
-                              <Search className="w-3 h-3" />
-                              <span>חפש ברשת</span>
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Historical Insights and Missing Test Alerts */}
-              {(diagnosis.historicalInsights?.length > 0 || diagnosis.missingTestsAlerts?.length > 0) && (
-                <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-400">
-                    <History className="w-4 h-4" />
-                    <span>תובנות היסטוריות ופערי זמנים:</span>
-                  </div>
-                  <ul className="space-y-1 text-xs text-slate-300 list-disc list-inside">
-                    {diagnosis.historicalInsights?.map((item: string, idx: number) => (
-                      <li key={idx}>{item}</li>
+                  <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                    {diagnosis.historicalInsights?.map((insight: string, idx: number) => (
+                      <li key={idx}>{insight}</li>
                     ))}
-                    {diagnosis.missingTestsAlerts?.map((item: string, idx: number) => (
-                      <li key={idx} className="text-amber-300 font-medium">⚠️ {item}</li>
+                    {diagnosis.recentAdditionsAnalysis?.map((addition: string, idx: number) => (
+                      <li key={`add-${idx}`}>{addition}</li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {/* Step By Step Treatment Plan */}
-              <div className="space-y-4">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-amber-400" />
-                  <span>תוכנית טיפול ומינונים צעד-אחר-צעד</span>
-                </h3>
+              {/* Step by Step Treatment Plan */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                  <FlaskConical className="w-4 h-4 text-cyan-400" />
+                  <span>תוכנית טיפול ומרשם חומרים מותאם אישית:</span>
+                </h4>
 
                 <div className="space-y-3">
-                  {diagnosis.stepByStepPlan?.map((step: any, idx: number) => (
+                  {diagnosis.stepByStepPlan?.map((step: any) => (
                     <div
-                      key={idx}
-                      className="bg-slate-950 border border-slate-800/80 rounded-2xl p-4 space-y-3 relative overflow-hidden"
+                      key={step.stepNumber}
+                      className="p-4 rounded-2xl bg-slate-950 border border-slate-850 space-y-3 hover:border-slate-700 transition-all shadow-md"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-black flex items-center justify-center border border-cyan-500/30">
-                            {step.stepNumber || idx + 1}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 font-black text-xs flex items-center justify-center shrink-0 border border-cyan-500/40">
+                            {step.stepNumber}
                           </span>
-                          <span className="font-bold text-sm text-white">{step.title}</span>
+                          <div>
+                            <h5 className="font-bold text-white text-sm">{step.title}</h5>
+                            <div className="text-xs text-cyan-300 font-semibold mt-0.5">
+                              חומר: {step.chemical} • מינון מומלץ: <span className="text-white font-bold">{step.amount}</span>
+                            </div>
+                          </div>
                         </div>
 
-                        {step.amount && step.amount !== "לפי שגרה" && (
-                          <span className="px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 font-extrabold text-xs border border-cyan-800">
-                            מינון: {step.amount}
+                        {step.stepType && (
+                          <span
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                              step.stepType === "ROOT_CAUSE"
+                                ? "bg-purple-950 text-purple-300 border-purple-800"
+                                : step.stepType === "IMMEDIATE_RELIEF"
+                                ? "bg-blue-950 text-blue-300 border-blue-800"
+                                : "bg-emerald-950 text-emerald-300 border-emerald-800"
+                            }`}
+                          >
+                            {step.stepType === "ROOT_CAUSE"
+                              ? "🎯 טיפול בשורש הבעיה"
+                              : step.stepType === "IMMEDIATE_RELIEF"
+                              ? "⚡ הקלה מיידית"
+                              : "📅 פעולת המשך"}
                           </span>
                         )}
                       </div>
 
-                      <div className="text-xs text-slate-300 leading-relaxed pr-8">{step.instructions}</div>
+                      <p className="text-xs text-slate-300 leading-relaxed pr-8">
+                        {step.instructions}
+                      </p>
 
-                      {/* Chemical Cabinet / Shopping Match for this Step */}
-                      {step.chemical && step.chemical !== "ללא חומר" && step.chemical !== "תחזוקה רגילה" && (
+                      {/* Cabinet vs Store Inventory Status */}
+                      {step.chemical && !step.chemical.includes("ללא חומר") && !step.chemical.includes("תחזוקה") && !step.chemical.includes("שטיפת פילטר") && (
                         <div className="mr-8">
                           {step.inInventory ? (
-                            <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/80 text-emerald-300 text-xs flex items-center justify-between">
+                            <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-900/60 text-emerald-300 text-xs flex items-center justify-between flex-wrap gap-2">
                               <div className="flex items-center gap-2">
                                 <Package className="w-4 h-4 text-emerald-400 shrink-0" />
                                 <span>

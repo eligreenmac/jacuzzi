@@ -15,6 +15,11 @@ export async function POST(req: NextRequest) {
       ph,
       freeChlorine,
       alkalinity,
+      calcium,
+      cya,
+      tds,
+      phosphates,
+      waterTemp,
       imageBase64,
       imageMimeType,
       valueBefore,
@@ -164,6 +169,23 @@ export async function POST(req: NextRequest) {
       alkalinity === "UNKNOWN" || alkalinity === "" || alkalinity === undefined || alkalinity === null
         ? "UNKNOWN"
         : parseFloat(alkalinity);
+    const parsedCalcium =
+      calcium === "UNKNOWN" || calcium === "" || calcium === undefined || calcium === null
+        ? "UNKNOWN"
+        : parseFloat(calcium);
+    const parsedCya =
+      cya === "UNKNOWN" || cya === "" || cya === undefined || cya === null
+        ? "UNKNOWN"
+        : parseFloat(cya);
+    const parsedTds =
+      tds === "UNKNOWN" || tds === "" || tds === undefined || tds === null
+        ? "UNKNOWN"
+        : parseFloat(tds);
+    const parsedPhosphates =
+      phosphates === "UNKNOWN" || phosphates === "" || phosphates === undefined || phosphates === null
+        ? "UNKNOWN"
+        : parseFloat(phosphates);
+    const parsedTemp = waterTemp ? parseFloat(waterTemp) : undefined;
 
     const diagnosis = await analyzeWaterWithGemini({
       volumeLiters,
@@ -173,6 +195,11 @@ export async function POST(req: NextRequest) {
       ph: parsedPh,
       freeChlorine: parsedCl,
       alkalinity: parsedAlk,
+      calcium: parsedCalcium,
+      cya: parsedCya,
+      tds: parsedTds,
+      phosphates: parsedPhosphates,
+      waterTemp: parsedTemp,
       lastRefillDate,
       imageBase64,
       imageMimeType,

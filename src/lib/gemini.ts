@@ -54,6 +54,11 @@ export interface DiagnoseRequest {
   ph?: number | "UNKNOWN";
   freeChlorine?: number | "UNKNOWN";
   alkalinity?: number | "UNKNOWN";
+  calcium?: number | "UNKNOWN";
+  cya?: number | "UNKNOWN";
+  tds?: number | "UNKNOWN";
+  phosphates?: number | "UNKNOWN";
+  waterTemp?: number;
   lastRefillDate?: string | Date;
   imageBase64?: string;
   imageMimeType?: string;
@@ -213,6 +218,23 @@ export async function analyzeWaterWithGemini(data: DiagnoseRequest): Promise<Dia
     data.alkalinity === "UNKNOWN" || data.alkalinity === undefined || data.alkalinity === null
       ? "לא ידוע / לא נבדק"
       : `${data.alkalinity} ppm`;
+  const calciumDisplay =
+    data.calcium === "UNKNOWN" || data.calcium === undefined || data.calcium === null
+      ? "לא ידוע / לא נבדק"
+      : `${data.calcium} ppm`;
+  const cyaDisplay =
+    data.cya === "UNKNOWN" || data.cya === undefined || data.cya === null
+      ? "לא ידוע / לא נבדק"
+      : `${data.cya} ppm`;
+  const tdsDisplay =
+    data.tds === "UNKNOWN" || data.tds === undefined || data.tds === null
+      ? "לא ידוע / לא נבדק"
+      : `${data.tds} ppm`;
+  const phosphatesDisplay =
+    data.phosphates === "UNKNOWN" || data.phosphates === undefined || data.phosphates === null
+      ? "לא ידוע / לא נבדק"
+      : `${data.phosphates} ppb`;
+  const tempDisplay = data.waterTemp ? `${data.waterTemp}°C` : "38°C (סטנדרטי)";
 
   if (ai) {
     try {
@@ -225,11 +247,16 @@ export async function analyzeWaterWithGemini(data: DiagnoseRequest): Promise<Dia
 - נפח המים: ${data.volumeLiters} ליטר.
 - שיטת חיטוי: ${data.sanitizationType} (כלור / ברום / מלח / חמצן פעיל).
 - תאריך מילוי מים אחרון: ${data.lastRefillDate || "לא צוין"}.
+- טמפרטורת מים: ${tempDisplay}.
 - מראה וצלילות המים המדווחת: ${data.waterClarity} (CLEAR / SLIGHTLY_CLOUDY / VERY_CLOUDY / GREEN / FOAMY / BAD_ODOR / METALLIC_COPPER / METALLIC_RUST).
 - ערכי בדיקה נוכחיים: 
-  * pH: ${phDisplay}
-  * כלור חופשי: ${clDisplay}
-  * בסיסיות (TA): ${alkDisplay}
+  * רמת חומציות (pH): ${phDisplay}
+  * כלור חופשי / ברום: ${clDisplay}
+  * בסיסיות כוללת (TA): ${alkDisplay}
+  * קשיות סידן (Calcium Hardness - CH): ${calciumDisplay}
+  * חומצה ציאנורית / מייצב (Cyanuric Acid - CYA): ${cyaDisplay}
+  * עומס מוצקים מומסים (TDS): ${tdsDisplay}
+  * פוספטים (Phosphates): ${phosphatesDisplay}
 - תיאור חופשי מהמשתמש: "${data.description || "ללא תיאור נוסף"}".
 
 === היסטוריית חומרים ומינונים שהוכנסו לג'קוזי (Chemical Additions Ledger) ===
