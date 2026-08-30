@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkAndCreateLowStockTask, scanAndEnsureLowStockTasks } from "@/lib/inventory-guard";
 
 export async function GET(req: NextRequest) {
   try {
     const user = await getSessionUser(req);
     if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
+
+    // Ensure any low stock chemical has an active task for today
+    await scanAndEnsureLowStockTasks(user.id);
 
     const chemicals = await prisma.chemicalInventory.findMany({
       where: { userId: user.id },
@@ -43,6 +47,8 @@ export async function POST(req: NextRequest) {
         addedDate: addedDate ? new Date(addedDate) : new Date(),
       },
     });
+
+    await checkAndCreateLowStockTask(user.id, chemical);
 
     return NextResponse.json({ success: true, chemical });
   } catch (error: any) {
@@ -84,6 +90,8 @@ export async function PUT(req: NextRequest) {
         addedDate: addedDate ? new Date(addedDate) : undefined,
       },
     });
+
+    await checkAndCreateLowStockTask(user.id, updated);
 
     return NextResponse.json({ success: true, chemical: updated });
   } catch (error: any) {

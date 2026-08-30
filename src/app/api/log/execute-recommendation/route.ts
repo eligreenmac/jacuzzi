@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkAndCreateLowStockTask } from "@/lib/inventory-guard";
 
 export async function POST(req: NextRequest) {
   try {
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
     // Deduct from inventory if matched
     if (matchedChem && parsedDeductAmount && parsedDeductAmount > 0) {
       const newQty = Math.max(0, matchedChem.quantity - parsedDeductAmount);
-      await prisma.chemicalInventory.update({
+      const updatedChem = await prisma.chemicalInventory.update({
         where: { id: matchedChem.id },
         data: {
           quantity: newQty,
@@ -132,6 +133,10 @@ export async function POST(req: NextRequest) {
           lastUsedAmount: parsedDeductAmount,
         },
       });
+
+      // Auto-create order task for today if stock dropped below 1/3
+      await checkAndCreateLowStockTask(user.id, updatedChem);
+
       inventoryDeducted = true;
       remainingQuantity = `${newQty} ${matchedChem.unit === "GRAMS" ? 'גר\'' : matchedChem.unit === "ML" ? 'מ"ל' : matchedChem.unit}`;
     }

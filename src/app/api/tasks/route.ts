@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkChemicalOverdoseSafety } from "@/lib/jacuzzi-calc";
+import { checkAndCreateLowStockTask } from "@/lib/inventory-guard";
 
 export async function GET(req: NextRequest) {
   try {
@@ -190,7 +191,7 @@ export async function PUT(req: NextRequest) {
         actualDeductNum = parseFloat(deductAmount);
         const newQuantity = Math.max(0, chem.quantity - actualDeductNum);
 
-        await prisma.chemicalInventory.update({
+        const updatedChem = await prisma.chemicalInventory.update({
           where: { id: chem.id },
           data: {
             quantity: newQuantity,
@@ -198,6 +199,9 @@ export async function PUT(req: NextRequest) {
             lastUsedAmount: actualDeductNum,
           },
         });
+
+        // Auto-create order task for today if stock dropped below 1/3
+        await checkAndCreateLowStockTask(user.id, updatedChem);
 
         // Run overdose safety check
         safetyCheck = checkChemicalOverdoseSafety(chem.name, chem.category, actualDeductNum, volumeLiters);

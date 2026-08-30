@@ -298,21 +298,30 @@ export default function DashboardPage() {
 
             <div className="space-y-2.5">
               {chemicals.slice(0, 3).map((chem: any) => {
-                const isLow = chem.quantity <= (chem.minThreshold || 100);
+                const threshold = chem.minThreshold && chem.minThreshold > 0 ? chem.minThreshold : (chem.unit === "GRAMS" || chem.unit === "ML" ? 330 : 15);
+                const isLow = chem.quantity <= threshold;
                 return (
                   <div
                     key={chem.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/70 border border-slate-850 text-xs"
+                    className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-all ${
+                      isLow ? "bg-rose-950/40 border-rose-800/60" : "bg-slate-950/70 border-slate-850"
+                    }`}
                   >
                     <div className="space-y-0.5">
-                      <div className="font-semibold text-slate-200">{chem.name}</div>
+                      <div className="font-semibold text-slate-200 flex items-center gap-1">
+                        <span>{chem.name}</span>
+                        {isLow && <span className="text-rose-400 font-bold text-[10px]">⚠️</span>}
+                      </div>
                       <div className="text-[11px] text-slate-400">
-                        נותרו: {chem.quantity} {chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit}
+                        נותרו: {chem.quantity} {chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit === "TABLETS" ? "טבליות" : chem.unit === "STRIPS" ? "מקלונים" : "יחידות"}
                       </div>
                     </div>
                     {isLow ? (
-                      <span className="text-[10px] bg-rose-950/80 text-rose-300 px-2 py-0.5 rounded border border-rose-800">
-                        מלאי נמוך!
+                      <span
+                        className="text-[9px] font-bold bg-rose-950 text-rose-300 px-2 py-0.5 rounded border border-rose-800"
+                        title="המלאי מתחת לשליש - שובצה משימת רכש להיום ביומן"
+                      >
+                        מתחת לשליש! (להזמין)
                       </span>
                     ) : (
                       <span className="text-[10px] bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">
@@ -322,6 +331,13 @@ export default function DashboardPage() {
                   </div>
                 );
               })}
+
+              {chemicals.some((c: any) => c.quantity <= (c.minThreshold && c.minThreshold > 0 ? c.minThreshold : (c.unit === "GRAMS" || c.unit === "ML" ? 330 : 15))) && (
+                <div className="p-2 rounded-xl bg-amber-950/30 border border-amber-800/50 text-amber-300 text-[10px] flex items-center gap-1.5">
+                  <span>🔔</span>
+                  <span>חומרים מתחת לשליש: שובצו משימות רכש להיום ביומן.</span>
+                </div>
+              )}
 
               {chemicals.length === 0 && (
                 <div className="text-center py-6 text-slate-400 text-xs space-y-1">
