@@ -17,6 +17,8 @@ import {
   Flame,
   ShieldCheck,
   RefreshCw,
+  FlaskConical,
+  Eye,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -96,6 +98,7 @@ export default function DashboardPage() {
   const chemicals = data.chemicals || [];
   const tasks = data.tasks || [];
   const waterLogs = data.waterLogs || [];
+  const latestWaterLog = waterLogs.length > 0 ? waterLogs[0] : null;
 
   // Calculate days since last refill
   const refillDate = jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : new Date();
@@ -155,69 +158,129 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick Action Navigation Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link
-          href="/water-doctor"
-          className="bg-gradient-to-br from-cyan-950/40 to-slate-900 border border-cyan-500/30 hover:border-cyan-400 p-5 rounded-2xl space-y-3 transition-all hover:scale-[1.02] group shadow-lg"
-        >
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-white transition-all">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="font-bold text-white text-base">רופא מים AI</h2>
-            <p className="text-xs text-slate-400 mt-0.5">אבחון עכירות, בדיקת pH ומינונים בגרמים</p>
-          </div>
-        </Link>
-
-        <Link
-          href="/inventory"
-          className="bg-gradient-to-br from-blue-950/40 to-slate-900 border border-blue-500/30 hover:border-blue-400 p-5 rounded-2xl space-y-3 transition-all hover:scale-[1.02] group shadow-lg"
-        >
-          <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all">
-            <Package className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="font-bold text-white text-base">ארון חומרים ומלאי</h2>
-            <p className="text-xs text-slate-400 mt-0.5">העלאת תמונות, מעקב כמויות וזיהוי חוסרים</p>
-          </div>
-        </Link>
-
-        <Link
-          href="/calendar"
-          className="bg-gradient-to-br from-sky-950/40 to-slate-900 border border-sky-500/30 hover:border-sky-400 p-5 rounded-2xl space-y-3 transition-all hover:scale-[1.02] group shadow-lg"
-        >
-          <div className="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center group-hover:bg-sky-500 group-hover:text-white transition-all">
-            <Calendar className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="font-bold text-white text-base">לוח טיפולים ויומן</h2>
-            <p className="text-xs text-slate-400 mt-0.5">מעקב שטיפת פילטר, שוק ויומן הערות</p>
-          </div>
-        </Link>
-
-        <div className="bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/30 p-5 rounded-2xl space-y-3 shadow-lg flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <Send className="w-5 h-5" />
+      {/* Compact Latest Water Test Card with Link to Full Results */}
+      {latestWaterLog ? (
+        <div className="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border border-cyan-500/30 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-800/30 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shadow-inner">
+                <FlaskConical className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-black text-white text-base">בדיקת מים אחרונה</h2>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">
+                    {new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")} {new Date(latestWaterLog.testedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {latestWaterLog.clarity === "CLEAR"
+                    ? "מים צלולים כקריסטל ✨"
+                    : latestWaterLog.clarity === "CLOUDY"
+                    ? "מים עכורים מעט ⚠️"
+                    : latestWaterLog.clarity === "FOAMY"
+                    ? "קצף במים ⚠️"
+                    : "תוצאות בדיקת מעבדה ומקלון"}
+                </p>
+              </div>
             </div>
-            <span className="text-[11px] text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800">
-              התראות פעילות
-            </span>
+
+            <Link
+              href="/water-tests"
+              className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all hover:scale-105"
+            >
+              <Eye className="w-4 h-4" />
+              <span>לתוצאות המלאות והיסטוריה</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
           </div>
-          <div>
-            <h2 className="font-bold text-white text-base">שליחת תזכורת למייל</h2>
-            <p className="text-xs text-slate-400 mt-0.5">בדוק קבלת התראת תחזוקה ישירה למייל</p>
+
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 text-center space-y-1">
+              <div className="text-[11px] text-slate-400 font-semibold">רמת חומציות (pH)</div>
+              <div className="text-lg font-black text-white">{latestWaterLog.ph ?? "—"}</div>
+              <div className="text-[10px]">
+                {latestWaterLog.ph >= 7.2 && latestWaterLog.ph <= 7.6 ? (
+                  <span className="text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-800/60">✓ אידיאלי</span>
+                ) : latestWaterLog.ph < 7.2 ? (
+                  <span className="text-amber-400 font-bold bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-800/60">חומצי מדי</span>
+                ) : (
+                  <span className="text-rose-400 font-bold bg-rose-950/60 px-2 py-0.5 rounded-md border border-rose-800/60">בסיסי מדי</span>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 text-center space-y-1">
+              <div className="text-[11px] text-slate-400 font-semibold">חיטוי (כלור / ברום)</div>
+              <div className="text-lg font-black text-white">{latestWaterLog.freeChlorine !== null ? `${latestWaterLog.freeChlorine} ppm` : "—"}</div>
+              <div className="text-[10px]">
+                {latestWaterLog.freeChlorine >= 2 && latestWaterLog.freeChlorine <= 5 ? (
+                  <span className="text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-800/60">✓ מחוטא היטב</span>
+                ) : latestWaterLog.freeChlorine < 2 ? (
+                  <span className="text-rose-400 font-bold bg-rose-950/60 px-2 py-0.5 rounded-md border border-rose-800/60">חיטוי נמוך</span>
+                ) : (
+                  <span className="text-amber-400 font-bold bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-800/60">חיטוי גבוה</span>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 text-center space-y-1">
+              <div className="text-[11px] text-slate-400 font-semibold">בסיסיות (TA)</div>
+              <div className="text-lg font-black text-white">{latestWaterLog.alkalinity !== null ? `${latestWaterLog.alkalinity} ppm` : "—"}</div>
+              <div className="text-[10px]">
+                {latestWaterLog.alkalinity >= 80 && latestWaterLog.alkalinity <= 120 ? (
+                  <span className="text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-800/60">✓ מאוזן</span>
+                ) : latestWaterLog.alkalinity < 80 ? (
+                  <span className="text-amber-400 font-bold bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-800/60">נמוך</span>
+                ) : (
+                  <span className="text-amber-400 font-bold bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-800/60">גבוה</span>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 text-center space-y-1">
+              <div className="text-[11px] text-slate-400 font-semibold">טמפרטורה / צלילות</div>
+              <div className="text-lg font-black text-white">{latestWaterLog.waterTemp ? `${latestWaterLog.waterTemp}°C` : "38°C"}</div>
+              <div className="text-[10px]">
+                <span className="text-cyan-300 font-bold bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-800/60">
+                  {latestWaterLog.clarity === "CLEAR" ? "צלול" : latestWaterLog.clarity === "FOAMY" ? "קצף" : "עכור"}
+                </span>
+              </div>
+            </div>
           </div>
-          <button
-            onClick={handleSendTestEmail}
-            disabled={emailSending}
-            className="w-full py-2 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white font-medium text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
-          >
-            {emailSending ? "שולח..." : "שלח לי תזכורת עכשיו"}
-          </button>
+
+          {/* AI Diagnosis snippet if present */}
+          {latestWaterLog.aiRecommendations && (
+            <div className="bg-cyan-950/30 border border-cyan-800/40 rounded-2xl p-3 text-xs text-cyan-200 flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+              <div className="line-clamp-2">
+                <span className="font-bold text-cyan-300">אבחון AI: </span>
+                <span>{latestWaterLog.notes || "הערכים תועדו ונשמרו. להנחיות טיפול ומינונים מפורטים, צפה בתוצאות המלאות."}</span>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 text-center sm:text-right">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
+              <FlaskConical className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">טרם בוצעה בדיקת מים במערכת</h3>
+              <p className="text-xs text-slate-400">בצע בדיקת מקלון ראשונה לקבלת אבחון כימי מלא, המלצות AI ומינונים מדויקים.</p>
+            </div>
+          </div>
+          <Link
+            href="/water-tests"
+            className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-2 transition-all hover:scale-105 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>בצע בדיקת מים עכשיו</span>
+          </Link>
+        </div>
+      )}
 
       {emailMsg && (
         <div
