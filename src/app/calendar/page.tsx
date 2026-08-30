@@ -24,6 +24,7 @@ import {
   ShieldAlert,
   Save,
   ExternalLink,
+  FlaskConical,
 } from "lucide-react";
 
 export default function CalendarPage() {
@@ -37,17 +38,27 @@ export default function CalendarPage() {
   // Selected Day Details Modal
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
-  // Task Completion Modal
+  // Task Completion Modal (Separated into Chemical Addition VS Water Testing)
   const [completingTask, setCompletingTask] = useState<any | null>(null);
+  const [treatmentType, setTreatmentType] = useState<"CHEMICAL" | "WATER_TEST">("CHEMICAL");
+
+  // Chemical Form
   const [chemicalSource, setChemicalSource] = useState<"INVENTORY" | "EXTERNAL">("INVENTORY");
   const [selectedChemicalId, setSelectedChemicalId] = useState("");
   const [deductAmount, setDeductAmount] = useState("20");
   const [externalChemicalName, setExternalChemicalName] = useState("");
-  const [completionForm, setCompletionForm] = useState({
-    valueBefore: "",
-    valueAfter: "",
-    notes: "",
-  });
+  const [chemicalNotes, setChemicalNotes] = useState("");
+
+  // Water Test Form
+  const [ph, setPh] = useState("7.4");
+  const [phUnknown, setPhUnknown] = useState(false);
+  const [freeChlorine, setFreeChlorine] = useState("3.0");
+  const [clUnknown, setClUnknown] = useState(false);
+  const [alkalinity, setAlkalinity] = useState("90");
+  const [alkUnknown, setAlkUnknown] = useState(false);
+  const [clarity, setClarity] = useState("CLEAR");
+  const [testNotes, setTestNotes] = useState("");
+
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
 
   // Emergency Overdose Warning Modal State
@@ -201,16 +212,21 @@ export default function CalendarPage() {
     return { dayTasks, doneTasks, dayEntries, dayWaterLogs };
   };
 
-  // Open Completion Modal
+  // Open Completion Modal with automatic detection of task type
   const openCompletionModal = (task: any) => {
     setCompletingTask(task);
-    setCompletionForm({
-      valueBefore: "",
-      valueAfter: "",
-      notes: "",
-    });
+    const isTest =
+      task.title.includes("בדיק") ||
+      task.title.includes("איכות") ||
+      task.title.includes("מקלון") ||
+      task.title.includes("pH");
+
+    setTreatmentType(isTest ? "WATER_TEST" : "CHEMICAL");
     setDeductAmount("20");
     setExternalChemicalName("");
+    setChemicalNotes("");
+    setTestNotes("");
+
     if (chemicals.length > 0) {
       setChemicalSource("INVENTORY");
       setSelectedChemicalId(chemicals[0].id);
@@ -225,32 +241,59 @@ export default function CalendarPage() {
 
     setIsSubmittingCompletion(true);
     try {
-      const isFromInventory = chemicalSource === "INVENTORY" && selectedChemicalId;
+      if (treatmentType === "CHEMICAL") {
+        const isFromInventory = chemicalSource === "INVENTORY" && selectedChemicalId;
 
-      const res = await fetch("/api/tasks", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: completingTask.id,
-          markDoneAndReschedule: true,
-          valueBefore: completionForm.valueBefore,
-          valueAfter: completionForm.valueAfter,
-          notes: completionForm.notes,
-          chemicalInventoryId: isFromInventory ? selectedChemicalId : null,
-          deductAmount: deductAmount,
-          chemicalUsed: !isFromInventory ? externalChemicalName : null,
-          amountAdded: !isFromInventory ? `${deductAmount} גרם/מ"ל` : null,
-        }),
-      });
+        const res = await fetch("/api/tasks", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: completingTask.id,
+            markDoneAndReschedule: true,
+            notes: chemicalNotes,
+            chemicalInventoryId: isFromInventory ? selectedChemicalId : null,
+            deductAmount: deductAmount,
+            chemicalUsed: !isFromInventory ? externalChemicalName : null,
+            amountAdded: !isFromInventory ? `${deductAmount} גרם/מ"ל` : null,
+          }),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
+        if (data.safetyCheck) {
+          setOverdoseAlert(data.safetyCheck);
+        }
+        setActionNotice("הוספת החומר תועדה והמלאי עודכן בהצלחה!");
+      } else {
+        // Water Testing Completion
+        const res = await fetch("/api/water-tests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            testedAt: new Date().toISOString(),
+            ph: phUnknown ? "UNKNOWN" : ph,
+            freeChlorine: clUnknown ? "UNKNOWN" : freeChlorine,
+            alkalinity: alkUnknown ? "UNKNOWN" : alkalinity,
+            waterClarity: clarity,
+            description: `משימה שבוצעה: ${completingTask.title}${testNotes ? ` - ${testNotes}` : ""}`,
+          }),
+        });
 
-      if (data.safetyCheck) {
-        setOverdoseAlert(data.safetyCheck);
+        // Mark task done & reschedule
+        await fetch("/api/tasks", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: completingTask.id,
+            markDoneAndReschedule: true,
+            valueAfter: `pH: ${phUnknown ? "לא נבדק" : ph}, כלור: ${clUnknown ? "לא נבדק" : freeChlorine}`,
+            notes: testNotes,
+          }),
+        });
+
+        setActionNotice("תוצאות הבדיקה נשמרו בעמוד בדיקות המים והמשימה סומנה כבוצעה!");
       }
 
       setCompletingTask(null);
-      setActionNotice("הטיפול תועד בהצלחה והמלאי עודכן!");
       setTimeout(() => setActionNotice(null), 4000);
       loadData();
     } catch (err) {
@@ -769,10 +812,10 @@ export default function CalendarPage() {
 
                           <button
                             onClick={() => openCompletionModal(task)}
-                            className="w-full py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all"
+                            className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all"
                           >
                             <CheckCircle2 className="w-4 h-4" />
-                            <span>סמן כבוצע ובחר חומר מהארון</span>
+                            <span>סמן ביצוע ועדכן נתונים</span>
                           </button>
                         </div>
                       ))}
@@ -799,7 +842,6 @@ export default function CalendarPage() {
                               <span>{task.title}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              {/* RESET BUTTON */}
                               <button
                                 onClick={() => handleResetTask(task)}
                                 className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/60 rounded-lg transition-colors flex items-center gap-1 border border-amber-800/40"
@@ -832,16 +874,9 @@ export default function CalendarPage() {
                             </div>
                           )}
 
-                          {task.lastValueBefore && (
-                            <div className="text-slate-300">
-                              <span className="text-slate-500">לפני: </span>
-                              {task.lastValueBefore}
-                            </div>
-                          )}
-
                           {task.lastValueAfter && (
                             <div className="text-emerald-300 font-semibold">
-                              <span className="text-slate-500">תוצאה אחרי: </span>
+                              <span className="text-slate-500">תוצאות שנמדדו: </span>
                               {task.lastValueAfter}
                             </div>
                           )}
@@ -936,165 +971,305 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Modal: Task Completion with Chemical Inventory Deduction */}
+      {/* Modal: Task Completion - CLEAN SEPARATION BETWEEN CHEMICAL ADDITION AND WATER TESTING */}
       {completingTask && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-cyan-800/80 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2 text-cyan-400">
                 <CheckCircle2 className="w-6 h-6" />
-                <h2 className="text-lg font-bold text-white">תיעוד טיפול: {completingTask.title}</h2>
+                <h2 className="text-lg font-bold text-white">סימון ביצוע: {completingTask.title}</h2>
               </div>
               <button onClick={() => setCompletingTask(null)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Type selector tabs */}
+            <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setTreatmentType("CHEMICAL")}
+                className={`py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                  treatmentType === "CHEMICAL"
+                    ? "bg-cyan-600 text-white shadow-lg"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Package className="w-4 h-4" />
+                <span>📦 הוספת חומר / טיפול</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTreatmentType("WATER_TEST")}
+                className={`py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                  treatmentType === "WATER_TEST"
+                    ? "bg-purple-600 text-white shadow-lg"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <FlaskConical className="w-4 h-4" />
+                <span>🧪 בדיקת נתוני מים</span>
+              </button>
+            </div>
+
             <form onSubmit={handleSaveCompletion} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300">1. מאיזה מקור נלקח החומר שהוספת?</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setChemicalSource("INVENTORY")}
-                    className={`p-3 rounded-2xl border text-right transition-all flex items-center gap-2 ${
-                      chemicalSource === "INVENTORY"
-                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold"
-                        : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
-                    }`}
-                  >
-                    <Package className="w-4 h-4 shrink-0" />
-                    <div className="text-xs">
-                      <div>מארון החומרים שלי</div>
-                      <div className="text-[10px] opacity-70 font-normal">מפחית מלאי אוטומטית</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setChemicalSource("EXTERNAL")}
-                    className={`p-3 rounded-2xl border text-right transition-all flex items-center gap-2 ${
-                      chemicalSource === "EXTERNAL"
-                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold"
-                        : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
-                    }`}
-                  >
-                    <Globe className="w-4 h-4 shrink-0" />
-                    <div className="text-xs">
-                      <div>ממקור חיצוני / אחר</div>
-                      <div className="text-[10px] opacity-70 font-normal">לא משפיע על הארון</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {chemicalSource === "INVENTORY" ? (
-                <div className="space-y-3 bg-slate-950/80 p-4 rounded-2xl border border-cyan-900/60">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">בחר חומר מתוך הארון שלך:</label>
-                    {chemicals.length === 0 ? (
-                      <div className="text-xs text-amber-400 p-2">אין חומרים בארון כרגע. באפשרותך לבחור "מקור חיצוני".</div>
-                    ) : (
-                      <select
-                        value={selectedChemicalId}
-                        onChange={(e) => setSelectedChemicalId(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs font-semibold focus:border-cyan-500"
+              {treatmentType === "CHEMICAL" ? (
+                /* === 1. PURE CHEMICAL ADDITION FORM === */
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-300">1. מאיזה מקור נלקח החומר שהוספת?</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setChemicalSource("INVENTORY")}
+                        className={`p-3 rounded-2xl border text-right transition-all flex items-center gap-2 ${
+                          chemicalSource === "INVENTORY"
+                            ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold"
+                            : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                        }`}
                       >
-                        {chemicals.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} (נותרו: {c.quantity} {c.unit === "GRAMS" ? 'גר\'' : c.unit === "ML" ? 'מ"ל' : c.unit})
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                        <Package className="w-4 h-4 shrink-0" />
+                        <div className="text-xs">
+                          <div>מארון החומרים שלי</div>
+                          <div className="text-[10px] opacity-70 font-normal">מפחית מלאי אוטומטית</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setChemicalSource("EXTERNAL")}
+                        className={`p-3 rounded-2xl border text-right transition-all flex items-center gap-2 ${
+                          chemicalSource === "EXTERNAL"
+                            ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold"
+                            : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                        }`}
+                      >
+                        <Globe className="w-4 h-4 shrink-0" />
+                        <div className="text-xs">
+                          <div>ממקור חיצוני / אחר</div>
+                          <div className="text-[10px] opacity-70 font-normal">לא משפיע על הארון</div>
+                        </div>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-300">כמות שהוספת לג'קוזי:</label>
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        value={deductAmount}
-                        onChange={(e) => setDeductAmount(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold text-sm text-cyan-300"
-                      />
-                    </div>
-
-                    {selectedChemObject && (
+                  {chemicalSource === "INVENTORY" ? (
+                    <div className="space-y-3 bg-slate-950/80 p-4 rounded-2xl border border-cyan-900/60">
                       <div className="space-y-1">
-                        <label className="text-[11px] text-slate-400">יתרה חדשה בארון:</label>
-                        <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-emerald-400">
-                          {Math.max(0, selectedChemObject.quantity - (parseFloat(deductAmount) || 0))} {selectedChemObject.unit === "GRAMS" ? 'גר\'' : selectedChemObject.unit === "ML" ? 'מ"ל' : selectedChemObject.unit}
-                        </div>
+                        <label className="text-xs font-semibold text-slate-300">בחר חומר מתוך הארון שלך:</label>
+                        {chemicals.length === 0 ? (
+                          <div className="text-xs text-amber-400 p-2">אין חומרים בארון כרגע. באפשרותך לבחור "מקור חיצוני".</div>
+                        ) : (
+                          <select
+                            value={selectedChemicalId}
+                            onChange={(e) => setSelectedChemicalId(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs font-semibold focus:border-cyan-500"
+                          >
+                            {chemicals.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name} (נותרו: {c.quantity} {c.unit === "GRAMS" ? 'גר\'' : c.unit === "ML" ? 'מ"ל' : c.unit})
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
-                    )}
+
+                      <div className="grid grid-cols-2 gap-3 pt-1">
+                        <div className="space-y-1">
+                          <label className="text-xs font-semibold text-slate-300">כמות שהוספת לג'קוזי:</label>
+                          <input
+                            type="number"
+                            min="1"
+                            required
+                            value={deductAmount}
+                            onChange={(e) => setDeductAmount(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold text-sm text-cyan-300"
+                          />
+                        </div>
+
+                        {selectedChemObject && (
+                          <div className="space-y-1">
+                            <label className="text-[11px] text-slate-400">יתרה חדשה בארון:</label>
+                            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-emerald-400">
+                              {Math.max(0, selectedChemObject.quantity - (parseFloat(deductAmount) || 0))} {selectedChemObject.unit === "GRAMS" ? 'גר\'' : selectedChemObject.unit === "ML" ? 'מ"ל' : selectedChemObject.unit}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-slate-300">שם החומר ממקור חיצוני:</label>
+                        <input
+                          type="text"
+                          required
+                          value={externalChemicalName}
+                          onChange={(e) => setExternalChemicalName(e.target.value)}
+                          placeholder="למשל: כלור טבליות, חומצת מלח..."
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-slate-300">כמות שהוספת:</label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={deductAmount}
+                          onChange={(e) => setDeductAmount(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-300">הערות לטיפול</label>
+                    <textarea
+                      value={chemicalNotes}
+                      onChange={(e) => setChemicalNotes(e.target.value)}
+                      rows={2}
+                      placeholder="הערות ליומן..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
+                    />
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+                /* === 2. PURE WATER TESTING FORM === */
+                <div className="space-y-3.5">
+                  <div className="bg-purple-950/40 p-3 rounded-2xl border border-purple-800/60 text-xs text-purple-200">
+                    התוצאות שתזין יישמרו אוטומטית ב<b>יומן בדיקות המים</b> של הג'קוזי.
+                  </div>
+
+                  {/* pH Input */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-slate-200">1. חומציות (pH)</span>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={phUnknown}
+                          onChange={(e) => setPhUnknown(e.target.checked)}
+                          className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                        />
+                        <span>לא יודע / לא נבדק</span>
+                      </label>
+                    </div>
+                    {!phUnknown ? (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="6.0"
+                          max="8.8"
+                          value={ph}
+                          onChange={(e) => setPh(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center text-cyan-300"
+                        />
+                        <span className="text-[10px] text-slate-500 shrink-0">מומלץ: 7.2-7.6</span>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-amber-400/80 text-center py-1">מסומן כ-"לא ידוע"</div>
+                    )}
+                  </div>
+
+                  {/* Chlorine Input */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-slate-200">2. כלור חופשי / ברום (ppm)</span>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={clUnknown}
+                          onChange={(e) => setClUnknown(e.target.checked)}
+                          className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                        />
+                        <span>לא יודע / לא נבדק</span>
+                      </label>
+                    </div>
+                    {!clUnknown ? (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          max="15"
+                          value={freeChlorine}
+                          onChange={(e) => setFreeChlorine(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center text-cyan-300"
+                        />
+                        <span className="text-[10px] text-slate-500 shrink-0">מומלץ: 3.0-5.0</span>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-amber-400/80 text-center py-1">מסומן כ-"לא ידוע"</div>
+                    )}
+                  </div>
+
+                  {/* Alkalinity Input */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-slate-200">3. בסיסיות (TA ppm)</span>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={alkUnknown}
+                          onChange={(e) => setAlkUnknown(e.target.checked)}
+                          className="accent-cyan-500 w-3.5 h-3.5 rounded"
+                        />
+                        <span>לא יודע / לא נבדק</span>
+                      </label>
+                    </div>
+                    {!alkUnknown ? (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          step="5"
+                          min="0"
+                          max="300"
+                          value={alkalinity}
+                          onChange={(e) => setAlkalinity(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center text-cyan-300"
+                        />
+                        <span className="text-[10px] text-slate-500 shrink-0">מומלץ: 80-120</span>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-amber-400/80 text-center py-1">מסומן כ-"לא ידוע"</div>
+                    )}
+                  </div>
+
+                  {/* Clarity */}
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">שם החומר ממקור חיצוני:</label>
-                    <input
-                      type="text"
-                      required
-                      value={externalChemicalName}
-                      onChange={(e) => setExternalChemicalName(e.target.value)}
-                      placeholder="למשל: כלור טבליות, חומצת מלח..."
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
-                    />
+                    <label className="text-xs font-semibold text-slate-300">4. צלילות המים</label>
+                    <select
+                      value={clarity}
+                      onChange={(e) => setClarity(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-semibold"
+                    >
+                      <option value="CLEAR">✨ מים צלולים</option>
+                      <option value="SLIGHTLY_CLOUDY">🌫️ מעט עכורים</option>
+                      <option value="VERY_CLOUDY">🥛 עכורים מאוד</option>
+                      <option value="FOAMY">🧼 מקציפים</option>
+                      <option value="GREEN">🌿 ירוקים</option>
+                      <option value="BAD_ODOR">👃 ריח חריף</option>
+                    </select>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">כמות שהוספת:</label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      value={deductAmount}
-                      onChange={(e) => setDeductAmount(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
+                    <label className="text-xs font-semibold text-slate-300">הערות לבדיקה</label>
+                    <textarea
+                      value={testNotes}
+                      onChange={(e) => setTestNotes(e.target.value)}
+                      rows={2}
+                      placeholder="הערות לבדיקת המים..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
                     />
                   </div>
                 </div>
               )}
-
-              {/* Measurements Before & After */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">2. מדידה לפני הטיפול</label>
-                  <input
-                    type="text"
-                    value={completionForm.valueBefore}
-                    onChange={(e) => setCompletionForm({ ...completionForm, valueBefore: e.target.value })}
-                    placeholder="למשל: pH 7.9, כלור 0.5"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-cyan-500"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">3. תוצאה אחרי הטיפול</label>
-                  <input
-                    type="text"
-                    value={completionForm.valueAfter}
-                    onChange={(e) => setCompletionForm({ ...completionForm, valueAfter: e.target.value })}
-                    placeholder="למשל: pH 7.3, מים צלולים"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs text-emerald-300 font-semibold focus:border-cyan-500"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">4. הערות נוספות</label>
-                <textarea
-                  value={completionForm.notes}
-                  onChange={(e) => setCompletionForm({ ...completionForm, notes: e.target.value })}
-                  rows={2}
-                  placeholder="הערות ליומן..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
-                />
-              </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
@@ -1109,7 +1284,7 @@ export default function CalendarPage() {
                   disabled={isSubmittingCompletion}
                   className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2"
                 >
-                  {isSubmittingCompletion ? "שומר ובודק בטיחות..." : "שמור טיפול ועדכן מלאי"}
+                  {isSubmittingCompletion ? "שומר..." : "שמור ביצוע משימה"}
                 </button>
               </div>
             </form>

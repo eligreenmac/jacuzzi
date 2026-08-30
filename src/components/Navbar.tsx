@@ -13,7 +13,7 @@ import {
   Menu,
   X,
   LayoutDashboard,
-  BellRing,
+  FlaskConical,
 } from "lucide-react";
 
 export default function Navbar() {
@@ -42,6 +42,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/dashboard", label: "לוח בקרה", icon: LayoutDashboard },
+    { href: "/water-tests", label: "בדיקות מים", icon: FlaskConical },
     { href: "/inventory", label: "ארון חומרים", icon: Package },
     { href: "/water-doctor", label: "רופא מים AI", icon: Sparkles },
     { href: "/calendar", label: "יומן ותחזוקה", icon: Calendar },
@@ -78,9 +79,9 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       isActive
-                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-inner"
+                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-inner font-bold"
                         : "text-slate-300 hover:text-white hover:bg-slate-800/60"
                     }`}
                   >
