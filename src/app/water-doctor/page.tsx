@@ -21,6 +21,7 @@ import {
   Search,
   ExternalLink,
   Check,
+  Info,
 } from "lucide-react";
 
 export default function WaterDoctorPage() {
@@ -405,6 +406,19 @@ export default function WaterDoctorPage() {
                 </div>
               )}
 
+              {/* Root Cause Analysis Banner */}
+              {diagnosis.rootCauseAnalysis && (
+                <div className="bg-purple-950/40 border border-purple-800/80 rounded-2xl p-4 space-y-1.5 shadow-lg">
+                  <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
+                    <Info className="w-4 h-4 text-purple-400" />
+                    <span>ניתוח מקצועי של שורש הבעיה (Root Cause):</span>
+                  </div>
+                  <div className="text-xs text-purple-200/90 leading-relaxed pr-6">
+                    {diagnosis.rootCauseAnalysis}
+                  </div>
+                </div>
+              )}
+
               {/* Inventory Overview Card: Available in Cabinet vs Missing to Buy */}
               {diagnosis.inventoryStatus && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -578,6 +592,39 @@ export default function WaterDoctorPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Follow up Requirements & Prevention Guidelines */}
+              {((diagnosis.followUpRequirements && diagnosis.followUpRequirements.length > 0) || (diagnosis.preventionGuidelines && diagnosis.preventionGuidelines.length > 0)) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  {diagnosis.followUpRequirements?.length > 0 && (
+                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5 shadow">
+                      <div className="text-xs font-bold text-cyan-300 flex items-center gap-2 border-b border-slate-900 pb-1.5">
+                        <Clock className="w-4 h-4 text-cyan-400" />
+                        <span>פעולות חובה להמשך (24-48 שעות):</span>
+                      </div>
+                      <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                        {diagnosis.followUpRequirements.map((req: string, idx: number) => (
+                          <li key={idx}>{req}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {diagnosis.preventionGuidelines?.length > 0 && (
+                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5 shadow">
+                      <div className="text-xs font-bold text-emerald-300 flex items-center gap-2 border-b border-slate-900 pb-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>הנחיות מניעה לפעמים הבאות:</span>
+                      </div>
+                      <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                        {diagnosis.preventionGuidelines.map((prev: string, idx: number) => (
+                          <li key={idx}>{prev}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* General Tips */}
               {diagnosis.generalTips?.length > 0 && (

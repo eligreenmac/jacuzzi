@@ -65,6 +65,7 @@ export interface DiagnoseRequest {
 
 export interface DiagnosisStep {
   stepNumber: number;
+  stepType?: "ROOT_CAUSE" | "IMMEDIATE_RELIEF" | "FOLLOW_UP";
   title: string;
   chemical: string;
   amount: string;
@@ -79,12 +80,15 @@ export interface DiagnosisStep {
 
 export interface DiagnosisResponse {
   waterStatusSummary: string;
+  rootCauseAnalysis?: string;
   severity: "GOOD" | "ATTENTION" | "WARNING" | "CRITICAL";
   stepByStepPlan: DiagnosisStep[];
   inventoryStatus?: {
     availableInCabinet: Array<{ name: string; neededAmount: string; remaining: string }>;
     missingToBuy: Array<{ name: string; searchKeywords: string; searchUrl: string; whyNeeded: string }>;
   };
+  followUpRequirements?: string[];
+  preventionGuidelines?: string[];
   recentAdditionsAnalysis?: string[];
   historicalInsights?: string[];
   missingTestsAlerts?: string[];
@@ -184,7 +188,7 @@ export async function identifyChemicalFromImage(
 }
 
 /**
- * Water Diagnosis with Time-Series History, Chemical Additions Ledger & Volume Scaling
+ * Water Diagnosis with Time-Series History, Chemical Additions Ledger, Root Cause & Inventory Matching
  */
 export async function analyzeWaterWithGemini(data: DiagnoseRequest): Promise<DiagnosisResponse> {
   const ai = getAiClient();
@@ -201,7 +205,11 @@ export async function analyzeWaterWithGemini(data: DiagnoseRequest): Promise<Dia
 
   if (ai) {
     try {
-      const prompt = `אתה מומחה בכיר לכימיית מי ג'קוזי, מתכות וספא (Jacuzzi & Metals Water Specialist).
+      const prompt = `אתה מומחה בכיר לכימיית מי ג'קוזי, טיפול בשורש הבעיה ומניעת נזקים מצטברים (Chief Jacuzzi Water Chemist).
+
+עקרון מנחה קריטי:
+ההמלצות שלך חייבות להיות מקצועיות, עמוקות ומלאות — לטפל ב**שורש הבעיה** (Root Cause) ולא רק לתת "פלסטרים" קוסמטיים שיוצרים בעיות נוספות (כמו שימוש במסיר קצף סיליקוני שסותם פילטרים בלי לפרק את השומנים והסבונים, או שינוי pH בלי לאזן קודם בסיסיות TA).
+
 נתוני הג'קוזי:
 - נפח המים: ${data.volumeLiters} ליטר.
 - שיטת חיטוי: ${data.sanitizationType} (כלור / ברום / מלח / חמצן פעיל).
@@ -214,7 +222,6 @@ export async function analyzeWaterWithGemini(data: DiagnoseRequest): Promise<Dia
 - תיאור חופשי מהמשתמש: "${data.description || "ללא תיאור נוסף"}".
 
 === היסטוריית חומרים ומינונים שהוכנסו לג'קוזי (Chemical Additions Ledger) ===
-להלן רשימת כל החומרים, המינונים והמועדים שבהם המשתמש כבר הוסיף חומרים לג'קוזי שלו:
 ${JSON.stringify(data.addedChemicalsLedger || [], null, 2)}
 
 - פערי זמנים מבדיקות קודמות:
@@ -225,32 +232,37 @@ ${JSON.stringify(data.addedChemicalsLedger || [], null, 2)}
 - מלאי חומרים זמין בארון המשתמש (Inventory):
 ${JSON.stringify(data.inventory || [], null, 2)}
 
-הנחיות חובה:
-1. **התאמה מלאה לארון החומרים וקניות ברשת**:
-   - עבור כל שלב בתוכנית (stepByStepPlan), בדוק האם החומר קיים בארון המשתמש (inInventory: true).
-   - אם החומר קיים בארון: ציין את שמו המדויק בארון (inventoryItemName) ואת הכמות שנותרה (inventoryRemaining).
-   - אם החומר **חסר בארון** (inInventory: false): ספק מילות חיפוש מדויקות לרכישה ברשת (searchKeywords למשל "מעלה בסיסיות לג'קוזי Alka Plus") והמלצת קנייה ברורה (buyRecommendation).
-2. **דיוק מוחלט בסיכום המצב**: אם ה-pH מאוזן ותקין, אל תכתוב שנדרש לאזן חומציות! התייחס בדיוק למה שדורש טיפול (למשל: קצף, בסיסיות נמוכה, או עכירות).
-3. **מינונים מותאמים אישית**: ספק מינון מדויק בגרם/מ"ל המחושב בדיוק לפי נפח ${data.volumeLiters} ליטר.
+הנחיות חובה לבניית האבחון:
+1. **ניתוח שורש הבעיה (rootCauseAnalysis)**: הסבר למשתמש בשפה בהירה ומקצועית מדוע התופעה הזו נוצרה (למשל: סבונים ושמנים בבגדי ים, מתח פנים חלש מבסיסיות נמוכה, קורוזיה של גוף חימום מ-pH חומצי, או עומס מוצקים מומסים TDS).
+2. **תוכנית פעולה משולבת (stepByStepPlan)**:
+   - כלול שלב ל**טיפול בשורש הבעיה** (כגון שוק MPS לפירוק שומנים, העלאת בסיסיות לייצוב ה-pH, שטיפת פילטר).
+   - אם ממליץ על טיפול נקודתי (כמו מסיר קצף או מצליל), ציין את תופעות הלוואי (סיליקון מצטבר / סתימת פילטר) וחייב שטיפת פילטר בהמשך!
+3. **חובת פעולות המשך (followUpRequirements)**: מה חובה לעשות בעוד 12-24 שעות (שטיפת פילטר, בדיקה חוזרת).
+4. **הנחיות מניעה (preventionGuidelines)**: איך למנוע מהבעיה לחזור שוב.
+5. **התאמה לארון חומרים ורכישה ברשת**: עבור כל שלב בדוק האם קיים בארון (inInventory), ואם חסר ספק מילות חיפוש והמלצת רכישה.
 
 החזר אך ורק תשובת JSON תקנית במבנה:
 {
-  "waterStatusSummary": "סיכום תמציתי ומדויק של מצב המים (מותאם אישית לפרמטרים המדויקים)",
+  "waterStatusSummary": "סיכום תמציתי ומדויק של מצב המים",
+  "rootCauseAnalysis": "הסבר מקצועי ומפורט על שורש הבעיה האמיתי",
   "severity": "GOOD" | "ATTENTION" | "WARNING" | "CRITICAL",
   "safeToBathe": true | false,
   "needsFullDrain": true | false,
   "estimatedRecoveryTime": "למשל: שעתיים / 24 שעות",
+  "followUpRequirements": ["חובה: לשטוף את הפילטר בזרם מים חזק בעוד 24 שעות", "לבצע בדיקת מקלון חוזרת בעוד 12 שעות"],
+  "preventionGuidelines": ["הקפד על שטיפת בגדי ים במים בלבד ללא אבקת/מרכך כביסה", "שמור על רמת בסיסיות (TA) בין 80-120 ppm"],
   "recentAdditionsAnalysis": ["התייחסות לחומרים שהוספו לאחרונה והשפעתם"],
   "historicalInsights": ["תובנה על פי ההיסטוריה ופערי הזמנים"],
   "missingTestsAlerts": ["התראה על בדיקה שלא בוצעה זמן רב"],
   "stepByStepPlan": [
     {
       "stepNumber": 1,
+      "stepType": "ROOT_CAUSE" | "IMMEDIATE_RELIEF" | "FOLLOW_UP",
       "title": "כותרת הפעולה",
       "chemical": "שם החומר הנדרש",
       "amount": "מינון מדויק ל-${data.volumeLiters} ליטר (למשל: 25 גרם)",
       "instructions": "הוראות יישום מפורטות ובטיחותיות",
-      "safetyWarning": "אזהרת בטיחות",
+      "safetyWarning": "אזהרת בטיחות והשלכות על המים",
       "inInventory": true | false,
       "inventoryItemName": "שם החומר בארון המשתמש",
       "inventoryRemaining": "כמות שנותרה (למשל: 450 גרם)",
@@ -281,7 +293,6 @@ ${JSON.stringify(data.inventory || [], null, 2)}
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]) as DiagnosisResponse;
-        // Enrich inventoryStatus
         return enrichInventoryStatus(parsed, data.inventory || []);
       }
     } catch (err) {
@@ -300,9 +311,8 @@ function enrichInventoryStatus(
   const missingToBuy: Array<{ name: string; searchKeywords: string; searchUrl: string; whyNeeded: string }> = [];
 
   for (const step of diagnosis.stepByStepPlan) {
-    if (step.chemical.includes("ללא חומר") || step.chemical.includes("תחזוקה רגילה")) continue;
+    if (step.chemical.includes("ללא חומר") || step.chemical.includes("תחזוקה רגילה") || step.chemical.includes("שטיפת פילטר")) continue;
 
-    // Check if matched
     const matched = inventory.find(
       (item) =>
         item.name.toLowerCase().includes(step.chemical.toLowerCase()) ||
@@ -403,11 +413,14 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
   const missingTestsAlerts: string[] = [];
   const recentAdditionsAnalysis: string[] = [];
   const issuesFound: string[] = [];
+  const followUpRequirements: string[] = [];
+  const preventionGuidelines: string[] = [];
 
   let severity: DiagnosisResponse["severity"] = "GOOD";
   let safeToBathe = true;
   let needsFullDrain = false;
   let estimatedRecoveryTime = "1-2 שעות";
+  let rootCauseExplanation = "";
 
   let stepCount = 1;
 
@@ -444,7 +457,40 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     historicalInsights.push(`בדיקת ה-pH הקודמת בוצעה לפני ${data.daysSinceLastPhTest} ימים.`);
   }
 
-  // 1. Check pH
+  // 1. Check Alkalinity (TA) FIRST - Essential Root Cause Buffer
+  let alkIsLow = false;
+  if (typeof data.alkalinity === "number") {
+    if (data.alkalinity < 80) {
+      alkIsLow = true;
+      severity = severity === "GOOD" ? "ATTENTION" : severity;
+      issuesFound.push("הבסיסיות (TA) נמוכה");
+      const alkDiff = 100 - data.alkalinity;
+      const alkGrams = Math.round((alkDiff / 10) * (data.volumeLiters / 1000) * 18);
+      const inStockItem = findInInventory("PH_PLUS", "בסיסיות") || findInInventory("PH_PLUS", "alka");
+
+      steps.push({
+        stepNumber: stepCount++,
+        stepType: "ROOT_CAUSE",
+        title: "טיפול שורש 1: העלאת וייצוב בסיסיות המים (Total Alkalinity)",
+        chemical: "מעלה בסיסיות (Alkalinity Increaser / סודיום ביקרבונט)",
+        amount: `${alkGrams} גרם`,
+        instructions: `הבסיסיות (TA) היא "כרית האוויר" של המים. הוסף כ-${alkGrams} גרם מעלה בסיסיות מומסים בדלי מים עם ג'טים פועלים. זה ימנע תנודות חומציות (pH Bounce) ויחזק את מתח הפנים של המים.`,
+        safetyWarning: "איזון הבסיסיות הוא צעד ראשון והכרחי לפני כל ניסיון לכוון את ה-pH.",
+        inInventory: !!inStockItem,
+        inventoryItemName: inStockItem?.name,
+        inventoryRemaining: inStockItem ? `${inStockItem.quantity} ${inStockItem.unit === "GRAMS" ? 'גר\'' : inStockItem.unit}` : undefined,
+        searchKeywords: "מעלה בסיסיות לג'קוזי Alkalinity Increaser סודיום ביקרבונט",
+        buyRecommendation: "חפש ברשת: 'מעלה בסיסיות לג'קוזי' או 'Alka Plus / Alkalinity Increaser'",
+      });
+
+      followUpRequirements.push("בדוק מקלון בעוד 12 שעות לוודא שהבסיסיות (TA) עלתה לטווח היעד (80-120 ppm).");
+      preventionGuidelines.push("שמור על רמת TA של 80-120 ppm למניעת קצף ותנודות חומציות פתאומיות.");
+    } else if (data.alkalinity > 150) {
+      issuesFound.push("הבסיסיות (TA) גבוהה");
+    }
+  }
+
+  // 2. Check pH
   let phIsIdeal = false;
   if (typeof data.ph === "number") {
     if (data.ph >= 7.2 && data.ph <= 7.6) {
@@ -459,6 +505,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
 
         steps.push({
           stepNumber: stepCount++,
+          stepType: "ROOT_CAUSE",
           title: isMinus ? "הורדת רמת החומציות (pH)" : "העלאת רמת החומציות (pH)",
           chemical: phAdj.chemical,
           amount: `${phAdj.amountGrams} גרם`,
@@ -476,7 +523,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     }
   }
 
-  // 2. Check Chlorine
+  // 3. Check Chlorine / Sanitizer
   let clIsIdeal = false;
   if (typeof data.freeChlorine === "number") {
     if (data.freeChlorine >= 2.0 && data.freeChlorine <= 5.0) {
@@ -490,6 +537,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
 
         steps.push({
           stepNumber: stepCount++,
+          stepType: "ROOT_CAUSE",
           title: "העלאת רמת חומר החיטוי",
           chemical: clAdj.chemical,
           amount: `${clAdj.amountGrams} גרם`,
@@ -508,6 +556,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
       issuesFound.push("רמת הכלור גבוהה מדי");
       steps.push({
         stepNumber: stepCount++,
+        stepType: "FOLLOW_UP",
         title: "רמת כלור גבוהה מדי",
         chemical: "אוורור וסירקולציה",
         amount: "ללא חומר",
@@ -518,46 +567,78 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     }
   }
 
-  // 3. Check Alkalinity (TA)
-  if (typeof data.alkalinity === "number") {
-    if (data.alkalinity < 80) {
-      severity = severity === "GOOD" ? "ATTENTION" : severity;
-      issuesFound.push("הבסיסיות (TA) נמוכה");
-      const alkDiff = 100 - data.alkalinity;
-      const alkGrams = Math.round((alkDiff / 10) * (data.volumeLiters / 1000) * 18);
-      const inStockItem = findInInventory("PH_PLUS", "בסיסיות") || findInInventory("PH_PLUS", "alka");
+  // 4. Foamy Water - Root Cause & Symptom Treatment
+  if (data.waterClarity === "FOAMY") {
+    severity = severity === "GOOD" ? "ATTENTION" : severity;
+    issuesFound.push("הקצפה במים");
+    rootCauseExplanation =
+      "שורש הבעיה של קצף במים: קצף נוצר משומני גוף, סבונים, קרמים ושאריות חומרי כביסה בבגדי ים, בשילוב עם בסיסיות (TA) נמוכה. מסיר קצף (Anti-Foam) הוא סיליקון שמפוצץ בועות באופן זמני אך נשאר במים ועלול לסתום את הפילטר. כדי לפתור את הבעיה מהשורש יש לחמצן את השומנים בשוק ולשטוף את הפילטר.";
 
-      steps.push({
-        stepNumber: stepCount++,
-        title: "העלאת וייצוב בסיסיות המים (Total Alkalinity)",
-        chemical: "מעלה בסיסיות (Alkalinity Increaser / סודיום ביקרבונט)",
-        amount: `${alkGrams} גרם`,
-        instructions: `הוסף כ-${alkGrams} גרם מעלה בסיסיות כדי לייצב את ה-pH ולמנוע תנודות חומציות ושחיקת מתכות.`,
-        inInventory: !!inStockItem,
-        inventoryItemName: inStockItem?.name,
-        inventoryRemaining: inStockItem ? `${inStockItem.quantity} ${inStockItem.unit === "GRAMS" ? 'גר\'' : inStockItem.unit}` : undefined,
-        searchKeywords: "מעלה בסיסיות לג'קוזי Alkalinity Increaser סודיום ביקרבונט",
-        buyRecommendation: "חפש ברשת: 'מעלה בסיסיות לג'קוזי' או 'Alka Plus / Alkalinity Increaser'",
-      });
-    } else if (data.alkalinity > 150) {
-      issuesFound.push("הבסיסיות (TA) גבוהה");
-    }
-  }
+    // Root Cause Step: MPS Oxidation Shock
+    const shockGrams = calculateShockDose(data.volumeLiters);
+    const inStockShock = findInInventory("SHOCK", "שוק") || findInInventory("SHOCK", "mps");
+    steps.push({
+      stepNumber: stepCount++,
+      stepType: "ROOT_CAUSE",
+      title: "טיפול שורש 2: שוק מחמצן (MPS) לפירוק שומנים וסבונים",
+      chemical: "אבקת שוק מחמצן ללא כלור (Non-Chlorine Shock / MPS)",
+      amount: `${shockGrams} גרם`,
+      instructions: `הוסף ${shockGrams} גרם של שוק מחמצן עם מכסה פתוח ומשאבות פועלות. חומר השוק "שורף" ומפרק את התרכובות האורגניות והסבונים שגרמו לקצף, במקום רק לכסות אותם.`,
+      safetyWarning: "השאר את המכסה פתוח למשך 30 דקות לאוורור גזים מחומצנים.",
+      inInventory: !!inStockShock,
+      inventoryItemName: inStockShock?.name,
+      inventoryRemaining: inStockShock ? `${inStockShock.quantity} ${inStockShock.unit === "GRAMS" ? 'גר\'' : inStockShock.unit}` : undefined,
+      searchKeywords: "שוק ללא כלור לג'קוזי Non Chlorine Shock MPS",
+      buyRecommendation: "חפש ברשת: 'שוק ללא כלור לג'קוזי' (MPS / Non-Chlorine Shock)",
+    });
 
-  // 4. Check Clarity / Appearance Issues
-  if (data.waterClarity === "METALLIC_COPPER") {
+    // Immediate Relief Step: Anti-Foam (Minimal dose with warnings)
+    const inStockFoam = findInInventory("ANTI_FOAM", "קצף") || findInInventory("ANTI_FOAM", "foam");
+    steps.push({
+      stepNumber: stepCount++,
+      stepType: "IMMEDIATE_RELIEF",
+      title: "מענה מיידי (אופציונלי): מסיר קצף נקודתי",
+      chemical: "חומר מונע קצף (Anti-Foam / Defoamer)",
+      amount: "10-15 מ\"ל",
+      instructions: "פזר כמות קטנה בלבד (פקק אחד) ישירות על הקצף לקבלת מים חלקים באותו הרגע.",
+      safetyWarning: "זהירות: שימוש עודף במסיר קצף גורם למים שומניים וסותם את הפילטר. אין להוסיף יותר מהמינון המומלץ!",
+      inInventory: !!inStockFoam,
+      inventoryItemName: inStockFoam?.name,
+      inventoryRemaining: inStockFoam ? `${inStockFoam.quantity} ${inStockFoam.unit === "ML" ? 'מ"ל' : inStockFoam.unit}` : undefined,
+      searchKeywords: "מסיר קצף לג'קוזי Anti Foam Defoamer Spa",
+      buyRecommendation: "חפש ברשת: 'מסיר קצף לג'קוזי' או 'Anti-Foam / Defoamer Spa'",
+    });
+
+    // Follow up step: Washing Filter
+    steps.push({
+      stepNumber: stepCount++,
+      stepType: "FOLLOW_UP",
+      title: "פעולת חובה להמשך: שטיפת הפילטר בזרם מים תוך 24 שעות",
+      chemical: "שטיפת פילטר במים (ללא חומר)",
+      amount: "שטיפה בלחץ",
+      instructions: "הוצא את פילטר הג'קוזי בעוד 24 שעות ושטוף אותו היטב בזרם מים חזק כדי להסיר את עודפי הסיליקון והשומנים שנלכדו בו.",
+      inInventory: true,
+    });
+
+    followUpRequirements.push("חובה לשטוף את מסנן הג'קוזי בזרם מים חזק תוך 24-48 שעות להסרת עודפי סיליקון ושומנים.");
+    preventionGuidelines.push("שטוף בגדי ים במים בלבד (ללא מרכך או אבקת כביסה במכונה) לפני כניסה לג'קוזי.");
+    preventionGuidelines.push("הקפד על מקלחת קלה ללא סבונים כבדים או קרמים לפני הכניסה למים.");
+  } else if (data.waterClarity === "METALLIC_COPPER") {
     severity = "WARNING";
     safeToBathe = false;
     estimatedRecoveryTime = "12-24 שעות";
     issuesFound.push("נוכחות נחושת מחומצנת במים");
-    const inStockItem = findInInventory("OTHER", "מתכות") || findInInventory("OTHER", "metal");
+    rootCauseExplanation =
+      "שורש הבעיה: מים חומציים (pH נמוך) ששחקו את גופי החימום הנחושתיים, או מילוי מים עשירים בנחושת. הכלור מחמצן את יוני הנחושת וצובע את המים בטורקיז/ירוק צלול.";
 
+    const inStockItem = findInInventory("OTHER", "מתכות") || findInInventory("OTHER", "metal");
     steps.push({
       stepNumber: stepCount++,
-      title: "טיפול בנחושת ומתכות מחומצנות (גוון ירוק-טורקיז)",
+      stepType: "ROOT_CAUSE",
+      title: "טיפול שורש 1: קשירת נחושת ומניעת הכתמות (Metal Sequestrant)",
       chemical: "חומר קושר מתכות (Metal Sequestrant / Metal Out)",
       amount: `${Math.round((data.volumeLiters / 1000) * 30)} מ\"ל`,
-      instructions: "הוסף חומר קושר מתכות כשהג'טים פועלים למשך 30 דקות. החומר עוטף את יוני הנחושת ומונע הכתמה ושינוי צבע.",
+      instructions: "הוסף חומר קושר מתכות כשהג'טים פועלים למשך 30 דקות. החומר עוטף את יוני הנחושת ומונע הכתמת דפנות אקריל ושיער.",
       safetyWarning: "מים עם נחושת מחומצנת עלולים להכתים שיער בהיר ודפנות אקריל בירוק.",
       inInventory: !!inStockItem,
       inventoryItemName: inStockItem?.name,
@@ -565,16 +646,21 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
       searchKeywords: "חומר קושר מתכות לג'קוזי Metal Out Metal Free Stain Scale",
       buyRecommendation: "חפש ברשת: 'חומר קושר מתכות לג'קוזי' או 'Metal Out / Stain & Scale'",
     });
+
+    followUpRequirements.push("שטוף את הפילטר בעוד 24 שעות להרחקת חלקיקי הנחושת שנלכדו.");
+    preventionGuidelines.push("שמור תמיד על pH מעל 7.2 כדי למנוע חומציות המאכלת את גופי החימום.");
   } else if (data.waterClarity === "METALLIC_RUST") {
     severity = "WARNING";
     safeToBathe = false;
     estimatedRecoveryTime = "12-24 שעות";
     issuesFound.push("נוכחות ברזל וחלודה במים");
-    const inStockItem = findInInventory("OTHER", "מתכות") || findInInventory("OTHER", "iron");
+    rootCauseExplanation = "שורש הבעיה: נוכחות יוני ברזל במי המילוי או קורוזיה מתכתית שהתחמצנה במגע עם הכלור.";
 
+    const inStockItem = findInInventory("OTHER", "מתכות") || findInInventory("OTHER", "iron");
     steps.push({
       stepNumber: stepCount++,
-      title: "טיפול בחלודה וברזל (גוון צהבהב / חום)",
+      stepType: "ROOT_CAUSE",
+      title: "טיפול שורש: מסיר וקושר ברזל וחלודה (Metal Free / Iron Out)",
       chemical: "מסיר וקושר מתכות וברזל (Metal Free / Iron Out)",
       amount: `${Math.round((data.volumeLiters / 1000) * 30)} מ\"ל`,
       instructions: "הוסף מסיר מתכות, הפעל סירקולציה למשך 2-3 שעות ולאחר מכן שטוף את הפילטר.",
@@ -584,17 +670,22 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
       searchKeywords: "מסיר ברזל וחלודה לג'קוזי Iron Out Metal Free",
       buyRecommendation: "חפש ברשת: 'מסיר ברזל לג'קוזי' או 'Metal Free / Iron Out'",
     });
+
+    followUpRequirements.push("שטוף את הפילטר ביסודיות לאחר 6 שעות.");
   } else if (data.waterClarity === "GREEN" || data.waterClarity === "BAD_ODOR") {
     severity = "CRITICAL";
     safeToBathe = false;
     estimatedRecoveryTime = "24-48 שעות";
     issuesFound.push("עכירות ירוקה או ריח חריף");
+    rootCauseExplanation =
+      "שורש הבעיה: התפתחות אצות, בקטריות או ריכוז גבוה של כלוראמינים (כלור שנקשר לזיעה ושתנן). נדרש שוק מסיבי להשמדת הזיהום.";
+
     const shockGrams = calculateShockDose(data.volumeLiters) * 1.5;
     const inStockItem = findInInventory("SHOCK", "שוק") || findInInventory("SANITIZER", "כלור");
-
     steps.push({
       stepNumber: stepCount++,
-      title: "שוק חיטוי מוגבר וחיסול אצות / בקטריות",
+      stepType: "ROOT_CAUSE",
+      title: "טיפול שורש מסיבי: שוק חיטוי מוגבר וחיסול אצות / כלוראמינים",
       chemical: "שוק כלור מהיר (Shock Chlorine)",
       amount: `${Math.round(shockGrams)} גרם`,
       instructions: "הוסף את השוק, הפעל את משאבות הסירקולציה למשך שעה ברציפות ובדוק שוב לאחר 12 שעות.",
@@ -605,40 +696,40 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
       searchKeywords: "שוק כלור מהיר לג'קוזי Shock Chlorine Granules",
       buyRecommendation: "חפש ברשת: 'שוק כלור מהיר לג'קוזי' או 'Non-Chlorine Shock MPS'",
     });
-  } else if (data.waterClarity === "FOAMY") {
-    severity = severity === "GOOD" ? "ATTENTION" : severity;
-    issuesFound.push("הקצפה במים");
-    const inStockItem = findInInventory("ANTI_FOAM", "קצף") || findInInventory("ANTI_FOAM", "foam");
 
-    steps.push({
-      stepNumber: stepCount++,
-      title: "הסרת קצף ושומנים",
-      chemical: "חומר מונע קצף (Anti-Foam / Defoamer)",
-      amount: "15-20 מ\"ל",
-      instructions: "פזר ישירות על הקצף בזמן שהג'טים פועלים. הקצף ייעלם תוך שניות.",
-      inInventory: !!inStockItem,
-      inventoryItemName: inStockItem?.name,
-      inventoryRemaining: inStockItem ? `${inStockItem.quantity} ${inStockItem.unit === "ML" ? 'מ"ל' : inStockItem.unit}` : undefined,
-      searchKeywords: "מסיר קצף לג'קוזי Anti Foam Defoamer Spa",
-      buyRecommendation: "חפש ברשת: 'מסיר קצף לג'קוזי' או 'Anti-Foam / Defoamer Spa'",
-    });
+    followUpRequirements.push("השאר את הג'קוזי פתוח ומאוורר למשך 45 דקות.");
+    followUpRequirements.push("בצע בדיקת כלור ו-pH בעוד 12 שעות.");
   } else if (data.waterClarity === "VERY_CLOUDY" || data.waterClarity === "SLIGHTLY_CLOUDY") {
     severity = severity === "GOOD" ? "ATTENTION" : severity;
     issuesFound.push("עכירות מים");
-    const inStockItem = findInInventory("CLARIFIER", "מצליל") || findInInventory("CLARIFIER", "clarifier");
+    rootCauseExplanation = "שורש הבעיה: חלקיקי לכלוך זעירים מיקרוניים שקטנים מדי מכדי שהפילטר ילכוד אותם, או עומס אורגני ראשוני.";
 
+    const inStockItem = findInInventory("CLARIFIER", "מצליל") || findInInventory("CLARIFIER", "clarifier");
     steps.push({
       stepNumber: stepCount++,
-      title: "הצללת מים ושטיפת פילטר",
+      stepType: "ROOT_CAUSE",
+      title: "הצללת מים ואיחוד חלקיקים (Water Clarifier)",
       chemical: "מצליל מים (Water Clarifier)",
       amount: `${Math.round((data.volumeLiters / 1000) * 15)} מ\"ל`,
-      instructions: "הוסף מצליל מים, הפעל ג'טים ל-20 דקות והשאר את הסינון לעבוד. לאחר 6 שעות שטוף את הפילטר במים.",
+      instructions: "הוסף מצליל מים, הפעל ג'טים ל-20 דקות והשאר את הסינון לעבוד. החומר מאחד את החלקיקים הזעירים כדי שהפילטר יסנן אותם.",
       inInventory: !!inStockItem,
       inventoryItemName: inStockItem?.name,
       inventoryRemaining: inStockItem ? `${inStockItem.quantity} ${inStockItem.unit === "ML" ? 'מ"ל' : inStockItem.unit}` : undefined,
       searchKeywords: "מצליל מים לג'קוזי Spa Water Clarifier",
       buyRecommendation: "חפש ברשת: 'מצליל מים לג'קוזי' או 'Spa Water Clarifier'",
     });
+
+    steps.push({
+      stepNumber: stepCount++,
+      stepType: "FOLLOW_UP",
+      title: "פעולת חובה להמשך: שטיפת הפילטר לאחר 6 שעות",
+      chemical: "שטיפת פילטר",
+      amount: "שטיפה בזרם",
+      instructions: "שטוף את הפילטר להרחקת כל הלכלוך שהמצליל ליכד בתוכו.",
+      inInventory: true,
+    });
+
+    followUpRequirements.push("שטוף את הפילטר בעוד 6-12 שעות ללכידת החלקיקים שהמצליל איחד.");
   }
 
   // Formulate accurate waterStatusSummary
@@ -656,6 +747,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
   if (steps.length === 0) {
     steps.push({
       stepNumber: 1,
+      stepType: "ROOT_CAUSE",
       title: "תחזוקה שוטפת ושימור",
       chemical: "תחזוקה רגילה",
       amount: "לפי שגרה",
@@ -666,10 +758,16 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
 
   const res: DiagnosisResponse = {
     waterStatusSummary: statusSummary,
+    rootCauseAnalysis: rootCauseExplanation || "המים נבדקו ונמצאו בפרמטרים תקינים.",
     severity,
     safeToBathe,
     needsFullDrain,
     estimatedRecoveryTime,
+    followUpRequirements: followUpRequirements.length > 0 ? followUpRequirements : ["המשך בבדיקת מקלון שבועית רגילה."],
+    preventionGuidelines: preventionGuidelines.length > 0 ? preventionGuidelines : [
+      "הקפד על מקלחת קלה לפני כניסה למים.",
+      "שטוף את מסנן הג'קוזי בזרם מים אחת לשבוע.",
+    ],
     recentAdditionsAnalysis,
     historicalInsights,
     missingTestsAlerts,

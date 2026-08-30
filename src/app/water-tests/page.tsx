@@ -510,12 +510,25 @@ export default function WaterTestsPage() {
                           </div>
                         )}
 
+                        {/* Root Cause Analysis */}
+                        {recs?.rootCauseAnalysis && (
+                          <div className="p-3.5 rounded-2xl bg-purple-950/40 border border-purple-800/60 text-purple-200 space-y-1">
+                            <div className="flex items-center gap-2 font-bold text-purple-300 text-xs">
+                              <Info className="w-4 h-4 text-purple-400" />
+                              <span>ניתוח מקצועי של שורש הבעיה (מעבר לסימפטום):</span>
+                            </div>
+                            <div className="text-[11px] leading-relaxed text-purple-200/90 pr-6">
+                              {recs.rootCauseAnalysis}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Step By Step Treatment Plan with Inventory Matching & Web Search */}
                         {recs?.stepByStepPlan && recs.stepByStepPlan.length > 0 && (
                           <div className="space-y-2.5 bg-slate-950/90 p-4 rounded-2xl border border-slate-850">
                             <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
                               <Zap className="w-4 h-4 text-amber-400" />
-                              <span>המלצות טיפול מותאמות אישית לאיזון המים:</span>
+                              <span>תוכנית טיפול משולבת (שורש הבעיה + הקלה מיידית + אזהרות לוואי):</span>
                             </div>
 
                             <div className="space-y-2.5">
@@ -526,7 +539,13 @@ export default function WaterTestsPage() {
                                 >
                                   <div className="flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-2 font-bold text-white text-xs">
-                                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-300 text-[11px] flex items-center justify-center font-bold">
+                                      <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-bold ${
+                                        step.stepType === "ROOT_CAUSE"
+                                          ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                                          : step.stepType === "IMMEDIATE_RELIEF"
+                                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                          : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                                      }`}>
                                         {step.stepNumber || sIdx + 1}
                                       </span>
                                       <span>{step.title}</span>
@@ -542,8 +561,15 @@ export default function WaterTestsPage() {
                                     {step.instructions}
                                   </div>
 
+                                  {step.safetyWarning && (
+                                    <div className="mr-7 p-2 rounded-lg bg-amber-950/40 border border-amber-900/60 text-amber-300 text-[10px] flex items-center gap-1.5">
+                                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                      <span>{step.safetyWarning}</span>
+                                    </div>
+                                  )}
+
                                   {/* Chemical match badge */}
-                                  {step.chemical && step.chemical !== "ללא חומר" && step.chemical !== "תחזוקה רגילה" && (
+                                  {step.chemical && step.chemical !== "ללא חומר" && step.chemical !== "תחזוקה רגילה" && !step.chemical.includes("שטיפת פילטר") && (
                                     <div className="mr-7">
                                       {step.inInventory ? (
                                         <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/80 text-emerald-300 text-[11px] flex items-center justify-between">
@@ -585,6 +611,39 @@ export default function WaterTestsPage() {
                                 </div>
                               ))}
                             </div>
+                          </div>
+                        )}
+
+                        {/* Follow up actions & Prevention guidelines */}
+                        {((recs?.followUpRequirements && recs.followUpRequirements.length > 0) || (recs?.preventionGuidelines && recs.preventionGuidelines.length > 0)) && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                            {recs.followUpRequirements?.length > 0 && (
+                              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                                <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span>פעולות חובה להמשך (24-48 שעות):</span>
+                                </div>
+                                <ul className="text-[11px] text-slate-300 space-y-0.5 list-disc list-inside">
+                                  {recs.followUpRequirements.map((req: string, idx: number) => (
+                                    <li key={idx}>{req}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {recs.preventionGuidelines?.length > 0 && (
+                              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                                <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>הנחיות מניעה לפעמים הבאות:</span>
+                                </div>
+                                <ul className="text-[11px] text-slate-300 space-y-0.5 list-disc list-inside">
+                                  {recs.preventionGuidelines.map((prev: string, idx: number) => (
+                                    <li key={idx}>{prev}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
