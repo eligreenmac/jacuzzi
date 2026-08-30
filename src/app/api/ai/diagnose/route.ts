@@ -144,8 +144,8 @@ export async function POST(req: NextRequest) {
       daysSinceLastShock,
     });
 
-    // Save to WaterLog if requested
-    if (saveToLog) {
+    // Note: Water Doctor is a theoretical sandbox and does NOT write to WaterLog history.
+    if (saveToLog === true) {
       await prisma.waterLog.create({
         data: {
           userId: user.id,

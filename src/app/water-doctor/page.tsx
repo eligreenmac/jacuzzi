@@ -78,7 +78,7 @@ export default function WaterDoctorPage() {
           alkalinity: alkUnknown ? "UNKNOWN" : alkalinity ? parseFloat(alkalinity) : "UNKNOWN",
           imageBase64: imagePreview || undefined,
           imageMimeType: imageMimeType || undefined,
-          saveToLog: true,
+          saveToLog: false, // Pure theoretical sandbox - does not write to system history
         }),
       });
 
@@ -87,64 +87,10 @@ export default function WaterDoctorPage() {
 
       setDiagnosis(data.diagnosis);
       setAddedLedger(data.addedChemicalsLedger || []);
-      setSavedToLog(true);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const [executingStep, setExecutingStep] = useState<number | null>(null);
-  const [actionNotice, setActionNotice] = useState<string | null>(null);
-
-  const handleExecuteStep = async (step: any, isScheduleAction = false) => {
-    setExecutingStep(step.stepNumber);
-    setActionNotice(null);
-
-    let hoursAhead = 24;
-    if (step.title.includes("12 שעות") || step.instructions?.includes("12 שעות")) hoursAhead = 12;
-    else if (step.title.includes("6 שעות") || step.instructions?.includes("6 שעות")) hoursAhead = 6;
-    else if (step.title.includes("48 שעות") || step.instructions?.includes("48 שעות")) hoursAhead = 48;
-
-    try {
-      const res = await fetch("/api/log/execute-recommendation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          stepNumber: step.stepNumber,
-          title: step.title,
-          chemical: step.chemical,
-          amount: step.amount,
-          instructions: step.instructions,
-          actionType: isScheduleAction ? "SCHEDULE_FUTURE" : "EXECUTE_NOW",
-          hoursAhead,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "שגיאה בביצוע הפעולה");
-
-      setActionNotice(data.message || (isScheduleAction ? "המשימה תוזמנה בהצלחה ללוח השנה!" : "הפעולה בוצעה ותועדה בהצלחה ביומן!"));
-
-      // Update step status in memory
-      setDiagnosis((prev: any) => {
-        if (!prev || !prev.stepByStepPlan) return prev;
-        return {
-          ...prev,
-          stepByStepPlan: prev.stepByStepPlan.map((s: any) =>
-            s.stepNumber === step.stepNumber
-              ? isScheduleAction
-                ? { ...s, isScheduled: true, scheduledFor: data.scheduledFor, isExecuted: false }
-                : { ...s, isScheduled: false, isExecuted: true, executedAt: new Date().toISOString() }
-              : s
-          ),
-        };
-      });
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setExecutingStep(null);
     }
   };
 
@@ -163,13 +109,13 @@ export default function WaterDoctorPage() {
     <div className="space-y-8 pb-12">
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-2">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-bold border border-cyan-500/20">
-          <Sparkles className="w-4 h-4" />
-          <span>מופעל על ידי Gemini 3.7 AI • שקלול מלא של ארון החומרים, המינונים ומניעת מינון יתר</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-bold border border-purple-500/20">
+          <Sparkles className="w-4 h-4 text-purple-400" />
+          <span>מרחב ייעוץ ובדיקות תיאורטיות (Sandbox) • שיח פתוח ללא שמירה בהיסטוריה</span>
         </div>
-        <h1 className="text-3xl font-black text-white">רופא המים של הג'קוזי</h1>
+        <h1 className="text-3xl font-black text-white">רופא המים של הג'קוזי (ייעוץ תיאורטי)</h1>
         <p className="text-sm text-slate-300">
-          תאר את מצב המים, הזן ערכים שידועים לך (או סמן "לא יודע"), וה-AI יגיד לך בדיוק איזה חומרים מהארון להוסיף, ומה לחפש ברשת לרכישה.
+          מרחב ייעוץ פתוח לשאלות, תרחישים ובדיקות תיאורטיות. הנתונים כאן <strong>אינם נשמרים בהיסטוריית המערכת</strong> ואינם משפיעים על הנתונים הרשמיים של הג'קוזי.
         </p>
       </div>
 
@@ -431,18 +377,6 @@ export default function WaterDoctorPage() {
                 </div>
               </div>
 
-              {actionNotice && (
-                <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-700 text-emerald-200 text-xs flex items-center justify-between shadow-xl animate-fade-in">
-                  <div className="flex items-center gap-2.5 font-bold">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                    <span>{actionNotice}</span>
-                  </div>
-                  <button onClick={() => setActionNotice(null)} className="text-slate-400 hover:text-white">
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
               {/* Chemical Ledger Analysis (What was already added) */}
               {(diagnosis.recentAdditionsAnalysis?.length > 0 || addedLedger.length > 0) && (
                 <div className="bg-cyan-950/40 border border-cyan-800/80 rounded-2xl p-4 space-y-2">
@@ -654,57 +588,6 @@ export default function WaterDoctorPage() {
                           <span>{step.safetyWarning}</span>
                         </div>
                       )}
-
-                      {/* Action Button: Schedule Future Task vs Immediate Done */}
-                      <div className="mr-8 pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2 flex-wrap">
-                        {step.isExecuted ? (
-                          <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-800">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                            <span>
-                              בוצע ותועד ביומן {step.executedAt ? `(${new Date(step.executedAt).toLocaleDateString("he-IL")} ${new Date(step.executedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })})` : "✅"}
-                            </span>
-                          </div>
-                        ) : step.isScheduled ? (
-                          <div className="flex items-center justify-between gap-2 w-full flex-wrap">
-                            <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs bg-cyan-950/60 px-3 py-1.5 rounded-xl border border-cyan-800">
-                              <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                              <span>
-                                ⏳ תוזמן ללוח השנה {step.scheduledFor ? `ל-${new Date(step.scheduledFor).toLocaleDateString("he-IL")} ${new Date(step.scheduledFor).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}` : ""}
-                              </span>
-                            </div>
-
-                            <button
-                              type="button"
-                              disabled={executingStep === step.stepNumber}
-                              onClick={() => handleExecuteStep(step, false)}
-                              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow flex items-center gap-1.5 transition-all"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>סמן כבוצע כעת</span>
-                            </button>
-                          </div>
-                        ) : step.stepType === "FOLLOW_UP" || step.title.includes("בעוד") || step.title.includes("להמשך") ? (
-                          <button
-                            type="button"
-                            disabled={executingStep === step.stepNumber}
-                            onClick={() => handleExecuteStep(step, true)}
-                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
-                          >
-                            <Calendar className="w-4 h-4" />
-                            <span>{executingStep === step.stepNumber ? "מתזמן ללוח השנה..." : "📅 הכנס ללוח השנה (תזמן ליומן)"}</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={executingStep === step.stepNumber}
-                            onClick={() => handleExecuteStep(step, false)}
-                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>{executingStep === step.stepNumber ? "מתעד ביומן ומפחית מהארון..." : "✓ סמן כבוצע כעת ותעד ביומן"}</span>
-                          </button>
-                        )}
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -758,27 +641,20 @@ export default function WaterDoctorPage() {
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Sandbox Notice & Action Links */}
               <div className="flex items-center justify-between pt-4 border-t border-slate-800 flex-wrap gap-3">
-                <div className="text-xs text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>תוצאות האבחון נשמרו בהיסטוריית הבדיקות שלך!</span>
+                <div className="text-xs text-purple-300 flex items-center gap-2 bg-purple-950/40 px-3.5 py-2 rounded-xl border border-purple-850">
+                  <Info className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span><strong>מרחב ייעוץ תיאורטי בלבד:</strong> תוצאות אלו לא נשמרות בהיסטוריה ואינן משפיעות על זיכרון המערכת.</span>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <Link
-                    href="/inventory"
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
+                    href="/water-tests"
+                    className="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-lg shadow-cyan-600/20"
                   >
-                    <Package className="w-4 h-4 text-cyan-400" />
-                    <span>נהל ארון חומרים</span>
-                  </Link>
-
-                  <Link
-                    href="/calendar"
-                    className="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
-                  >
-                    <span>עבור ללוח השנה להזנת ביצוע</span>
+                    <FlaskConical className="w-4 h-4" />
+                    <span>עבור להזנת תוצאת אמת ביומן הבדיקות</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
