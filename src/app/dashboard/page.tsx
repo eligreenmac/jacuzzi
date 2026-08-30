@@ -61,9 +61,42 @@ export default function DashboardPage() {
   const daysSinceRefill = Math.max(0, Math.floor((Date.now() - refillDate.getTime()) / (1000 * 60 * 60 * 24)));
   const daysUntilNextRefill = Math.max(0, 90 - daysSinceRefill);
 
-  // Filter urgent & upcoming tasks
-  const pendingTasks = tasks.filter((t: any) => !t.isCompleted);
-  const completedTasks = tasks.filter((t: any) => t.isCompleted);
+  // Filter urgent & upcoming tasks based on Saturday-to-Saturday weekly cycle
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const day = todayStart.getDay(); // 0 (Sun) to 6 (Sat)
+  const offsetFromSaturday = (day + 1) % 7;
+  const startOfWeek = new Date(todayStart);
+  startOfWeek.setDate(todayStart.getDate() - offsetFromSaturday);
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  // Completed tasks: explicitly completed OR performed during this week
+  const completedTasks = tasks.filter((t: any) => {
+    if (t.isCompleted) return true;
+    if (t.lastDoneDate) {
+      const lastDone = new Date(t.lastDoneDate);
+      return lastDone >= startOfWeek && lastDone <= endOfWeek;
+    }
+    return false;
+  });
+
+  // Pending tasks for this week: NOT completed AND due <= endOfWeek AND NOT performed this week
+  const pendingTasks = tasks.filter((t: any) => {
+    if (t.isCompleted) return false;
+    const dueDate = new Date(t.nextDueDate);
+    if (t.lastDoneDate) {
+      const lastDone = new Date(t.lastDoneDate);
+      if (lastDone >= startOfWeek && dueDate > endOfWeek) {
+        return false; // Already executed for this weekly cycle!
+      }
+    }
+    return dueDate <= endOfWeek;
+  });
+
   const lowStockChemicals = chemicals.filter((c: any) => c.quantity <= (c.minThreshold || 100));
 
   return (
@@ -246,9 +279,13 @@ export default function DashboardPage() {
               {tasks.length > 0 ? (
                 (() => {
                   // Show pending first, then completed tasks
-                  const displayTasks = [...pendingTasks, ...completedTasks].slice(0, 3);
+                  const displayTasks = [
+                    ...pendingTasks.map((t: any) => ({ ...t, isDoneForView: false })),
+                    ...completedTasks.map((t: any) => ({ ...t, isDoneForView: true })),
+                  ].slice(0, 4);
+
                   return displayTasks.map((task: any) => {
-                    const isDone = task.isCompleted;
+                    const isDone = task.isDoneForView ?? task.isCompleted;
                     const isOverdue = !isDone && new Date(task.nextDueDate).getTime() < Date.now();
                     return (
                       <div
