@@ -1,0 +1,129 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { signToken } from "@/lib/auth";
+import { getDefaultMaintenanceTasks } from "@/lib/jacuzzi-calc";
+import bcrypt from "bcryptjs";
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const code = searchParams.get("code");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  if (!code) {
+    return NextResponse.redirect(`${appUrl}/login?error=missing_code`);
+  }
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = `${appUrl}/api/auth/google/callback`;
+
+  if (!clientId || !clientSecret) {
+    return NextResponse.redirect(`${appUrl}/login?error=google_not_configured`);
+  }
+
+  try {
+    // 1. Exchange authorization code for tokens
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    const tokenData = await tokenRes.json();
+    if (!tokenRes.ok || !tokenData.access_token) {
+      console.error("Google token error:", tokenData);
+      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
+    }
+
+    // 2. Fetch User Profile from Google
+    const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+
+    const googleUser = await userRes.json();
+    if (!googleUser.email) {
+      return NextResponse.redirect(`${appUrl}/login?error=google_no_email`);
+    }
+
+    const email = googleUser.email.toLowerCase().trim();
+    const name = googleUser.name || googleUser.given_name || "משתמש Google";
+
+    // 3. Find or Create user in database
+    let user = await prisma.user.findUnique({
+      where: { email },
+      include: { jacuzzi: true },
+    });
+
+    if (!user) {
+      const dummyPassword = await bcrypt.hash(Math.random().toString(36) + "google_auth_random", 10);
+      user = await prisma.user.create({
+        data: {
+          email,
+          name,
+          passwordHash: dummyPassword,
+          notificationEmail: email,
+          emailNotificationsEnabled: true,
+          jacuzzi: {
+            create: {
+              name: "הג'קוזי של " + name,
+              volumeLiters: 1200,
+              sanitizationType: "CHLORINE",
+              location: "OUTDOOR",
+              usageFrequency: "MEDIUM",
+            },
+          },
+        },
+        include: { jacuzzi: true },
+      });
+
+      // Initialize default tasks for new user
+      if (user.jacuzzi) {
+        const defaultTasks = getDefaultMaintenanceTasks({
+          volumeLiters: user.jacuzzi.volumeLiters,
+          sanitizationType: user.jacuzzi.sanitizationType,
+        });
+
+        for (const task of defaultTasks) {
+          await prisma.maintenanceTask.create({
+            data: {
+              userId: user.id,
+              title: task.title,
+              description: task.description,
+              category: task.category,
+              frequencyDays: task.frequencyDays,
+              nextDueDate: task.nextDueDate,
+              priority: task.priority,
+            },
+          });
+        }
+      }
+    }
+
+    // 4. Create Session JWT & Set Cookie
+    const token = await signToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name || undefined,
+    });
+
+    const response = NextResponse.redirect(`${appUrl}/dashboard`);
+    response.cookies.set("jacuzzi_session", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: "/",
+    });
+
+    return response;
+  } catch (err) {
+    console.error("Google Auth Exception:", err);
+    return NextResponse.redirect(`${appUrl}/login?error=server_error`);
+  }
+}
