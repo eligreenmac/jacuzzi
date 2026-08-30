@@ -215,13 +215,14 @@ ${JSON.stringify(data.addedChemicalsLedger || [], null, 2)}
 ${JSON.stringify(data.inventory || [], null, 2)}
 
 הנחיות חובה:
-1. **התחשבות בנחושת ומתכות**: אם מראה המים מצביע על METALLIC_COPPER (נחושת / טורקיז) או METALLIC_RUST (ברזל/חלודה), הסבר את מקור הבעיה (קורוזיה של גוף חימום מ-pH נמוך או מי מקור עשירים במתכות) והנחה להשתמש בחומר קושר מתכות (Metal Sequestrant / Metal Out) ולאזן מיד את ה-pH.
-2. **התחשבות במה שהוכנס כבר**: נתח את החומרים שהוכנסו לאחרונה לג'קוזי למניעת מינוני יתר (overdosing).
-3. **מינונים מותאמים אישית**: ספק מינון מדויק בגרם/מ"ל המחושב בדיוק לפי נפח ${data.volumeLiters} ליטר.
+1. **דיוק מוחלט בסיכום המצב**: אם ה-pH מאוזן ותקין, אל תכתוב שנדרש לאזן חומציות! התייחס בדיוק למה שדורש טיפול (למשל: קצף, בסיסיות נמוכה, או עכירות).
+2. **התחשבות בנחושת ומתכות**: אם מראה המים מצביע על METALLIC_COPPER (נחושת / טורקיז) או METALLIC_RUST (ברזל/חלודה), הסבר את מקור הבעיה (קורוזיה של גוף חימום מ-pH נמוך או מי מקור עשירים במתכות) והנחה להשתמש בחומר קושר מתכות (Metal Sequestrant / Metal Out) ולאזן מיד את ה-pH.
+3. **התחשבות במה שהוכנס כבר**: נתח את החומרים שהוכנסו לאחרונה לג'קוזי למניעת מינוני יתר (overdosing).
+4. **מינונים מותאמים אישית**: ספק מינון מדויק בגרם/מ"ל המחושב בדיוק לפי נפח ${data.volumeLiters} ליטר.
 
 החזר אך ורק תשובת JSON תקנית במבנה:
 {
-  "waterStatusSummary": "סיכום תמציתי ומדויק של מצב המים",
+  "waterStatusSummary": "סיכום תמציתי ומדויק של מצב המים (מותאם אישית לפרמטרים המדויקים)",
   "severity": "GOOD" | "ATTENTION" | "WARNING" | "CRITICAL",
   "safeToBathe": true | false,
   "needsFullDrain": true | false,
@@ -335,6 +336,8 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
   const historicalInsights: string[] = [];
   const missingTestsAlerts: string[] = [];
   const recentAdditionsAnalysis: string[] = [];
+  const issuesFound: string[] = [];
+
   let severity: DiagnosisResponse["severity"] = "GOOD";
   let safeToBathe = true;
   let needsFullDrain = false;
@@ -365,60 +368,38 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     historicalInsights.push(`בדיקת ה-pH הקודמת בוצעה לפני ${data.daysSinceLastPhTest} ימים.`);
   }
 
-  // Metallic Copper Issue
-  if (data.waterClarity === "METALLIC_COPPER") {
-    severity = "WARNING";
-    safeToBathe = false;
-    estimatedRecoveryTime = "12-24 שעות";
-    steps.push({
-      stepNumber: stepCount++,
-      title: "טיפול בנחושת ומתכות מחומצנות (גוון ירוק-טורקיז)",
-      chemical: "חומר קושר מתכות (Metal Sequestrant / Metal Out)",
-      amount: `${Math.round((data.volumeLiters / 1000) * 30)} מ\"ל`,
-      instructions: "הוסף חומר קושר מתכות כשהג'טים פועלים למשך 30 דקות. החומר עוטף את יוני הנחושת ומונע הכתמה ושינוי צבע.",
-      safetyWarning: "מים עם נחושת מחומצנת עלולים להכתים שיער בהיר ודפנות אקריל בירוק.",
-    });
-
-    steps.push({
-      stepNumber: stepCount++,
-      title: "איזון חומציות (pH) למניעת שחיקת נחושת מגוף החימום",
-      chemical: "בדיקת מקלון + מעלה pH במידת הצורך",
-      amount: "לפי תוצאות המקלון",
-      instructions: "בדוק שרמת ה-pH אינה מתחת ל-7.2. מים חומציים מאכלים את גופי החימום הנחושתיים של הג'קוזי.",
-    });
-  } else if (data.waterClarity === "METALLIC_RUST") {
-    severity = "WARNING";
-    safeToBathe = false;
-    estimatedRecoveryTime = "12-24 שעות";
-    steps.push({
-      stepNumber: stepCount++,
-      title: "טיפול בחלודה וברזל (גוון צהבהב / חום)",
-      chemical: "מסיר וקושר מתכות וברזל (Metal Free / Iron Out)",
-      amount: `${Math.round((data.volumeLiters / 1000) * 30)} מ\"ל`,
-      instructions: "הוסף מסיר מתכות, הפעל סירקולציה למשך 2-3 שעות ולאחר מכן שטוף את הפילטר.",
-    });
-  }
-
+  // 1. Check pH
+  let phIsIdeal = false;
   if (typeof data.ph === "number") {
-    const phAdj = calculatePhAdjustment(data.volumeLiters, data.ph);
-    if (phAdj) {
-      severity = severity === "GOOD" ? "ATTENTION" : severity;
-      steps.push({
-        stepNumber: stepCount++,
-        title: phAdj.action === "REDUCE_PH" ? "הורדת רמת החומציות (pH)" : "העלאת רמת החומציות (pH)",
-        chemical: phAdj.chemical,
-        amount: `${phAdj.amountGrams} גרם`,
-        instructions: phAdj.instruction,
-        safetyWarning: "אין לערבב חומרים יחד בדלי. יש להמיס כל חומר בנפרד במים פושרים.",
-      });
+    if (data.ph >= 7.2 && data.ph <= 7.6) {
+      phIsIdeal = true;
+    } else {
+      const phAdj = calculatePhAdjustment(data.volumeLiters, data.ph);
+      if (phAdj) {
+        severity = severity === "GOOD" ? "ATTENTION" : severity;
+        issuesFound.push(phAdj.action === "REDUCE_PH" ? "רמת ה-pH גבוהה" : "רמת ה-pH נמוכה");
+        steps.push({
+          stepNumber: stepCount++,
+          title: phAdj.action === "REDUCE_PH" ? "הורדת רמת החומציות (pH)" : "העלאת רמת החומציות (pH)",
+          chemical: phAdj.chemical,
+          amount: `${phAdj.amountGrams} גרם`,
+          instructions: phAdj.instruction,
+          safetyWarning: "אין לערבב חומרים יחד בדלי. יש להמיס כל חומר בנפרד במים פושרים.",
+        });
+      }
     }
   }
 
+  // 2. Check Chlorine
+  let clIsIdeal = false;
   if (typeof data.freeChlorine === "number") {
-    if (data.freeChlorine < 2.0) {
+    if (data.freeChlorine >= 2.0 && data.freeChlorine <= 5.0) {
+      clIsIdeal = true;
+    } else if (data.freeChlorine < 2.0) {
       const clAdj = calculateChlorineDose(data.volumeLiters, data.freeChlorine);
       if (clAdj) {
         severity = severity === "GOOD" ? "ATTENTION" : severity;
+        issuesFound.push("רמת הכלור/חיטוי נמוכה");
         steps.push({
           stepNumber: stepCount++,
           title: "העלאת רמת חומר החיטוי",
@@ -431,6 +412,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     } else if (data.freeChlorine > 8.0) {
       severity = "WARNING";
       safeToBathe = false;
+      issuesFound.push("רמת הכלור גבוהה מדי");
       steps.push({
         stepNumber: stepCount++,
         title: "רמת כלור גבוהה מדי",
@@ -442,10 +424,56 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     }
   }
 
-  if (data.waterClarity === "GREEN" || data.waterClarity === "BAD_ODOR") {
+  // 3. Check Alkalinity (TA)
+  if (typeof data.alkalinity === "number") {
+    if (data.alkalinity < 80) {
+      severity = severity === "GOOD" ? "ATTENTION" : severity;
+      issuesFound.push("הבסיסיות (TA) נמוכה");
+      const alkDiff = 100 - data.alkalinity;
+      const alkGrams = Math.round((alkDiff / 10) * (data.volumeLiters / 1000) * 18);
+      steps.push({
+        stepNumber: stepCount++,
+        title: "העלאת וייצוב בסיסיות המים (Total Alkalinity)",
+        chemical: "מעלה בסיסיות (Alkalinity Increaser / סודיום ביקרבונט)",
+        amount: `${alkGrams} גרם`,
+        instructions: `הוסף כ-${alkGrams} גרם מעלה בסיסיות כדי לייצב את ה-pH ולמנוע תנודות חומציות ושחיקת מתכות.`,
+      });
+    } else if (data.alkalinity > 150) {
+      issuesFound.push("הבסיסיות (TA) גבוהה");
+    }
+  }
+
+  // 4. Check Clarity / Appearance Issues
+  if (data.waterClarity === "METALLIC_COPPER") {
+    severity = "WARNING";
+    safeToBathe = false;
+    estimatedRecoveryTime = "12-24 שעות";
+    issuesFound.push("נוכחות נחושת מחומצנת במים");
+    steps.push({
+      stepNumber: stepCount++,
+      title: "טיפול בנחושת ומתכות מחומצנות (גוון ירוק-טורקיז)",
+      chemical: "חומר קושר מתכות (Metal Sequestrant / Metal Out)",
+      amount: `${Math.round((data.volumeLiters / 1000) * 30)} מ\"ל`,
+      instructions: "הוסף חומר קושר מתכות כשהג'טים פועלים למשך 30 דקות. החומר עוטף את יוני הנחושת ומונע הכתמה ושינוי צבע.",
+      safetyWarning: "מים עם נחושת מחומצנת עלולים להכתים שיער בהיר ודפנות אקריל בירוק.",
+    });
+  } else if (data.waterClarity === "METALLIC_RUST") {
+    severity = "WARNING";
+    safeToBathe = false;
+    estimatedRecoveryTime = "12-24 שעות";
+    issuesFound.push("נוכחות ברזל וחלודה במים");
+    steps.push({
+      stepNumber: stepCount++,
+      title: "טיפול בחלודה וברזל (גוון צהבהב / חום)",
+      chemical: "מסיר וקושר מתכות וברזל (Metal Free / Iron Out)",
+      amount: `${Math.round((data.volumeLiters / 1000) * 30)} מ\"ל`,
+      instructions: "הוסף מסיר מתכות, הפעל סירקולציה למשך 2-3 שעות ולאחר מכן שטוף את הפילטר.",
+    });
+  } else if (data.waterClarity === "GREEN" || data.waterClarity === "BAD_ODOR") {
     severity = "CRITICAL";
     safeToBathe = false;
     estimatedRecoveryTime = "24-48 שעות";
+    issuesFound.push("עכירות ירוקה או ריח חריף");
     const shockGrams = calculateShockDose(data.volumeLiters) * 1.5;
     steps.push({
       stepNumber: stepCount++,
@@ -457,6 +485,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     });
   } else if (data.waterClarity === "FOAMY") {
     severity = severity === "GOOD" ? "ATTENTION" : severity;
+    issuesFound.push("הקצפה במים");
     steps.push({
       stepNumber: stepCount++,
       title: "הסרת קצף ושומנים",
@@ -466,6 +495,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     });
   } else if (data.waterClarity === "VERY_CLOUDY" || data.waterClarity === "SLIGHTLY_CLOUDY") {
     severity = severity === "GOOD" ? "ATTENTION" : severity;
+    issuesFound.push("עכירות מים");
     steps.push({
       stepNumber: stepCount++,
       title: "הצללת מים ושטיפת פילטר",
@@ -475,25 +505,30 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     });
   }
 
+  // Formulate accurate waterStatusSummary
+  let statusSummary = "";
+  if (phIsIdeal && clIsIdeal && issuesFound.length === 0) {
+    statusSummary = "המים במצב מעולה, מאוזנים וצלולים לחלוטין! ✨";
+  } else if (phIsIdeal && clIsIdeal && issuesFound.length > 0) {
+    statusSummary = `רמת ה-pH והחיטוי מעולים ומאוזנים! נדרש טיפול נקודתי בנושא: ${issuesFound.join(", ")}.`;
+  } else if (issuesFound.length > 0) {
+    statusSummary = `נמצאו מדדים הדורשים התייחסות: ${issuesFound.join(", ")}.`;
+  } else {
+    statusSummary = "המים במצב תקין. המשך בשגרת הבדיקות והתחזוקה.";
+  }
+
   if (steps.length === 0) {
     steps.push({
       stepNumber: 1,
       title: "תחזוקה שוטפת ושימור",
       chemical: "תחזוקה רגילה",
       amount: "לפי שגרה",
-      instructions: "המים שלך במצב תקין! המשך בבדיקה שבועית רגילה ושטיפת פילטר.",
+      instructions: "המים שלך במצב תקין ומאוזנים! המשך בבדיקה שבועית רגילה ושטיפת פילטר.",
     });
   }
 
   return {
-    waterStatusSummary:
-      severity === "GOOD"
-        ? "המים במצב מעולה ומאוזנים!"
-        : severity === "ATTENTION"
-        ? "נדרש איזון קל של החומציות או המצליל."
-        : severity === "WARNING"
-        ? "המים אינם מאוזנים או מושפעים ממתכות/כלור ודורשים טיפול לפני רחצה."
-        : "מצב מים ירוד / זיהום. נדרש שוק מסיבי או ריקון ומילוי מחדש.",
+    waterStatusSummary: statusSummary,
     severity,
     safeToBathe,
     needsFullDrain,
@@ -505,7 +540,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     generalTips: [
       "זכור תמיד לשטוף את הפילטר אחת לשבוע כדי לאפשר סירקולציה וחיטוי יעיל.",
       "מומלץ להיכנס לג'קוזי ללא קרמים או שמנים למניעת קצף.",
-      "הקפד על רמת pH תקינה (7.2-7.6) כדי למנוע קורוזיה ושחיקת נחושת מגופי החימום.",
+      "הקפד על רמת בסיסיות (TA) של 80-120 כדי לשמור על יציבות ה-pH.",
     ],
   };
 }
