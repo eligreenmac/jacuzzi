@@ -188,28 +188,30 @@ export async function identifyChemicalFromImage(
 }`;
 
   const apiKeyStr = (process.env.GEMINI_API_KEY || "").trim();
+  const targetModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
   const modelsToTry = [
-    process.env.GEMINI_MODEL,
+    targetModel,
     "gemini-2.5-flash",
     "gemini-2.0-flash",
-    "gemini-1.5-flash",
-  ].filter(Boolean) as string[];
+    "gemini-2.5-pro",
+    "gemini-2.0-flash-exp",
+  ].filter((m, i, arr) => m && arr.indexOf(m) === i) as string[];
 
   let lastError: any = null;
 
-  // 1. Try via official SDK
+  // 1. Try via official Google GenAI SDK (Gemini 2.5 / 2.0)
   for (const model of modelsToTry) {
     try {
       const response = await ai.models.generateContent({
         model: model,
         contents: [
+          prompt,
           {
             inlineData: {
               mimeType: mime,
               data: cleanBase64,
             },
           },
-          { text: prompt },
         ],
       });
 
@@ -227,9 +229,9 @@ export async function identifyChemicalFromImage(
     }
   }
 
-  // 2. Direct REST fallback via Google Generative Language API
+  // 2. Direct REST fallback via Google Generative Language API (Gemini 2.5 / 2.0)
   if (apiKeyStr) {
-    for (const model of ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]) {
+    for (const model of modelsToTry) {
       try {
         const restRes = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKeyStr}`,
@@ -267,7 +269,7 @@ export async function identifyChemicalFromImage(
         } else {
           const errData = await restRes.json().catch(() => ({}));
           console.warn(`Direct REST model ${model} error:`, errData);
-          lastError = errData?.error || lastError;
+          lastError = errData?.error?.message || errData?.error || lastError;
         }
       } catch (err: any) {
         console.warn(`Direct REST model ${model} fetch failed:`, err);
@@ -277,7 +279,7 @@ export async function identifyChemicalFromImage(
   }
 
   throw new Error(
-    `שגיאה בזיהוי התמונה ב-AI: ${lastError?.message || JSON.stringify(lastError) || "לא התקבל מענה ממודל הראייה"}. אנא ודא שהתמונה ברורה ושמפתח ה-GEMINI_API_KEY מוגדר ותקין ב-Vercel.`
+    `שגיאה בזיהוי התמונה במודל Gemini 2.5 Flash (${lastError?.message || JSON.stringify(lastError) || "שגיאת תקשורת"}). ודא שמפתח ה-GEMINI_API_KEY מוגדר ותקין ב-Vercel.`
   );
 }
 
