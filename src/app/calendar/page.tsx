@@ -25,6 +25,8 @@ import {
   Save,
   ExternalLink,
   FlaskConical,
+  Zap,
+  Droplets,
 } from "lucide-react";
 
 // Standard Test Strip Range Scales
@@ -124,6 +126,74 @@ export default function CalendarPage() {
   // Email reminder state
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState<{ text: string; previewUrl?: string; isWarning?: boolean } | null>(null);
+
+  // Proactive Maintenance (פעולת אחזקה יזומה)
+  const [isProactiveModalOpen, setIsProactiveModalOpen] = useState(false);
+  const [proactiveText, setProactiveText] = useState("");
+  const [proactiveDate, setProactiveDate] = useState(new Date().toISOString().slice(0, 10));
+  const [isAnalyzingProactive, setIsAnalyzingProactive] = useState(false);
+  const [proactiveAnalysis, setProactiveAnalysis] = useState<any | null>(null);
+  const [isApplyingProactive, setIsApplyingProactive] = useState(false);
+
+  const handleAnalyzeProactive = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!proactiveText.trim()) return;
+
+    setIsAnalyzingProactive(true);
+    try {
+      const res = await fetch("/api/ai/proactive-maintenance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          freeText: proactiveText,
+          actionDate: proactiveDate,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "שגיאה בניתוח הפעולה");
+
+      setProactiveAnalysis(data.analysis);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsAnalyzingProactive(false);
+    }
+  };
+
+  const handleApplyProactive = async () => {
+    if (!proactiveAnalysis) return;
+
+    setIsApplyingProactive(true);
+    try {
+      const res = await fetch("/api/ai/proactive-maintenance/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          freeText: proactiveText,
+          actionDate: proactiveDate,
+          scheduleShifts: proactiveAnalysis.scheduleShifts,
+          newTasksToCreate: proactiveAnalysis.newTasksToCreate,
+          updateJacuzziRefill: proactiveAnalysis.updateJacuzziRefill,
+          suggestedDiaryTitle: proactiveAnalysis.suggestedDiaryTitle,
+          suggestedDiaryContent: proactiveAnalysis.suggestedDiaryContent,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "שגיאה בהחלת השינויים");
+
+      setActionNotice(data.message || "פעולת האחזקה עודכנה ולוח הזמנים הותאם בהצלחה!");
+      setIsProactiveModalOpen(false);
+      setProactiveAnalysis(null);
+      setProactiveText("");
+      loadData();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsApplyingProactive(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -535,6 +605,18 @@ export default function CalendarPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => {
+              setIsProactiveModalOpen(true);
+              setProactiveAnalysis(null);
+              setProactiveText("");
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/25 transition-all hover:scale-105"
+          >
+            <Zap className="w-4 h-4 text-slate-950 fill-slate-950" />
+            <span>⚡ פעולת אחזקה יזומה</span>
+          </button>
+
           <button
             onClick={() => {
               setSelectedDay(new Date());
@@ -1526,6 +1608,229 @@ export default function CalendarPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Proactive Maintenance Modal (Step 1: Input & AI Trigger) */}
+      {isProactiveModalOpen && !proactiveAnalysis && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl animate-scale-up">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <Zap className="w-5 h-5 fill-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">פעולת אחזקה יזומה (מלל חופשי)</h2>
+                  <p className="text-[11px] text-slate-400">ה-AI ינתח את הפעולה, ויציג התרעה לאישורך לפני שינוי זימונים</p>
+                </div>
+              </div>
+              <button onClick={() => setIsProactiveModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAnalyzeProactive} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">תאריך ביצוע הפעולה</label>
+                <input
+                  type="date"
+                  required
+                  value={proactiveDate}
+                  onChange={(e) => setProactiveDate(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs font-bold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300">
+                  תאר במלל חופשי מה ביצעת בג'קוזי:
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={proactiveText}
+                  onChange={(e) => setProactiveText(e.target.value)}
+                  placeholder="למשל: החלפתי 30% ממי הג'קוזי במים נקיים ושטפתי את הפילטר..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs leading-relaxed focus:border-amber-500"
+                />
+
+                {/* Quick suggestion chips */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span className="text-[10px] text-slate-400">הצעות מהירות:</span>
+                  {[
+                    "החלפתי 30% ממי הג'קוזי במים נקיים",
+                    "החלפתי חצי מים (50%) ושטפתי פילטר",
+                    "ריקון ומילוי מים מלא (100%)",
+                    "שטיפת פילטר יסודית במים",
+                    "טיפול שוק מחמצן ללא כלור",
+                  ].map((chip, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setProactiveText(chip)}
+                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[10px] transition-all border border-slate-700"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-800/50 text-amber-300 text-[11px] flex items-start gap-2">
+                <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <span>
+                  💡 <strong>דוגמה להשפעה:</strong> אם החלפת מים היום, ה-AI יזהה שאין טעם להוסיף ברום/חיטוי מחר ויציע לדחות את הזימון כדי למנוע בזבוז ולתת למים להתאזן תחילה.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsProactiveModalOpen(false)}
+                  className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                >
+                  ביטול
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAnalyzingProactive || !proactiveText.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 text-slate-950 rounded-xl text-xs font-black shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>{isAnalyzingProactive ? "ה-AI מנתח ומחשב זימונים..." : "✨ נתח פעולה והצע התאמת זימונים"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Proactive Maintenance Confirmation Modal (Step 2: AI Proposal & User Confirmation) */}
+      {proactiveAnalysis && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 max-w-2xl w-full space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto animate-scale-up">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <ShieldAlert className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">התרעה לאישור: התאמת לוח זמנים בעקבות פעולה יזומה</h2>
+                  <p className="text-[11px] text-slate-400">בדוק את השינויים שה-AI מציע לפני החלתם על לוח השנה</p>
+                </div>
+              </div>
+              <button onClick={() => setProactiveAnalysis(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* AI Understanding Card */}
+            <div className="bg-slate-950 p-4 rounded-2xl border border-cyan-900/60 space-y-2">
+              <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <span>ניתוח ה-AI של הפעולה:</span>
+              </div>
+              <div className="text-xs text-white font-bold">{proactiveAnalysis.understanding}</div>
+              <div className="text-xs text-slate-300 leading-relaxed pr-5">
+                {proactiveAnalysis.chemicalImpact}
+              </div>
+            </div>
+
+            {/* Proposed Schedule Shifts */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-amber-300 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-400" />
+                <span>זימונים קיימים שיוזזו בלוח השנה ({proactiveAnalysis.scheduleShifts.length}):</span>
+              </h3>
+
+              {proactiveAnalysis.scheduleShifts.length === 0 ? (
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs">
+                  אין זימונים קרובים שדורשים דחייה או הזזה.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {proactiveAnalysis.scheduleShifts.map((shift: any, idx: number) => (
+                    <div key={idx} className="p-3 rounded-xl bg-slate-950 border border-amber-900/40 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                        <span className="font-bold text-white">{shift.taskTitle}</span>
+                        <div className="flex items-center gap-2 font-bold">
+                          <span className="line-through text-slate-500 text-[11px]">
+                            {new Date(shift.currentDueDate).toLocaleDateString("he-IL")}
+                          </span>
+                          <span className="text-amber-400">➔</span>
+                          <span className="text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-800 text-[11px]">
+                            מועד חדש: {new Date(shift.newDueDate).toLocaleDateString("he-IL")} (+{shift.shiftDays} ימים)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-amber-300/90 leading-relaxed">
+                        💡 {shift.reason}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* New Tasks to Create */}
+            {proactiveAnalysis.newTasksToCreate?.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold text-cyan-300 flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-cyan-400" />
+                  <span>משימות מעקב חדשות שיתווספו ללוח השנה:</span>
+                </h3>
+
+                <div className="space-y-2">
+                  {proactiveAnalysis.newTasksToCreate.map((newTask: any, idx: number) => (
+                    <div key={idx} className="p-3 rounded-xl bg-slate-950 border border-cyan-900/40 space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-white">{newTask.title}</span>
+                        <span className="text-cyan-300 font-bold text-[11px]">
+                          מועד יעד: {new Date(newTask.dueDate).toLocaleDateString("he-IL")} {new Date(newTask.dueDate).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-400">{newTask.description}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Jacuzzi Refill Notification */}
+            {proactiveAnalysis.updateJacuzziRefill && (
+              <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-800/60 text-blue-200 text-xs flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-blue-400 shrink-0" />
+                <span>
+                  <strong>עדכון הגדרות ג'קוזי:</strong> תאריך מילוי המים האחרון יעודכן להיום ({new Date(proactiveDate).toLocaleDateString("he-IL")}).
+                </span>
+              </div>
+            )}
+
+            {/* Action Buttons: Confirm vs Reject */}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-800 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setProactiveAnalysis(null);
+                  setIsProactiveModalOpen(false);
+                }}
+                className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all"
+              >
+                ✕ בטל (אל תשנה זימונים)
+              </button>
+
+              <button
+                type="button"
+                disabled={isApplyingProactive}
+                onClick={handleApplyProactive}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-600/25 flex items-center gap-2 transition-all hover:scale-105 disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{isApplyingProactive ? "מעדכן לוח שנה ויומן..." : "✓ אשר והחל שינויים בלוח השנה וביומן"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

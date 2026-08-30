@@ -823,3 +823,278 @@ function generateRuleBasedInventoryAnalysis(
     ],
   };
 }
+
+export interface ProactiveMaintenanceRequest {
+  freeText: string;
+  actionDate?: string | Date;
+  volumeLiters: number;
+  sanitizationType: string;
+  lastRefillDate?: string | Date;
+  currentTasks: Array<{
+    id: string;
+    title: string;
+    description?: string | null;
+    category: string;
+    frequencyDays: number;
+    nextDueDate: string | Date;
+  }>;
+}
+
+export interface ProactiveMaintenanceShift {
+  taskId: string;
+  taskTitle: string;
+  currentDueDate: string;
+  newDueDate: string;
+  shiftDays: number;
+  reason: string;
+}
+
+export interface ProactiveMaintenanceNewTask {
+  title: string;
+  description: string;
+  hoursAhead: number;
+  dueDate: string;
+  priority: "MEDIUM" | "HIGH";
+}
+
+export interface ProactiveMaintenanceResponse {
+  understanding: string;
+  chemicalImpact: string;
+  updateJacuzziRefill: boolean;
+  refillPercentage?: number;
+  scheduleShifts: ProactiveMaintenanceShift[];
+  newTasksToCreate: ProactiveMaintenanceNewTask[];
+  suggestedDiaryTitle: string;
+  suggestedDiaryContent: string;
+}
+
+export async function analyzeProactiveMaintenance(
+  req: ProactiveMaintenanceRequest
+): Promise<ProactiveMaintenanceResponse> {
+  const actionTime = req.actionDate ? new Date(req.actionDate).getTime() : Date.now();
+  const text = req.freeText.toLowerCase();
+
+  const ai = getAiClient();
+  if (ai) {
+    try {
+      const prompt = `
+אתה מומחה מים וטכנאי ג'קוזי בכיר. המשתמש ביצע פעולת אחזקה יזומה בג'קוזי ותיאר אותה במלל חופשי.
+עליך לנתח מה בדיוק בוצע, מה ההשפעה על כימיית המים, וכיצד יש להתאים את לוח הזמנים והמשימות הקרובות של הג'קוזי.
+
+נתוני הג'קוזי:
+- נפח: ${req.volumeLiters} ליטר
+- שיטת חיטוי: ${req.sanitizationType}
+- תאריך הפעולה: ${new Date(actionTime).toLocaleDateString("he-IL")}
+
+תיאור הפעולה היזומה של המשתמש:
+"${req.freeText}"
+
+משימות מתוזמנות קיימות בלוח השנה:
+${JSON.stringify(req.currentTasks, null, 2)}
+
+הנחיות קריטיות להתאמת לוח הזמנים:
+1. החלפת מים חלקית או מלאה (Partial / Full Water Change):
+   - אם הוחלפו חלק מהמים (למשל 20%-50% או "החלפתי חלק מהמים" / "מילאתי מים חדשים"):
+     - המים החדשים צריכים להסתחרר ולהתאזן קודם.
+     - אסור להוסיף חיטוי שגרתי (ברום/כלור שבועי) למחרת! אם יש משימת חיטוי/ברום/כלור בימים הקרובים (1-3 ימים), יש לדחות אותה ב-3 עד 4 ימים!
+     - יש ליצור משימה חדשה: "בדיקת מקלון ראשונית למים החדשים" בעוד 12-24 שעות.
+   - אם הוחלפו כל המים (ריקון ומילוי מלא):
+     - יש לדחות את כל המשימות השבועיות הקיימות ב-4 ימים ולהגדיר updateJacuzziRefill: true.
+2. שטיפת פילטר / ניקוי מסנן:
+   - אם המשתמש ציין ששטף/ניקה את הפילטר: כל משימת "שטיפת פילטר" מתוזמנת קרובה צריכה להידחות ל-7 ימים לאחר מועד הפעולה הנוכחית.
+3. שוק / חיטוי חזק (MPS / Shock):
+   - אם בוצע שוק: יש לדחות את משימת השוק הבאה ב-7 עד 14 ימים.
+4. ניקוי צנרת / שטיפת ג'טים עמוקה:
+   - יש לעדכן את משימת הניקוי הרבעונית ב-90 ימים קדימה.
+
+ענה אך ורק במבנה JSON תקין:
+{
+  "understanding": "הסבר תמציתי ומדויק של מה שהבנת שבוצע (למשל: החלפה חלקית של 30% מהמים וסירקולציה)",
+  "chemicalImpact": "הסבר מה ההשפעה הכימית ומדוע יש או אין לשנות משימות (למשל: המים הטריים דיללו את הריכוז, אין להוסיף ברום מחר אלא להמתין לבדיקת בסיס)",
+  "updateJacuzziRefill": false,
+  "refillPercentage": 30,
+  "scheduleShifts": [
+    {
+      "taskId": "מזהה המשימה הקיימת שנדחית",
+      "taskTitle": "שם המשימה",
+      "currentDueDate": "תאריך יעד נוכחי ב-ISO",
+      "newDueDate": "תאריך יעד חדש ב-ISO",
+      "shiftDays": 3,
+      "reason": "סיבת הדחייה/השינוי"
+    }
+  ],
+  "newTasksToCreate": [
+    {
+      "title": "בדיקת מקלון ראשונית למים החדשים",
+      "description": "בדיקת pH, בסיסיות וחיטוי לאחר 12 שעות סירקולציה של המים המעורבים",
+      "hoursAhead": 16,
+      "dueDate": "תאריך מחושב ב-ISO",
+      "priority": "HIGH"
+    }
+  ],
+  "suggestedDiaryTitle": "פעולת אחזקה יזומה: החלפת מים חלקית",
+  "suggestedDiaryContent": "הוחלפו כ-30% ממי הג'קוזי במים נקיים."
+}
+`;
+
+      const response = await ai.models.generateContent({
+        model: preferredModel,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.2,
+        },
+      });
+
+      const raw = response.text ? response.text.trim() : "";
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return parsed;
+      }
+    } catch (err) {
+      console.error("AI Proactive Maintenance analysis error, falling back to rule engine:", err);
+    }
+  }
+
+  return generateRuleBasedProactiveMaintenance(req);
+}
+
+function generateRuleBasedProactiveMaintenance(
+  req: ProactiveMaintenanceRequest
+): ProactiveMaintenanceResponse {
+  const text = req.freeText.toLowerCase();
+  const actionTime = req.actionDate ? new Date(req.actionDate).getTime() : Date.now();
+  const actionDateObj = new Date(actionTime);
+
+  const scheduleShifts: ProactiveMaintenanceShift[] = [];
+  const newTasksToCreate: ProactiveMaintenanceNewTask[] = [];
+
+  let understanding = "פעולת אחזקה יזומה בג'קוזי";
+  let chemicalImpact = "הפעולה עודכנה. לוח הזמנים נבדק להתאמות.";
+  let updateJacuzziRefill = false;
+  let refillPercentage = 0;
+
+  const isWaterChange =
+    text.includes("החלפ") ||
+    text.includes("החלפת") ||
+    text.includes("החלפתי") ||
+    text.includes("מים חדשים") ||
+    text.includes("מילאתי") ||
+    text.includes("מילוי") ||
+    text.includes("ריקון") ||
+    text.includes("מים");
+
+  const isFilterWash =
+    text.includes("פילטר") ||
+    text.includes("מסנן") ||
+    text.includes("שטפתי") ||
+    text.includes("שטיפה") ||
+    text.includes("ניקוי פילטר");
+
+  const isShock =
+    text.includes("שוק") ||
+    text.includes("חיטוי") ||
+    text.includes("mps") ||
+    text.includes("כלור מרוכז");
+
+  // Analyze water change
+  if (isWaterChange) {
+    const isFull = text.includes("מלא") || text.includes("הכל") || text.includes("100%") || text.includes("ריקון ומילוי");
+    if (isFull) {
+      understanding = "ריקון ומילוי מלא של כל מי הג'קוזי (100% מים טריים)";
+      chemicalImpact = "המים טריים לחלוטין. יש לאפשר להם להגיע לטמפרטורת יעד ולהסתחרר 24 שעות. כל משימות החיטוי הישנות נדחות עד לבדיקת בסיס ראשונית.";
+      updateJacuzziRefill = true;
+      refillPercentage = 100;
+    } else {
+      // Partial change
+      refillPercentage = text.includes("חצי") || text.includes("50%") ? 50 : text.includes("שליש") || text.includes("30%") ? 30 : 25;
+      understanding = `החלפה חלקית של כ-${refillPercentage}% ממי הג'קוזי (כ-${Math.round((req.volumeLiters * refillPercentage) / 100)} ליטר מים טריים)`;
+      chemicalImpact = "הוספת מים טריים דיללה את ריכוז החיטוי ושינתה מעט את ה-pH והבסיסיות. אין להוסיף ברום/כלור שגרתי מחר אלא לאפשר סירקולציה ולבצע בדיקת מקלון ראשונית.";
+    }
+
+    // Shift upcoming sanitizer tasks (bromine / chlorine / daily sanitizer)
+    for (const task of req.currentTasks) {
+      const taskDue = new Date(task.nextDueDate).getTime();
+      const daysDiff = (taskDue - actionTime) / (1000 * 3600 * 24);
+      const isSanitizer =
+        task.title.includes("ברום") ||
+        task.title.includes("כלור") ||
+        task.title.includes("חיטוי") ||
+        task.title.includes("בסיסיות");
+
+      if (isSanitizer && daysDiff >= -0.5 && daysDiff <= 3) {
+        const shiftDays = 3;
+        const newDue = new Date(taskDue + shiftDays * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays,
+          reason: "דחייה ב-3 ימים: בעקבות החלפת המים יש לאפשר סירקולציה ולבדוק ערכי בסיס לפני הוספת חיטוי שגרתי.",
+        });
+      }
+    }
+
+    // Add baseline test task
+    const baselineDueDate = new Date(actionTime + 16 * 3600 * 1000);
+    newTasksToCreate.push({
+      title: "בדיקת מקלון ראשונית למים החדשים",
+      description: "בדיקת pH, בסיסיות (TA) וחיטוי לאחר סירקולציה של המים שהוחלפו",
+      hoursAhead: 16,
+      dueDate: baselineDueDate.toISOString(),
+      priority: "HIGH",
+    });
+  }
+
+  // Analyze filter wash
+  if (isFilterWash) {
+    if (!isWaterChange) {
+      understanding = "שטיפת וניקוי פילטר הג'קוזי";
+      chemicalImpact = "הפילטר נקי ומאפשר סירקולציה וסינון אופטימליים. מועד שטיפת הפילטר הבא נדחה ב-7 ימים ממועד הפעולה.";
+    }
+
+    for (const task of req.currentTasks) {
+      if (task.title.includes("פילטר") || task.title.includes("מסנן")) {
+        const newDue = new Date(actionTime + 7 * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays: 7,
+          reason: "הפילטר נשטף היום באופן יזום - המשימה נדחתה ב-7 ימים ממועד השטיפה.",
+        });
+      }
+    }
+  }
+
+  // Analyze shock
+  if (isShock) {
+    for (const task of req.currentTasks) {
+      if (task.title.includes("שוק")) {
+        const newDue = new Date(actionTime + 7 * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays: 7,
+          reason: "בוצע טיפול שוק היום - משימת השוק הבאה נדחתה ב-7 ימים.",
+        });
+      }
+    }
+  }
+
+  return {
+    understanding,
+    chemicalImpact,
+    updateJacuzziRefill,
+    refillPercentage,
+    scheduleShifts,
+    newTasksToCreate,
+    suggestedDiaryTitle: `פעולת אחזקה יזומה: ${understanding}`,
+    suggestedDiaryContent: `בוצעה פעולה יזומה: ${req.freeText}. ${chemicalImpact}`,
+  };
+}
+
