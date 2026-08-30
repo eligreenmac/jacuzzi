@@ -15,29 +15,52 @@ import {
   AlertTriangle,
   RefreshCw,
   X,
-  Camera,
   Activity,
   ChevronRight,
   TrendingUp,
   Info,
 } from "lucide-react";
 
+// Standard Test Strip Range Scales
+const PH_RANGES = [
+  { id: "LOW_CRIT", label: "< 6.8 (חומצי מאוד / קריטי 🔴)", val: 6.6, badge: "חומצי מאוד", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
+  { id: "LOW", label: "6.8 - 7.1 (נמוך / דורש מעלה pH 🟠)", val: 7.0, badge: "נמוך", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
+  { id: "IDEAL", label: "7.2 - 7.6 (אידיאלי ומאוזן ✨ 🟢)", val: 7.4, badge: "אידיאלי", color: "border-emerald-700 bg-emerald-950/50 text-emerald-300" },
+  { id: "HIGH", label: "7.7 - 8.0 (גבוה / דורש מוריד pH 🟠)", val: 7.8, badge: "גבוה", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
+  { id: "HIGH_CRIT", label: "> 8.0 (בסיסי מאוד / קריטי 🔴)", val: 8.2, badge: "גבוה מאוד", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
+  { id: "UNKNOWN", label: "לא יודע / לא נבדק", val: null, badge: "לא נבדק", color: "border-slate-800 bg-slate-950 text-slate-400" },
+];
+
+const CHLORINE_RANGES = [
+  { id: "ZERO", label: "0 ppm (ללא חיטוי כלל / קריטי 🔴)", val: 0.0, badge: "ללא חיטוי", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
+  { id: "LOW", label: "0.5 - 1.5 ppm (נמוך / דורש חיטוי 🟠)", val: 1.0, badge: "נמוך", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
+  { id: "IDEAL", label: "2.0 - 4.0 ppm (אידיאלי לג'קוזי ✨ 🟢)", val: 3.0, badge: "אידיאלי", color: "border-emerald-700 bg-emerald-950/50 text-emerald-300" },
+  { id: "HIGH", label: "5.0 - 8.0 ppm (גבוה / להמתין לפני רחצה 🟠)", val: 6.0, badge: "גבוה", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
+  { id: "SHOCK", label: "> 10.0 ppm (גבוה מאוד / שוק 🔴)", val: 10.0, badge: "שוק / גבוה", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
+  { id: "UNKNOWN", label: "לא יודע / לא נבדק", val: null, badge: "לא נבדק", color: "border-slate-800 bg-slate-950 text-slate-400" },
+];
+
+const ALKALINITY_RANGES = [
+  { id: "LOW_CRIT", label: "< 40 ppm (נמוכה מאוד 🔴)", val: 30, badge: "נמוכה מאוד", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
+  { id: "LOW", label: "40 - 70 ppm (נמוכה 🟠)", val: 60, badge: "נמוכה", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
+  { id: "IDEAL", label: "80 - 120 ppm (אידיאלי לג'קוזי ✨ 🟢)", val: 100, badge: "אידיאלי", color: "border-emerald-700 bg-emerald-950/50 text-emerald-300" },
+  { id: "HIGH", label: "130 - 180 ppm (גבוהה 🟠)", val: 150, badge: "גבוהה", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
+  { id: "HIGH_CRIT", label: "> 180 ppm (גבוהה מאוד 🔴)", val: 200, badge: "גבוהה מאוד", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
+  { id: "UNKNOWN", label: "לא יודע / לא נבדק", val: null, badge: "לא נבדק", color: "border-slate-800 bg-slate-950 text-slate-400" },
+];
+
 export default function WaterTestsPage() {
   const [tests, setTests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Add Test Modal
+  // Add Test Modal State (Test Strip Ranges)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [testDate, setTestDate] = useState(new Date().toISOString().slice(0, 16));
-  const [ph, setPh] = useState("7.4");
-  const [phUnknown, setPhUnknown] = useState(false);
-  const [freeChlorine, setFreeChlorine] = useState("3.0");
-  const [clUnknown, setClUnknown] = useState(false);
-  const [alkalinity, setAlkalinity] = useState("90");
-  const [alkUnknown, setAlkUnknown] = useState(false);
+  const [selectedPhRange, setSelectedPhRange] = useState("IDEAL");
+  const [selectedClRange, setSelectedClRange] = useState("IDEAL");
+  const [selectedAlkRange, setSelectedAlkRange] = useState("IDEAL");
   const [clarity, setClarity] = useState("CLEAR");
   const [description, setDescription] = useState("");
-  const [imagePreview, setImagePreview] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -45,12 +68,9 @@ export default function WaterTestsPage() {
   const [editingTest, setEditingTest] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({
     testedAt: "",
-    ph: "7.4",
-    phUnknown: false,
-    freeChlorine: "3.0",
-    clUnknown: false,
-    alkalinity: "90",
-    alkUnknown: false,
+    phRangeId: "IDEAL",
+    clRangeId: "IDEAL",
+    alkRangeId: "IDEAL",
     waterClarity: "CLEAR",
     description: "",
   });
@@ -73,21 +93,14 @@ export default function WaterTestsPage() {
     loadTests();
   }, []);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSaveNewTest = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setErrorMsg("");
+
+    const phObj = PH_RANGES.find((r) => r.id === selectedPhRange);
+    const clObj = CHLORINE_RANGES.find((r) => r.id === selectedClRange);
+    const alkObj = ALKALINITY_RANGES.find((r) => r.id === selectedAlkRange);
 
     try {
       const res = await fetch("/api/water-tests", {
@@ -95,12 +108,14 @@ export default function WaterTestsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           testedAt: new Date(testDate).toISOString(),
-          ph: phUnknown ? "UNKNOWN" : ph,
-          freeChlorine: clUnknown ? "UNKNOWN" : freeChlorine,
-          alkalinity: alkUnknown ? "UNKNOWN" : alkalinity,
+          ph: phObj?.val !== null ? phObj?.val : "UNKNOWN",
+          phRange: phObj?.label,
+          freeChlorine: clObj?.val !== null ? clObj?.val : "UNKNOWN",
+          chlorineRange: clObj?.label,
+          alkalinity: alkObj?.val !== null ? alkObj?.val : "UNKNOWN",
+          alkalinityRange: alkObj?.label,
           waterClarity: clarity,
           description: description || null,
-          imageUrl: imagePreview || null,
         }),
       });
 
@@ -110,7 +125,6 @@ export default function WaterTestsPage() {
       }
 
       setIsAddModalOpen(false);
-      setImagePreview("");
       setDescription("");
       loadTests();
     } catch (err: any) {
@@ -122,14 +136,40 @@ export default function WaterTestsPage() {
 
   const openEditModal = (test: any) => {
     setEditingTest(test);
+
+    // Match closest range
+    let phId = "UNKNOWN";
+    if (typeof test.ph === "number") {
+      if (test.ph < 6.8) phId = "LOW_CRIT";
+      else if (test.ph <= 7.1) phId = "LOW";
+      else if (test.ph <= 7.6) phId = "IDEAL";
+      else if (test.ph <= 8.0) phId = "HIGH";
+      else phId = "HIGH_CRIT";
+    }
+
+    let clId = "UNKNOWN";
+    if (typeof test.freeChlorine === "number") {
+      if (test.freeChlorine === 0) clId = "ZERO";
+      else if (test.freeChlorine < 2.0) clId = "LOW";
+      else if (test.freeChlorine <= 4.0) clId = "IDEAL";
+      else if (test.freeChlorine <= 8.0) clId = "HIGH";
+      else clId = "SHOCK";
+    }
+
+    let alkId = "UNKNOWN";
+    if (typeof test.alkalinity === "number") {
+      if (test.alkalinity < 40) alkId = "LOW_CRIT";
+      else if (test.alkalinity < 80) alkId = "LOW";
+      else if (test.alkalinity <= 120) alkId = "IDEAL";
+      else if (test.alkalinity <= 180) alkId = "HIGH";
+      else alkId = "HIGH_CRIT";
+    }
+
     setEditForm({
       testedAt: test.testedAt ? new Date(test.testedAt).toISOString().slice(0, 16) : "",
-      ph: test.ph !== null && test.ph !== undefined ? test.ph.toString() : "7.4",
-      phUnknown: test.ph === null || test.ph === undefined,
-      freeChlorine: test.freeChlorine !== null && test.freeChlorine !== undefined ? test.freeChlorine.toString() : "3.0",
-      clUnknown: test.freeChlorine === null || test.freeChlorine === undefined,
-      alkalinity: test.alkalinity !== null && test.alkalinity !== undefined ? test.alkalinity.toString() : "90",
-      alkUnknown: test.alkalinity === null || test.alkalinity === undefined,
+      phRangeId: phId,
+      clRangeId: clId,
+      alkRangeId: alkId,
       waterClarity: test.waterClarity || "CLEAR",
       description: test.description || "",
     });
@@ -139,6 +179,10 @@ export default function WaterTestsPage() {
     e.preventDefault();
     if (!editingTest) return;
 
+    const phObj = PH_RANGES.find((r) => r.id === editForm.phRangeId);
+    const clObj = CHLORINE_RANGES.find((r) => r.id === editForm.clRangeId);
+    const alkObj = ALKALINITY_RANGES.find((r) => r.id === editForm.alkRangeId);
+
     try {
       await fetch("/api/water-tests", {
         method: "PUT",
@@ -146,9 +190,12 @@ export default function WaterTestsPage() {
         body: JSON.stringify({
           id: editingTest.id,
           testedAt: new Date(editForm.testedAt).toISOString(),
-          ph: editForm.phUnknown ? "UNKNOWN" : editForm.ph,
-          freeChlorine: editForm.clUnknown ? "UNKNOWN" : editForm.freeChlorine,
-          alkalinity: editForm.alkUnknown ? "UNKNOWN" : editForm.alkalinity,
+          ph: phObj?.val !== null ? phObj?.val : "UNKNOWN",
+          phRange: phObj?.label,
+          freeChlorine: clObj?.val !== null ? clObj?.val : "UNKNOWN",
+          chlorineRange: clObj?.label,
+          alkalinity: alkObj?.val !== null ? alkObj?.val : "UNKNOWN",
+          alkalinityRange: alkObj?.label,
           waterClarity: editForm.waterClarity,
           description: editForm.description,
         }),
@@ -203,7 +250,7 @@ export default function WaterTestsPage() {
             <span>יומן בדיקות איכות מים</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            תיעוד כרונולוגי מלא של בדיקות מקלון, ערכי pH וכלור, צלילות המים ואבחוני AI.
+            תיעוד כרונולוגי לפי סולם טווחי מקלונים (pH, כלור/ברום, בסיסיות וצלילות מים).
           </p>
         </div>
 
@@ -213,7 +260,7 @@ export default function WaterTestsPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-purple-600/20 transition-all"
           >
             <Sparkles className="w-4 h-4" />
-            <span>אבחון מקיף ברופא המים</span>
+            <span>אבחון מקיף ברופא המים AI</span>
           </Link>
 
           <button
@@ -224,7 +271,7 @@ export default function WaterTestsPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-600/20 transition-all hover:scale-105"
           >
             <Plus className="w-4 h-4" />
-            <span>הזן תוצאת בדיקה חדשה</span>
+            <span>הזן תוצאת בדיקת מקלון חדשה</span>
           </button>
         </div>
       </div>
@@ -237,7 +284,7 @@ export default function WaterTestsPage() {
             <Activity className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="text-2xl font-black text-white">{totalTests}</div>
-          <div className="text-[11px] text-slate-500">היסטוריה מלאה במסד הנתונים</div>
+          <div className="text-[11px] text-slate-500">היסטוריית מקלונים ובדיקות</div>
         </div>
 
         <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 space-y-1">
@@ -268,7 +315,7 @@ export default function WaterTestsPage() {
             <TrendingUp className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-2xl font-black text-amber-300">{avgCl} {avgCl !== "--" ? "ppm" : ""}</div>
-          <div className="text-[11px] text-slate-500">טווח יעד אופטימלי: 3.0 - 5.0</div>
+          <div className="text-[11px] text-slate-500">טווח יעד אופטימלי: 2.0 - 4.0 ppm</div>
         </div>
       </div>
 
@@ -282,7 +329,7 @@ export default function WaterTestsPage() {
           <FlaskConical className="w-12 h-12 text-slate-600 mx-auto" />
           <div className="space-y-1">
             <h3 className="text-lg font-bold text-white">עדיין לא תועדו בדיקות מים</h3>
-            <p className="text-xs text-slate-400">הזן את תוצאות בדיקת המקלון הראשונה שלך למעקב בריאות ואיכות המים</p>
+            <p className="text-xs text-slate-400">הזן את תוצאות בדיקת המקלון הראשונה שלך לפי סולם הטווחים</p>
           </div>
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -307,12 +354,10 @@ export default function WaterTestsPage() {
               // pH evaluation
               const isPhGood = typeof test.ph === "number" && test.ph >= 7.2 && test.ph <= 7.6;
               const isPhHigh = typeof test.ph === "number" && test.ph > 7.6;
-              const isPhLow = typeof test.ph === "number" && test.ph < 7.2;
 
               // Chlorine evaluation
-              const isClGood = typeof test.freeChlorine === "number" && test.freeChlorine >= 2.5 && test.freeChlorine <= 6.0;
-              const isClLow = typeof test.freeChlorine === "number" && test.freeChlorine < 2.5;
-              const isClHigh = typeof test.freeChlorine === "number" && test.freeChlorine > 6.0;
+              const isClGood = typeof test.freeChlorine === "number" && test.freeChlorine >= 2.0 && test.freeChlorine <= 4.0;
+              const isClLow = typeof test.freeChlorine === "number" && test.freeChlorine < 2.0;
 
               return (
                 <div
@@ -360,22 +405,11 @@ export default function WaterTestsPage() {
                   </div>
 
                   {/* Values Badges Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {/* pH Badge */}
-                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-850 space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">חומציות (pH)</div>
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`text-lg font-black ${
-                            typeof test.ph !== "number"
-                              ? "text-slate-500 text-sm"
-                              : isPhGood
-                              ? "text-emerald-400"
-                              : "text-amber-400"
-                          }`}
-                        >
-                          {typeof test.ph === "number" ? test.ph : "לא נבדק"}
-                        </span>
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850 space-y-1.5">
+                      <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between">
+                        <span>חומציות (pH)</span>
                         {typeof test.ph === "number" && (
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -386,27 +420,19 @@ export default function WaterTestsPage() {
                                 : "bg-rose-950 text-rose-300 border-rose-800"
                             }`}
                           >
-                            {isPhGood ? "מאוזן" : isPhHigh ? "גבוה" : "נמוך"}
+                            {isPhGood ? "אידיאלי" : isPhHigh ? "גבוה" : "נמוך"}
                           </span>
                         )}
+                      </div>
+                      <div className="text-sm font-bold text-white">
+                        {test.phRange || (typeof test.ph === "number" ? `pH ${test.ph}` : "לא נבדק")}
                       </div>
                     </div>
 
                     {/* Chlorine Badge */}
-                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-850 space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">כלור / ברום (ppm)</div>
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`text-lg font-black ${
-                            typeof test.freeChlorine !== "number"
-                              ? "text-slate-500 text-sm"
-                              : isClGood
-                              ? "text-emerald-400"
-                              : "text-amber-400"
-                          }`}
-                        >
-                          {typeof test.freeChlorine === "number" ? `${test.freeChlorine} ppm` : "לא נבדק"}
-                        </span>
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850 space-y-1.5">
+                      <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between">
+                        <span>כלור / ברום (חיטוי)</span>
                         {typeof test.freeChlorine === "number" && (
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -417,31 +443,32 @@ export default function WaterTestsPage() {
                                 : "bg-amber-950 text-amber-300 border-amber-800"
                             }`}
                           >
-                            {isClGood ? "תקין" : isClLow ? "חסר" : "גבוה"}
+                            {isClGood ? "אידיאלי" : isClLow ? "חסר" : "גבוה"}
                           </span>
                         )}
+                      </div>
+                      <div className="text-sm font-bold text-white">
+                        {test.chlorineRange || (typeof test.freeChlorine === "number" ? `${test.freeChlorine} ppm` : "לא נבדק")}
                       </div>
                     </div>
 
                     {/* Alkalinity Badge */}
-                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-850 space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">בסיסיות כוללת (TA)</div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-black text-cyan-300">
-                          {typeof test.alkalinity === "number" ? `${test.alkalinity} ppm` : "לא נבדק"}
-                        </span>
-                        {typeof test.alkalinity === "number" && (
-                          <span className="text-[10px] text-slate-400">יעד: 80-120</span>
-                        )}
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850 space-y-1.5">
+                      <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between">
+                        <span>בסיסיות כוללת (TA)</span>
+                        <span className="text-[10px] text-slate-400">יעד: 80-120</span>
+                      </div>
+                      <div className="text-sm font-bold text-cyan-300">
+                        {test.alkalinityRange || (typeof test.alkalinity === "number" ? `${test.alkalinity} ppm` : "לא נבדק")}
                       </div>
                     </div>
 
                     {/* Clarity Badge */}
-                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-850 space-y-1">
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850 space-y-1.5">
                       <div className="text-[11px] text-slate-400 font-semibold">צלילות המים</div>
                       <div className="flex items-center gap-2">
                         <span className="text-base">{clarityInfo.icon}</span>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg border ${clarityInfo.color}`}>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${clarityInfo.color}`}>
                           {clarityInfo.label}
                         </span>
                       </div>
@@ -476,14 +503,14 @@ export default function WaterTestsPage() {
         </div>
       )}
 
-      {/* Modal: Add New Test */}
+      {/* Modal: Add New Test (With Test Strip Ranges / Verbal Scale) */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <FlaskConical className="w-5 h-5 text-cyan-400" />
-                <span>הזנת תוצאות בדיקת איכות מים</span>
+                <span>הזנת תוצאות בדיקת מקלון (לפי סולם טווחים)</span>
               </h2>
               <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -508,103 +535,79 @@ export default function WaterTestsPage() {
                 />
               </div>
 
-              {/* pH Input */}
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+              {/* 1. pH Range Picker */}
+              <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-200">1. חומציות (pH)</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
-                    <input
-                      type="checkbox"
-                      checked={phUnknown}
-                      onChange={(e) => setPhUnknown(e.target.checked)}
-                      className="accent-cyan-500 w-3.5 h-3.5 rounded"
-                    />
-                    <span>לא יודע / לא נבדק</span>
-                  </label>
+                  <span className="font-bold text-slate-200">1. רמת חומציות (pH לפי סולם המקלון):</span>
+                  <span className="text-[11px] text-cyan-400">אידיאלי: 7.2 - 7.6</span>
                 </div>
-                {!phUnknown ? (
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="6.0"
-                      max="8.8"
-                      value={ph}
-                      onChange={(e) => setPh(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center text-cyan-300"
-                    />
-                    <span className="text-[10px] text-slate-500 shrink-0">מומלץ: 7.2-7.6</span>
-                  </div>
-                ) : (
-                  <div className="text-xs text-amber-400/80 text-center py-1">מסומן כ-"לא ידוע"</div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {PH_RANGES.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setSelectedPhRange(r.id)}
+                      className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
+                        selectedPhRange === r.id
+                          ? `${r.color} ring-2 ring-cyan-400 font-bold shadow-md`
+                          : "border-slate-850 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Chlorine Input */}
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+              {/* 2. Chlorine Range Picker */}
+              <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-200">2. כלור חופשי / ברום (ppm)</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
-                    <input
-                      type="checkbox"
-                      checked={clUnknown}
-                      onChange={(e) => setClUnknown(e.target.checked)}
-                      className="accent-cyan-500 w-3.5 h-3.5 rounded"
-                    />
-                    <span>לא יודע / לא נבדק</span>
-                  </label>
+                  <span className="font-bold text-slate-200">2. כלור חופשי / ברום (ppm חיטוי):</span>
+                  <span className="text-[11px] text-cyan-400">אידיאלי: 2.0 - 4.0 ppm</span>
                 </div>
-                {!clUnknown ? (
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      max="15"
-                      value={freeChlorine}
-                      onChange={(e) => setFreeChlorine(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center text-cyan-300"
-                    />
-                    <span className="text-[10px] text-slate-500 shrink-0">מומלץ: 3.0-5.0</span>
-                  </div>
-                ) : (
-                  <div className="text-xs text-amber-400/80 text-center py-1">מסומן כ-"לא ידוע"</div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {CHLORINE_RANGES.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setSelectedClRange(r.id)}
+                      className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
+                        selectedClRange === r.id
+                          ? `${r.color} ring-2 ring-cyan-400 font-bold shadow-md`
+                          : "border-slate-850 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Alkalinity Input */}
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+              {/* 3. Alkalinity Range Picker */}
+              <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-200">3. בסיסיות כוללת (TA ppm)</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
-                    <input
-                      type="checkbox"
-                      checked={alkUnknown}
-                      onChange={(e) => setAlkUnknown(e.target.checked)}
-                      className="accent-cyan-500 w-3.5 h-3.5 rounded"
-                    />
-                    <span>לא יודע / לא נבדק</span>
-                  </label>
+                  <span className="font-bold text-slate-200">3. בסיסיות כוללת (TA ppm):</span>
+                  <span className="text-[11px] text-cyan-400">אידיאלי: 80 - 120 ppm</span>
                 </div>
-                {!alkUnknown ? (
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="number"
-                      step="5"
-                      min="0"
-                      max="300"
-                      value={alkalinity}
-                      onChange={(e) => setAlkalinity(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-bold text-sm text-center text-cyan-300"
-                    />
-                    <span className="text-[10px] text-slate-500 shrink-0">מומלץ: 80-120</span>
-                  </div>
-                ) : (
-                  <div className="text-xs text-amber-400/80 text-center py-1">מסומן כ-"לא ידוע"</div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {ALKALINITY_RANGES.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setSelectedAlkRange(r.id)}
+                      className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
+                        selectedAlkRange === r.id
+                          ? `${r.color} ring-2 ring-cyan-400 font-bold shadow-md`
+                          : "border-slate-850 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Clarity Picker */}
+              {/* 4. Clarity Picker */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">4. מראה וצלילות המים</label>
                 <select
@@ -657,7 +660,7 @@ export default function WaterTestsPage() {
       {/* Modal: Edit Test */}
       {editingTest && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Edit2 className="w-4 h-4 text-cyan-400" />
@@ -680,28 +683,43 @@ export default function WaterTestsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">pH</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={editForm.ph}
-                    onChange={(e) => setEditForm({ ...editForm, ph: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white text-xs"
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">טווח pH</label>
+                <select
+                  value={editForm.phRangeId}
+                  onChange={(e) => setEditForm({ ...editForm, phRangeId: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                >
+                  {PH_RANGES.map((r) => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">כלור (ppm)</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={editForm.freeChlorine}
-                    onChange={(e) => setEditForm({ ...editForm, freeChlorine: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white text-xs"
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">טווח כלור/ברום</label>
+                <select
+                  value={editForm.clRangeId}
+                  onChange={(e) => setEditForm({ ...editForm, clRangeId: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                >
+                  {CHLORINE_RANGES.map((r) => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">טווח בסיסיות (TA)</label>
+                <select
+                  value={editForm.alkRangeId}
+                  onChange={(e) => setEditForm({ ...editForm, alkRangeId: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                >
+                  {ALKALINITY_RANGES.map((r) => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1">

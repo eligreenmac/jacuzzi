@@ -67,8 +67,11 @@ model WaterLog {
   userId            String
   testedAt          DateTime @default(now())
   ph                Float?
+  phRange           String?  // e.g. "7.2 - 7.6 (אידיאלי)"
   freeChlorine      Float?
+  chlorineRange     String?  // e.g. "2.0 - 4.0 ppm (אידיאלי)"
   alkalinity        Float?
+  alkalinityRange   String?  // e.g. "80 - 120 ppm (אידיאלי)"
   waterClarity      String   @default("CLEAR") // CLEAR, SLIGHTLY_CLOUDY, VERY_CLOUDY, GREEN, FOAMY, BAD_ODOR
   description       String?
   imageUrl          String?
