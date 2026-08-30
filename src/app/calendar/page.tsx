@@ -27,6 +27,7 @@ import {
   FlaskConical,
   Zap,
   Droplets,
+  Lock,
 } from "lucide-react";
 
 // Standard Test Strip Range Scales
@@ -374,8 +375,23 @@ export default function CalendarPage() {
     return { dayTasks, doneTasks, dayEntries, dayWaterLogs };
   };
 
-  // Open Completion Modal with automatic detection of task type
+  const isTaskFuture = (task: any) => {
+    if (!task || !task.nextDueDate) return false;
+    const dueDate = new Date(task.nextDueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskDay = new Date(dueDate);
+    taskDay.setHours(0, 0, 0, 0);
+    return taskDay.getTime() > today.getTime();
+  };
+
+  // Open Completion Modal with automatic detection of task type (Locked for future tasks!)
   const openCompletionModal = (task: any) => {
+    if (isTaskFuture(task)) {
+      alert(`משימה זו מתוכננת לתאריך ${new Date(task.nextDueDate).toLocaleDateString("he-IL")}. סימון ביצוע ועדכון נתונים ייפתחו החל מתאריך היעד המתוכנן.`);
+      return;
+    }
+
     setCompletingTask(task);
     const isTest =
       task.title.includes("בדיק") ||
@@ -548,14 +564,23 @@ export default function CalendarPage() {
   };
 
   const handleDeleteTask = async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (task && !task.isCompleted && isTaskFuture(task)) {
+      alert(`לא ניתן למחוק משימה עתידית מתוכננת (${task.title}). משימות עתידיות נעולות למחיקה.`);
+      return;
+    }
+
     if (!confirm("האם למחוק משימה זו? המלאי בארון יוחזר אוטומטית.")) return;
     try {
-      await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "שגיאה במחיקת המשימה");
+
       setActionNotice("המשימה נמחקה והמלאי הוחזר לארון.");
       setTimeout(() => setActionNotice(null), 4000);
       loadData();
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
@@ -972,46 +997,86 @@ export default function CalendarPage() {
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {dayTasks.map((task) => (
-                        <div
-                          key={task.id}
-                          className="bg-slate-950 border border-cyan-800/60 rounded-2xl p-4 space-y-3 flex flex-col justify-between"
-                        >
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
-                                {task.category === "WEEKLY" ? "שבועי" : task.category === "MONTHLY" ? "חודשי" : "תקופתי"}
-                              </span>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => openEditTaskModal(task)}
-                                  className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-slate-900 rounded-lg transition-colors"
-                                  title="ערוך משימה"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteTask(task.id)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition-colors"
-                                  title="מחק משימה"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                            <h4 className="font-bold text-white text-sm pt-1">{task.title}</h4>
-                            {task.description && <p className="text-xs text-slate-400">{task.description}</p>}
-                          </div>
-
-                          <button
-                            onClick={() => openCompletionModal(task)}
-                            className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all"
+                      {dayTasks.map((task) => {
+                        const isFuture = isTaskFuture(task);
+                        return (
+                          <div
+                            key={task.id}
+                            className={`border rounded-2xl p-4 space-y-3 flex flex-col justify-between transition-all ${
+                              isFuture
+                                ? "bg-slate-950/70 border-slate-800/80"
+                                : "bg-slate-950 border-cyan-800/60 shadow-lg"
+                            }`}
                           >
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>סמן ביצוע ועדכן נתונים</span>
-                          </button>
-                        </div>
-                      ))}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                                    {task.category === "WEEKLY" ? "שבועי" : task.category === "MONTHLY" ? "חודשי" : task.category === "QUARTERLY" ? "רבעוני" : "תקופתי"}
+                                  </span>
+                                  {isFuture && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800/60 flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      <span>מתוזמן לעתיד ({new Date(task.nextDueDate).toLocaleDateString("he-IL")})</span>
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => openEditTaskModal(task)}
+                                    className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-slate-900 rounded-lg transition-colors"
+                                    title="ערוך משימה"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* Delete button: DISABLED/BLOCKED for future tasks */}
+                                  {!isFuture ? (
+                                    <button
+                                      onClick={() => handleDeleteTask(task.id)}
+                                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition-colors"
+                                      title="מחק משימה"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  ) : (
+                                    <span
+                                      className="p-1.5 text-slate-600 cursor-not-allowed opacity-50 flex items-center gap-0.5"
+                                      title="לא ניתן למחוק משימות עתידיות מתוכננות"
+                                    >
+                                      <Lock className="w-3.5 h-3.5" />
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <h4 className="font-bold text-white text-sm pt-1">{task.title}</h4>
+                              {task.description && <p className="text-xs text-slate-400">{task.description}</p>}
+                            </div>
+
+                            {/* Button: Disabled if future, enabled starting from planned date */}
+                            {isFuture ? (
+                              <button
+                                type="button"
+                                disabled
+                                className="w-full py-2.5 bg-slate-900/90 border border-slate-800 text-slate-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed opacity-70 select-none"
+                                title={`משימה עתידית - סימון ביצוע ועדכון נתונים ייפתחו ב-${new Date(task.nextDueDate).toLocaleDateString("he-IL")}`}
+                              >
+                                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                                <span>⏳ ייפתח לביצוע ב-{new Date(task.nextDueDate).toLocaleDateString("he-IL")}</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => openCompletionModal(task)}
+                                className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>סמן ביצוע ועדכן נתונים</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

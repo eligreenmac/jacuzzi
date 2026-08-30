@@ -161,6 +161,17 @@ export async function PUT(req: NextRequest) {
       });
     }
 
+    // Guard: Prevent marking future tasks as done before their due date
+    if (markDoneAndReschedule) {
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+      if (new Date(existing.nextDueDate).getTime() > todayEnd.getTime()) {
+        return NextResponse.json({
+          error: `משימה זו מתוכננת לתאריך ${new Date(existing.nextDueDate).toLocaleDateString("he-IL")}. סימון ביצוע ועדכון נתונים ייפתחו החל מתאריך היעד המתוכנן.`,
+        }, { status: 400 });
+      }
+    }
+
     let updateData: any = {};
     let deductedChemicalName = "";
     let deductedInventoryId: string | null = null;
@@ -286,6 +297,15 @@ export async function DELETE(req: NextRequest) {
 
     if (!existing) {
       return NextResponse.json({ error: "משימה לא נמצאה" }, { status: 404 });
+    }
+
+    // Guard: Prevent deleting future scheduled tasks
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+    if (!existing.isCompleted && new Date(existing.nextDueDate).getTime() > todayEnd.getTime()) {
+      return NextResponse.json({
+        error: `לא ניתן למחוק משימה עתידית מתוכננת (${existing.title}). משימות עתידיות נעולות למחיקה.`,
+      }, { status: 400 });
     }
 
     // Always restore inventory if chemical was deducted for this task!

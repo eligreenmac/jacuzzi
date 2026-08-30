@@ -678,15 +678,27 @@ export default function WaterTestsPage() {
                                           </span>
                                         </div>
 
-                                        <button
-                                          type="button"
-                                          disabled={executingStep === `${test.id}-${step.stepNumber}`}
-                                          onClick={() => handleExecuteStep(test.id, step, recs, false)}
-                                          className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow flex items-center gap-1 transition-all"
-                                        >
-                                          <CheckCircle2 className="w-3.5 h-3.5" />
-                                          <span>סמן כבוצע כעת</span>
-                                        </button>
+                                        {step.scheduledFor && new Date(step.scheduledFor).getTime() > Date.now() ? (
+                                          <button
+                                            type="button"
+                                            disabled
+                                            className="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 font-bold text-[11px] cursor-not-allowed opacity-75 flex items-center gap-1 select-none"
+                                            title={`משימה עתידית - תיפתח לסימון ביצוע ב-${new Date(step.scheduledFor).toLocaleDateString("he-IL")}`}
+                                          >
+                                            <Clock className="w-3.5 h-3.5 text-slate-500" />
+                                            <span>⏳ ייפתח לביצוע במועד</span>
+                                          </button>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            disabled={executingStep === `${test.id}-${step.stepNumber}`}
+                                            onClick={() => handleExecuteStep(test.id, step, recs, false)}
+                                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow flex items-center gap-1 transition-all"
+                                          >
+                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                            <span>סמן כבוצע כעת</span>
+                                          </button>
+                                        )}
                                       </div>
                                     ) : step.stepType === "FOLLOW_UP" || step.title.includes("בעוד") || step.title.includes("להמשך") ? (
                                       <button
