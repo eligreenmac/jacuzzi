@@ -94,6 +94,70 @@ export default function WaterDoctorPage() {
     }
   };
 
+  const [executingStep, setExecutingStep] = useState<number | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  const handleExecuteStep = async (step: any) => {
+    setExecutingStep(step.stepNumber);
+    setActionNotice(null);
+
+    const followUpTasks = [];
+    if (diagnosis?.followUpRequirements && diagnosis.followUpRequirements.length > 0) {
+      for (const req of diagnosis.followUpRequirements) {
+        if (req.includes("פילטר")) {
+          followUpTasks.push({
+            title: "שטיפת פילטר (בעקבות טיפול ביומן)",
+            description: req,
+            hoursAhead: 24,
+          });
+        } else if (req.includes("מקלון") || req.includes("בדיק")) {
+          followUpTasks.push({
+            title: "בדיקת מקלון חוזרת (מעקב)",
+            description: req,
+            hoursAhead: 12,
+          });
+        }
+      }
+    }
+
+    try {
+      const res = await fetch("/api/log/execute-recommendation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stepNumber: step.stepNumber,
+          title: step.title,
+          chemical: step.chemical,
+          amount: step.amount,
+          instructions: step.instructions,
+          followUpTasks,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "שגיאה בתיעוד הפעולה");
+
+      setActionNotice(data.message || "הפעולה בוצעה ותועדה בהצלחה ביומן!");
+
+      // Update step status in memory
+      setDiagnosis((prev: any) => {
+        if (!prev || !prev.stepByStepPlan) return prev;
+        return {
+          ...prev,
+          stepByStepPlan: prev.stepByStepPlan.map((s: any) =>
+            s.stepNumber === step.stepNumber
+              ? { ...s, isExecuted: true, executedAt: new Date().toISOString() }
+              : s
+          ),
+        };
+      });
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setExecutingStep(null);
+    }
+  };
+
   const clarityOptions = [
     { value: "CLEAR", label: "מים צלולים", icon: "✨", desc: "שקופים לחלוטין וללא ריח" },
     { value: "SLIGHTLY_CLOUDY", label: "מעט עכורים", icon: "🌫️", desc: "ראות מופחתת קלות בקרקעית" },
@@ -377,6 +441,18 @@ export default function WaterDoctorPage() {
                 </div>
               </div>
 
+              {actionNotice && (
+                <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-700 text-emerald-200 text-xs flex items-center justify-between shadow-xl animate-fade-in">
+                  <div className="flex items-center gap-2.5 font-bold">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span>{actionNotice}</span>
+                  </div>
+                  <button onClick={() => setActionNotice(null)} className="text-slate-400 hover:text-white">
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
               {/* Chemical Ledger Analysis (What was already added) */}
               {(diagnosis.recentAdditionsAnalysis?.length > 0 || addedLedger.length > 0) && (
                 <div className="bg-cyan-950/40 border border-cyan-800/80 rounded-2xl p-4 space-y-2">
@@ -588,6 +664,28 @@ export default function WaterDoctorPage() {
                           <span>{step.safetyWarning}</span>
                         </div>
                       )}
+
+                      {/* Action Button: Mark as Done & Log in Diary */}
+                      <div className="mr-8 pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2">
+                        {step.isExecuted ? (
+                          <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-800">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>
+                              בוצע ותועד ביומן {step.executedAt ? `(${new Date(step.executedAt).toLocaleDateString("he-IL")} ${new Date(step.executedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })})` : "✅"}
+                            </span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={executingStep === step.stepNumber}
+                            onClick={() => handleExecuteStep(step)}
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>{executingStep === step.stepNumber ? "מתעד ביומן ומפחית מהארון..." : "✓ סמן כבוצע ותעד ביומן"}</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
