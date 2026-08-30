@@ -5,6 +5,7 @@ import {
   Package,
   Plus,
   Trash2,
+  Edit2,
   Sparkles,
   Camera,
   Upload,
@@ -22,6 +23,7 @@ export default function InventoryPage() {
   const [chemicals, setChemicals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
@@ -37,12 +39,25 @@ export default function InventoryPage() {
   const [customCategory, setCustomCategory] = useState("OTHER");
   const [customUnit, setCustomUnit] = useState("GRAMS");
   const [customActiveIngredients, setCustomActiveIngredients] = useState("");
+  const [customNotes, setCustomNotes] = useState("");
 
   const [quantity, setQuantity] = useState("500");
   const [minThreshold, setMinThreshold] = useState("100");
   const [addedDate, setAddedDate] = useState(new Date().toISOString().split("T")[0]);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Edit Existing Chemical State
+  const [editingChemical, setEditingChemical] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    category: "OTHER",
+    quantity: "500",
+    unit: "GRAMS",
+    minThreshold: "100",
+    notes: "",
+    addedDate: "",
+  });
 
   const loadChemicals = async () => {
     try {
@@ -166,6 +181,54 @@ export default function InventoryPage() {
       loadChemicals();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const openEditModal = (chem: any) => {
+    setEditingChemical(chem);
+    setEditForm({
+      name: chem.name || "",
+      category: chem.category || "OTHER",
+      quantity: chem.quantity?.toString() || "0",
+      unit: chem.unit || "GRAMS",
+      minThreshold: chem.minThreshold?.toString() || "100",
+      notes: chem.notes || "",
+      addedDate: chem.addedDate ? new Date(chem.addedDate).toISOString().split("T")[0] : "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateChemical = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingChemical) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/chemicals", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingChemical.id,
+          name: editForm.name,
+          category: editForm.category,
+          quantity: parseFloat(editForm.quantity) || 0,
+          unit: editForm.unit,
+          minThreshold: parseFloat(editForm.minThreshold) || 100,
+          notes: editForm.notes,
+          addedDate: editForm.addedDate ? new Date(editForm.addedDate).toISOString() : undefined,
+        }),
+      });
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        setEditingChemical(null);
+        loadChemicals();
+      } else {
+        const d = await res.json();
+        alert(d.error || "שגיאה בעדכון החומר");
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -373,13 +436,22 @@ export default function InventoryPage() {
                       </button>
                     </div>
 
-                    <button
-                      onClick={() => handleDeleteChemical(chem.id)}
-                      className="p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 transition-colors"
-                      title="מחק מהארון"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEditModal(chem)}
+                        className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors"
+                        title="ערוך פרטי חומר"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteChemical(chem.id)}
+                        className="p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 transition-colors"
+                        title="מחק מהארון"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -451,21 +523,13 @@ export default function InventoryPage() {
                 )}
               </div>
 
-              {/* Scanning status */}
-              {isScanningPhoto && (
-                <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-xs flex items-center gap-3">
-                  <RefreshCw className="w-5 h-5 animate-spin shrink-0" />
-                  <span>Gemini Vision מנתח את התווית ומזהה את הרכיבים...</span>
-                </div>
-              )}
-
               {/* Step 2: Recognized or Editable Chemical Form */}
               {imagePreview && !isScanningPhoto && (
                 <div className="space-y-4 p-4 rounded-2xl bg-slate-950/90 border border-cyan-900/60 shadow-inner">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold">
                       <Sparkles className="w-4 h-4" />
-                      <span>{identifiedData ? "פרטי החומר (זוהה על ידי ה-AI):" : "פרטי החומר לארון:"}</span>
+                      <span>{identifiedData ? "פרטי החומר (חולצו ב-AI — ניתן לערוך הכל):" : "פרטי החומר לארון:"}</span>
                     </div>
                     {identifiedData && (
                       <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded-full font-bold">
@@ -477,7 +541,7 @@ export default function InventoryPage() {
                   {/* Chemical Name */}
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-300 block">
-                      שם המוצר והמותג:
+                      1. שם המוצר והמותג (ניתן לעריכה חופשית):
                     </label>
                     <input
                       type="text"
@@ -490,31 +554,31 @@ export default function InventoryPage() {
                   </div>
 
                   {/* Category & Unit */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-slate-300 block">
-                        קטגוריית החומר:
+                        2. קטגוריית החומר:
                       </label>
                       <select
                         value={customCategory}
                         onChange={(e) => setCustomCategory(e.target.value)}
                         className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-bold focus:border-cyan-500"
                       >
-                        <option value="SANITIZER">חומר חיטוי (כלור / ברום)</option>
-                        <option value="PH_MINUS">מוריד pH (חומצה)</option>
-                        <option value="PH_PLUS">מעלה pH / בסיסיות</option>
-                        <option value="SHOCK">שוק מחמצן (ללא כלור / מהיר)</option>
-                        <option value="ANTI_FOAM">מסיר / מונע קצף (Anti-Foam)</option>
-                        <option value="CLARIFIER">מצליל מים (Clarifier)</option>
-                        <option value="TEST_STRIPS">מקלונים / ערכת בדיקה</option>
-                        <option value="CLEANER">חומר ניקוי / שטיפת פילטר</option>
-                        <option value="OTHER">אחר / תוסף תחזוקה</option>
+                        <option value="ANTI_FOAM">🫧 מסיר / מונע קצף (Anti-Foam)</option>
+                        <option value="SANITIZER">🧪 חומר חיטוי (כלור / ברום)</option>
+                        <option value="PH_MINUS">📉 מוריד pH (חומצה)</option>
+                        <option value="PH_PLUS">📈 מעלה pH / בסיסיות</option>
+                        <option value="SHOCK">⚡ שוק מחמצן (ללא כלור / מהיר)</option>
+                        <option value="CLARIFIER">✨ מצליל מים (Clarifier)</option>
+                        <option value="TEST_STRIPS">📏 מקלונים / ערכת בדיקה</option>
+                        <option value="CLEANER">🧽 חומר ניקוי / שטיפת פילטר</option>
+                        <option value="OTHER">📦 אחר / תוסף תחזוקה</option>
                       </select>
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-slate-300 block">
-                        יחידת מידה:
+                        3. יחידת מידה:
                       </label>
                       <select
                         value={customUnit}
@@ -530,51 +594,75 @@ export default function InventoryPage() {
                     </div>
                   </div>
 
-                  {/* Active Ingredients & Usage Summary from OCR */}
-                  {identifiedData?.activeIngredients && (
-                    <div className="text-[11px] text-cyan-300 bg-cyan-950/40 p-2.5 rounded-xl border border-cyan-900/60 font-semibold">
-                      🧪 חומר פעיל שזוהה: {identifiedData.activeIngredients}
-                    </div>
-                  )}
-
-                  {identifiedData?.usageSummary && (
-                    <div className="text-[11px] text-slate-300 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                      💡 {identifiedData.usageSummary}
-                    </div>
-                  )}
-
-                  {/* Quantity & Addition Date */}
-                  <div className="pt-2 border-t border-slate-800/80 space-y-3">
-                    <label className="text-xs font-bold text-white block">
-                      כמות באריזה ותאריך הוספה לארון:
+                  {/* Active Ingredients */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-300 block">
+                      4. חומר פעיל וריכוז (Active Ingredient):
                     </label>
+                    <input
+                      type="text"
+                      placeholder="לדוגמה: דימתיקון / סודיום דיכלור 56% / סודיום ביסולפט"
+                      value={customActiveIngredients}
+                      onChange={(e) => setCustomActiveIngredients(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-cyan-500"
+                    />
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <span className="text-[11px] text-slate-400">
-                          כמות שנותרה באריזה ({customUnit === "GRAMS" ? 'גר\'' : customUnit === "ML" ? 'מ"ל' : customUnit === "TABLETS" ? 'טבליות' : customUnit})
-                        </span>
-                        <input
-                          type="number"
-                          required
-                          min="0"
-                          step="1"
-                          value={quantity}
-                          onChange={(e) => setQuantity(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white font-bold text-sm text-cyan-300 focus:border-cyan-500"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <span className="text-[11px] text-slate-400">תאריך הוספה / רכישה</span>
-                        <input
-                          type="date"
-                          value={addedDate}
-                          onChange={(e) => setAddedDate(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                        />
-                      </div>
+                  {/* Quantity, Min Threshold & Date */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-slate-300 block">
+                        5. כמות שנותרה:
+                      </span>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="1"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold text-sm text-cyan-300 focus:border-cyan-500"
+                      />
                     </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-slate-300 block">
+                        6. רף התראת חוסר:
+                      </span>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="1"
+                        value={minThreshold}
+                        onChange={(e) => setMinThreshold(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-cyan-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-slate-300 block">7. תאריך הוספה:</span>
+                      <input
+                        type="date"
+                        value={addedDate}
+                        onChange={(e) => setAddedDate(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Usage Summary & Notes */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-300 block">
+                      8. הוראות מינון, שימוש ובטיחות:
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="הוראות מינון שזוהו או הערות אישיות..."
+                      value={customNotes || identifiedData?.usageSummary || ""}
+                      onChange={(e) => setCustomNotes(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs resize-none focus:border-cyan-500"
+                    />
                   </div>
                 </div>
               )}
@@ -605,6 +693,160 @@ export default function InventoryPage() {
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>שמור חומר בארון</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Chemical Modal */}
+      {isEditModalOpen && editingChemical && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-cyan-400" />
+                <span>עריכת פרטי חומר בארון</span>
+              </h2>
+              <button
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingChemical(null);
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateChemical} className="space-y-4">
+              {/* Name */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300 block">שם המוצר והמותג:</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-bold text-sm focus:border-cyan-500"
+                />
+              </div>
+
+              {/* Category & Unit */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300 block">קטגוריית החומר:</label>
+                  <select
+                    value={editForm.category}
+                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-bold focus:border-cyan-500"
+                  >
+                    <option value="ANTI_FOAM">🫧 מסיר / מונע קצף (Anti-Foam)</option>
+                    <option value="SANITIZER">🧪 חומר חיטוי (כלור / ברום)</option>
+                    <option value="PH_MINUS">📉 מוריד pH (חומצה)</option>
+                    <option value="PH_PLUS">📈 מעלה pH / בסיסיות</option>
+                    <option value="SHOCK">⚡ שוק מחמצן (ללא כלור / מהיר)</option>
+                    <option value="CLARIFIER">✨ מצליל מים (Clarifier)</option>
+                    <option value="TEST_STRIPS">📏 מקלונים / ערכת בדיקה</option>
+                    <option value="CLEANER">🧽 חומר ניקוי / שטיפת פילטר</option>
+                    <option value="OTHER">📦 אחר / תוסף תחזוקה</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300 block">יחידת מידה:</label>
+                  <select
+                    value={editForm.unit}
+                    onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-bold focus:border-cyan-500"
+                  >
+                    <option value="GRAMS">גרם (אבקה / גרגירים)</option>
+                    <option value="ML">מ"ל (נוזל)</option>
+                    <option value="TABLETS">טבליות / כדורים</option>
+                    <option value="STRIPS">מקלונים</option>
+                    <option value="PIECES">יחידות</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Quantity, Threshold & Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300 block">כמות שנותרה:</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="1"
+                    value={editForm.quantity}
+                    onChange={(e) => setEditForm({ ...editForm, quantity: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold text-sm text-cyan-300 focus:border-cyan-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300 block">רף התראת חוסר:</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="1"
+                    value={editForm.minThreshold}
+                    onChange={(e) => setEditForm({ ...editForm, minThreshold: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-cyan-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300 block">תאריך הוספה:</label>
+                  <input
+                    type="date"
+                    value={editForm.addedDate}
+                    onChange={(e) => setEditForm({ ...editForm, addedDate: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300 block">הוראות שימוש, חומר פעיל והערות:</label>
+                <textarea
+                  rows={3}
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs resize-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setEditingChemical(null);
+                  }}
+                  className="px-5 py-2.5 rounded-xl text-slate-400 hover:text-white text-xs font-medium"
+                >
+                  ביטול
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>מעדכן...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>שמור שינויים</span>
                     </>
                   )}
                 </button>
