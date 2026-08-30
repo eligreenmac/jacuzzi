@@ -19,6 +19,11 @@ import {
   ChevronRight,
   TrendingUp,
   Info,
+  Package,
+  ShoppingCart,
+  Search,
+  ExternalLink,
+  Zap,
 } from "lucide-react";
 
 // Standard Test Strip Range Scales
@@ -477,27 +482,114 @@ export default function WaterTestsPage() {
                     </div>
                   </div>
 
-                  {/* Free text & AI Diagnosis if available */}
-                  {(test.description || test.aiDiagnosis) && (
-                    <div className="space-y-2 pt-2 border-t border-slate-800/80 text-xs">
-                      {test.description && (
-                        <div className="text-slate-300">
-                          <span className="text-slate-500 font-semibold">תיאור והערות: </span>
-                          {test.description}
-                        </div>
-                      )}
+                  {/* Free text & AI Diagnosis & Recommendations if available */}
+                  {(test.description || test.aiDiagnosis || test.aiRecommendations) && (() => {
+                    let recs: any = null;
+                    if (test.aiRecommendations) {
+                      try {
+                        recs = typeof test.aiRecommendations === "string" ? JSON.parse(test.aiRecommendations) : test.aiRecommendations;
+                      } catch (e) {}
+                    }
 
-                      {test.aiDiagnosis && (
-                        <div className="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-800/60 text-cyan-200 flex items-start gap-2">
-                          <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-bold text-cyan-300">אבחון AI בבדיקה זו: </span>
-                            {test.aiDiagnosis}
+                    return (
+                      <div className="space-y-3 pt-3 border-t border-slate-800/80 text-xs">
+                        {test.description && (
+                          <div className="text-slate-300">
+                            <span className="text-slate-500 font-semibold">תיאור והערות: </span>
+                            {test.description}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+
+                        {test.aiDiagnosis && (
+                          <div className="p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-800/60 text-cyan-200 flex items-start gap-2.5">
+                            <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <span className="font-bold text-cyan-300">אבחון ומצב המים: </span>
+                              <span>{test.aiDiagnosis}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Step By Step Treatment Plan with Inventory Matching & Web Search */}
+                        {recs?.stepByStepPlan && recs.stepByStepPlan.length > 0 && (
+                          <div className="space-y-2.5 bg-slate-950/90 p-4 rounded-2xl border border-slate-850">
+                            <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+                              <Zap className="w-4 h-4 text-amber-400" />
+                              <span>המלצות טיפול מותאמות אישית לאיזון המים:</span>
+                            </div>
+
+                            <div className="space-y-2.5">
+                              {recs.stepByStepPlan.map((step: any, sIdx: number) => (
+                                <div
+                                  key={sIdx}
+                                  className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 font-bold text-white text-xs">
+                                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-300 text-[11px] flex items-center justify-center font-bold">
+                                        {step.stepNumber || sIdx + 1}
+                                      </span>
+                                      <span>{step.title}</span>
+                                    </div>
+                                    {step.amount && step.amount !== "לפי שגרה" && (
+                                      <span className="px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-300 font-bold text-[11px] border border-cyan-800">
+                                        מינון: {step.amount}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="text-[11px] text-slate-300 leading-relaxed pr-7">
+                                    {step.instructions}
+                                  </div>
+
+                                  {/* Chemical match badge */}
+                                  {step.chemical && step.chemical !== "ללא חומר" && step.chemical !== "תחזוקה רגילה" && (
+                                    <div className="mr-7">
+                                      {step.inInventory ? (
+                                        <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/80 text-emerald-300 text-[11px] flex items-center justify-between">
+                                          <div className="flex items-center gap-1.5">
+                                            <Package className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                            <span>
+                                              <strong>קיים בארון החומרים שלך:</strong> {step.inventoryItemName || step.chemical} (נותרו: {step.inventoryRemaining || "במלאי"})
+                                            </span>
+                                          </div>
+                                          <span className="text-[10px] bg-emerald-900/60 px-1.5 py-0.5 rounded font-bold text-emerald-200">
+                                            מוכן לשימוש ✅
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/80 text-amber-200 text-[11px] space-y-1">
+                                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                                            <div className="flex items-center gap-1.5">
+                                              <ShoppingCart className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                              <span className="font-bold text-amber-300">חסר בארון החומרים - נדרש לרכוש</span>
+                                            </div>
+                                            <a
+                                              href={`https://www.google.com/search?q=${encodeURIComponent(step.searchKeywords || step.chemical + " לג'קוזי")}`}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="px-2 py-0.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded flex items-center gap-1 transition-all shadow"
+                                            >
+                                              <Search className="w-3 h-3" />
+                                              <span>חפש ברשת לרכישה</span>
+                                              <ExternalLink className="w-2.5 h-2.5" />
+                                            </a>
+                                          </div>
+                                          <div className="text-[10px] text-amber-300/80 pr-5">
+                                            💡 {step.buyRecommendation || `חפש ברשת: "${step.searchKeywords || step.chemical}" באתרי ציוד ספא ובריכות`}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}

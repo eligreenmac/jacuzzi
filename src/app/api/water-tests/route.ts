@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { analyzeWaterWithGemini } from "@/lib/gemini";
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,8 +36,6 @@ export async function POST(req: NextRequest) {
       waterClarity,
       description,
       imageUrl,
-      aiDiagnosis,
-      aiRecommendations,
     } = body;
 
     const parsedPh = ph === "UNKNOWN" || ph === "" || ph === undefined || ph === null ? null : parseFloat(ph);
@@ -48,6 +47,31 @@ export async function POST(req: NextRequest) {
       alkalinity === "UNKNOWN" || alkalinity === "" || alkalinity === undefined || alkalinity === null
         ? null
         : parseFloat(alkalinity);
+
+    const jacuzzi = await prisma.jacuzzi.findUnique({
+      where: { userId: user.id },
+    });
+
+    const inventory = await prisma.chemicalInventory.findMany({
+      where: { userId: user.id },
+    });
+
+    // Auto-generate rich AI diagnosis & chemical inventory matching
+    const diagnosis = await analyzeWaterWithGemini({
+      volumeLiters: jacuzzi?.volumeLiters || 1200,
+      sanitizationType: jacuzzi?.sanitizationType || "CHLORINE",
+      waterClarity: waterClarity || "CLEAR",
+      description,
+      ph: parsedPh !== null ? parsedPh : "UNKNOWN",
+      freeChlorine: parsedCl !== null ? parsedCl : "UNKNOWN",
+      alkalinity: parsedAlk !== null ? parsedAlk : "UNKNOWN",
+      inventory: inventory.map((i) => ({
+        name: i.name,
+        category: i.category,
+        quantity: i.quantity,
+        unit: i.unit,
+      })),
+    });
 
     const newTest = await prisma.waterLog.create({
       data: {
@@ -62,12 +86,12 @@ export async function POST(req: NextRequest) {
         waterClarity: waterClarity || "CLEAR",
         description: description || null,
         imageUrl: imageUrl || null,
-        aiDiagnosis: aiDiagnosis || null,
-        aiRecommendations: typeof aiRecommendations === "object" ? JSON.stringify(aiRecommendations) : aiRecommendations || null,
+        aiDiagnosis: diagnosis.waterStatusSummary,
+        aiRecommendations: JSON.stringify(diagnosis),
       },
     });
 
-    return NextResponse.json({ success: true, test: newTest });
+    return NextResponse.json({ success: true, test: newTest, diagnosis });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -90,7 +114,6 @@ export async function PUT(req: NextRequest) {
       alkalinityRange,
       waterClarity,
       description,
-      aiDiagnosis,
     } = body;
 
     if (!id) {
@@ -115,6 +138,31 @@ export async function PUT(req: NextRequest) {
         ? null
         : parseFloat(alkalinity);
 
+    const jacuzzi = await prisma.jacuzzi.findUnique({
+      where: { userId: user.id },
+    });
+
+    const inventory = await prisma.chemicalInventory.findMany({
+      where: { userId: user.id },
+    });
+
+    // Auto-generate rich AI diagnosis & chemical inventory matching
+    const diagnosis = await analyzeWaterWithGemini({
+      volumeLiters: jacuzzi?.volumeLiters || 1200,
+      sanitizationType: jacuzzi?.sanitizationType || "CHLORINE",
+      waterClarity: (waterClarity || existing.waterClarity || "CLEAR") as string,
+      description: description !== undefined ? description : existing.description || undefined,
+      ph: parsedPh !== null ? parsedPh : "UNKNOWN",
+      freeChlorine: parsedCl !== null ? parsedCl : "UNKNOWN",
+      alkalinity: parsedAlk !== null ? parsedAlk : "UNKNOWN",
+      inventory: inventory.map((i) => ({
+        name: i.name,
+        category: i.category,
+        quantity: i.quantity,
+        unit: i.unit,
+      })),
+    });
+
     const updated = await prisma.waterLog.update({
       where: { id },
       data: {
@@ -127,11 +175,12 @@ export async function PUT(req: NextRequest) {
         alkalinityRange: alkalinityRange !== undefined ? alkalinityRange : undefined,
         waterClarity: waterClarity !== undefined ? waterClarity : undefined,
         description: description !== undefined ? description : undefined,
-        aiDiagnosis: aiDiagnosis !== undefined ? aiDiagnosis : undefined,
+        aiDiagnosis: diagnosis.waterStatusSummary,
+        aiRecommendations: JSON.stringify(diagnosis),
       },
     });
 
-    return NextResponse.json({ success: true, test: updated });
+    return NextResponse.json({ success: true, test: updated, diagnosis });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
