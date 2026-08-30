@@ -85,9 +85,12 @@ export default function InventoryPage() {
           if (json.data.defaultMinThreshold) {
             setMinThreshold(json.data.defaultMinThreshold.toString());
           }
+        } else {
+          setErrorMsg(json.error || "לא ניתן היה לפענח את התמונה. אנא ודא שהתמונה ברורה.");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to identify photo:", err);
+        setErrorMsg(err.message || "שגיאה בפענוח התמונה מול שרתי ה-AI");
       } finally {
         setIsScanningPhoto(false);
       }

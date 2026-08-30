@@ -6,14 +6,14 @@ import {
   ESSENTIAL_CHEMICAL_CATEGORIES,
 } from "./jacuzzi-calc";
 
-const apiKey = process.env.GEMINI_API_KEY || "";
 const preferredModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 function getAiClient() {
-  if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY") {
+  const key = process.env.GEMINI_API_KEY || "";
+  if (!key || key === "YOUR_GEMINI_API_KEY" || key.trim() === "") {
     return null;
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: key.trim() });
 }
 
 export interface IdentifyChemicalResponse {
@@ -140,39 +140,70 @@ export async function identifyChemicalFromImage(
 ): Promise<IdentifyChemicalResponse> {
   const ai = getAiClient();
 
-  if (ai) {
-    try {
-      const prompt = `אתה מומחה לזיהוי כימיקלים ומוצרי תחזוקה לג'קוזי, בריכות וספא.
-עליך לנתח את התמונה המצורפת של אריזת המוצר / תווית הכימיקל.
-זהה:
-1. שם המוצר המלא והמותג (למשל: "כלור גרגירי מהיר HTH 56%", "מוריד pH נוזלי SpaTime", "מצליל מים קריסטל", "שוק ללא כלור MPS", "מסיר קצף Anti-Foam", "מקלונים לבדיקת מים 5 ב-1", "חומר קושר מתכות Metal Out").
-2. קטגוריית החומר: אחת מתוך: SANITIZER, PH_MINUS, PH_PLUS, SHOCK, ANTI_FOAM, CLARIFIER, TEST_STRIPS, CLEANER, OTHER.
-3. יחידת מידה מומלצת: GRAMS (אם אבקה/גרגירים), ML (אם נוזל), TABLETS (אם טבליות), STRIPS (אם מקלונים), PIECES.
-4. רף התראת מלאי מינימלי מומלץ (מספר בגרם/מל, למשל: 150).
-5. חומר פעיל עיקרי (Active Ingredient) שזוהה בתווית.
-6. תמצית אופן השימוש והמינון המומלץ מהתווית.
-7. הערות בטיחות מהאריזה.
+  if (!ai) {
+    throw new Error(
+      "מפתח Google Gemini API אינו מוגדר. יש להוסיף את GEMINI_API_KEY בהגדרות הסביבה (Environment Variables ב-Vercel או בקובץ .env) כדי להפעיל פענוח תמונות AI אמיתי."
+    );
+  }
+
+  // Extract accurate MIME and clean base64 payload
+  let mime = imageMimeType || "image/jpeg";
+  let cleanBase64 = imageBase64;
+  const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+  if (mimeMatch) {
+    mime = mimeMatch[1];
+    cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
+  }
+  cleanBase64 = cleanBase64.trim();
+
+  const prompt = `אתה מומחה ראייה ממוחשבת (Vision AI) וכימאי מקצועי לבריכות, ספא וג'קוזי.
+עליך לפענח ולקרוא במדויק (OCR) את כל הטקסט, התווית והפרטים שעל אריזת המוצר שבתמונה.
+
+דגשים קריטיים לזיהוי מהתווית:
+1. קרא את שם המותג והשם המלא והמדויק של המוצר (למשל: "טבליות ברום SpaTime", "מוריד pH גרגירי HTH", "שוק ללא כלור MPS Oxy-Shock", "מסיר קצף Foam Down", "מצליל ספא Clarifier", "מקלונים 4 ב-1 AquaChek").
+2. זהה את החומר הפעיל (Active Ingredients) והריכוז כפי שמודפס על האריזה (למשל: סודיום ביסולפט 98%, אשלגן פרוקסימונוסולפט 42%, סודיום דיכלור 56%, ברומו-כלורו-דימתילהידנטואין BCDMH 96%).
+3. קבע את הקטגוריה המדויקת:
+   - SANITIZER (כלור / ברום / חיטוי)
+   - PH_MINUS (מוריד pH)
+   - PH_PLUS (מעלה pH / מעלה בסיסיות)
+   - SHOCK (שוק מחמצן / שוק מהיר)
+   - ANTI_FOAM (מסיר / מונע קצף)
+   - CLARIFIER (מצליל מים)
+   - TEST_STRIPS (מקלונים / ערכות בדיקה)
+   - CLEANER (חומר ניקוי / שטיפת פילטר)
+   - OTHER (אחר)
+4. קבע את יחידת המידה: GRAMS (אם אבקה/גרגירים/משקל), ML (אם נוזל), TABLETS (אם טבליות), STRIPS (אם מקלונים), PIECES.
+5. תמצת בעברית ברורה את אופן השימוש, המינון והוראות הבטיחות שכתובים על האריזה.
 
 החזר אך ורק תשובת JSON תקנית במבנה הבא:
 {
   "identified": true,
-  "name": "שם המוצר שזוהה",
+  "name": "שם המוצר המלא והמותג כפי שזוהה מהתווית",
   "category": "SANITIZER" | "PH_MINUS" | "PH_PLUS" | "SHOCK" | "ANTI_FOAM" | "CLARIFIER" | "TEST_STRIPS" | "CLEANER" | "OTHER",
   "unit": "GRAMS" | "ML" | "TABLETS" | "STRIPS" | "PIECES",
   "defaultMinThreshold": 150,
-  "activeIngredients": "חומר פעיל",
-  "usageSummary": "תמצית שימוש ומינון",
-  "safetyNotes": "הוראות בטיחות ואחסון"
+  "activeIngredients": "החומר הפעיל המדויק מהתווית",
+  "usageSummary": "תמצית אופן השימוש והמינון המומלץ מהאריזה בעברית",
+  "safetyNotes": "הוראות בטיחות ואחסון מהאריזה"
 }`;
 
-      const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
+  const modelsToTry = [
+    process.env.GEMINI_MODEL,
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+  ].filter(Boolean) as string[];
 
+  let lastError: any = null;
+
+  for (const model of modelsToTry) {
+    try {
       const response = await ai.models.generateContent({
-        model: preferredModel,
+        model: model,
         contents: [
           {
             inlineData: {
-              mimeType: imageMimeType,
+              mimeType: mime,
               data: cleanBase64,
             },
           },
@@ -183,24 +214,20 @@ export async function identifyChemicalFromImage(
       const responseText = response.text || "";
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]) as IdentifyChemicalResponse;
+        const parsed = JSON.parse(jsonMatch[0]) as IdentifyChemicalResponse;
+        if (parsed.name && parsed.name.trim() !== "") {
+          return parsed;
+        }
       }
-    } catch (err) {
-      console.error("Gemini Image ID error:", err);
+    } catch (err: any) {
+      console.warn(`Gemini model ${model} vision identification attempt failed:`, err?.message || err);
+      lastError = err;
     }
   }
 
-  // Smart fallback
-  return {
-    identified: true,
-    name: "כימיקל ג'קוזי (זוהה מצילום)",
-    category: "SANITIZER",
-    unit: "GRAMS",
-    defaultMinThreshold: 100,
-    activeIngredients: "חומר פעיל לג'קוזי",
-    usageSummary: "יש לעיין בתווית האריזה לצורך הוראות מינון מדויקות לפי נפח הג'קוזי.",
-    safetyNotes: "אחסן במקום קריר ויבש, הרחק מילדים. אין לערבב חומרים יחד.",
-  };
+  throw new Error(
+    `שגיאה בזיהוי התמונה ב-AI: ${lastError?.message || "לא התקבל מענה ממודל הראייה"}. אנא ודא שהתמונה ברורה ושמפתח ה-GEMINI_API_KEY מוגדר ב-Vercel.`
+  );
 }
 
 /**
