@@ -1023,19 +1023,33 @@ export default function CalendarPage() {
                       );
                     })}
 
-                    {/* Completed Tasks */}
+                    {/* Completed Tasks - Clickable to Reset / Undo */}
                     {doneTasks.map((t: any) => (
                       <div
                         key={`done-${t.id}`}
-                        className="p-2 rounded-2xl bg-emerald-950/25 border border-emerald-900/50 text-[10px] text-emerald-300 flex items-center justify-between gap-1 font-semibold"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleResetTask(t);
+                        }}
+                        className="p-2 rounded-2xl bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/60 hover:border-emerald-600 text-[10px] text-emerald-300 flex items-center justify-between gap-1 font-semibold transition-all cursor-pointer group shadow-sm"
+                        title="לחץ כאן כדי לבטל את סימון הביצוע ולהחזיר למצב לא בוצע"
                       >
                         <div className="flex items-center gap-1.5 truncate">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                          <span className="truncate">{t.title}</span>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-amber-400" />
+                          <span className="truncate group-hover:text-amber-200">{t.title}</span>
                         </div>
-                        <span className="text-[8px] bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800 shrink-0">
-                          בוצע ✓
-                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleResetTask(t);
+                          }}
+                          className="text-[8px] bg-emerald-900/80 group-hover:bg-rose-950 group-hover:text-rose-300 group-hover:border-rose-800 text-emerald-200 px-1.5 py-0.5 rounded border border-emerald-700 shrink-0 transition-colors"
+                          title="לחץ לביטול ביצוע"
+                        >
+                          <span className="group-hover:hidden">בוצע ✓</span>
+                          <span className="hidden group-hover:inline">בטל ✕</span>
+                        </button>
                       </div>
                     ))}
 

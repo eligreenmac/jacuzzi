@@ -36,6 +36,24 @@ export default function DashboardPage() {
     }
   };
 
+  const handleResetTask = async (task: any) => {
+    if (!confirm(`האם להחזיר את המשימה "${task.title}" למצב פתוח (טרם בוצע)? המלאי שנגרע יוחזר לארון.`)) {
+      return;
+    }
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: task.id, resetTask: true }),
+      });
+      if (res.ok) {
+        loadDashboard();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     loadDashboard();
   }, []);
@@ -309,10 +327,15 @@ export default function DashboardPage() {
                           </div>
 
                           {isDone ? (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 shrink-0 flex items-center gap-1">
-                              <span>✓</span>
-                              <span>בוצע</span>
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleResetTask(task)}
+                              className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 hover:bg-rose-950 hover:text-rose-300 hover:border-rose-800 text-emerald-300 border border-emerald-800 shrink-0 flex items-center gap-1 transition-colors group/btn"
+                              title="לחץ כאן כדי לבטל סימון ביצוע ולהחזיר למצב לא בוצע"
+                            >
+                              <span className="group-hover/btn:hidden">✓ בוצע</span>
+                              <span className="hidden group-hover/btn:inline">✕ בטל</span>
+                            </button>
                           ) : (
                             <span
                               className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
