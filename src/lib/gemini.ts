@@ -1124,3 +1124,299 @@ function generateRuleBasedProactiveMaintenance(
   };
 }
 
+export interface OptimizeRoutineRequest {
+  volumeLiters: number;
+  sanitizationType: string;
+  location: string;
+  usageFrequency: string;
+  lastRefillDate: string | Date;
+  waterAgeDays: number;
+  currentTasks: Array<{
+    id: string;
+    title: string;
+    description?: string | null;
+    category: string;
+    frequencyDays: number;
+    nextDueDate: string | Date;
+    isCompleted: boolean;
+    lastDoneDate?: string | Date | null;
+  }>;
+  recentWaterLogs: Array<{
+    testedAt: string | Date;
+    ph?: number | null;
+    freeChlorine?: number | null;
+    alkalinity?: number | null;
+    waterClarity: string;
+    aiDiagnosis?: string | null;
+  }>;
+  recentDiary: Array<{
+    entryDate: string | Date;
+    title: string;
+    chemicalsAdded?: string | null;
+    content: string;
+  }>;
+  inventory: Array<{
+    name: string;
+    category: string;
+    quantity: number;
+    unit: string;
+  }>;
+}
+
+export interface TaskToDelete {
+  taskId: string;
+  taskTitle: string;
+  reason: string;
+}
+
+export interface TaskToUpdate {
+  taskId: string;
+  taskTitle: string;
+  currentFrequencyDays: number;
+  newFrequencyDays: number;
+  currentDueDate: string;
+  newDueDate: string;
+  reason: string;
+}
+
+export interface TaskToCreate {
+  title: string;
+  description: string;
+  category: "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY" | "CUSTOM";
+  frequencyDays: number;
+  nextDueDate: string;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  reason: string;
+}
+
+export interface OptimizeRoutineResponse {
+  routineHealthScore: number; // 0 - 100
+  executiveSummary: string;
+  waterAgeAnalysis: string;
+  tasksToDelete: TaskToDelete[];
+  tasksToUpdate: TaskToUpdate[];
+  tasksToCreate: TaskToCreate[];
+  proTips: string[];
+}
+
+export async function optimizeRoutineWithGemini(
+  req: OptimizeRoutineRequest
+): Promise<OptimizeRoutineResponse> {
+  const ai = getAiClient();
+  if (ai) {
+    try {
+      const prompt = `אתה מומחה-על לניהול שגרת תחזוקה ואופטימיזציית משימות לג'קוזי (Spa Master Maintenance AI).
+עליך לסרוק את כל היסטוריית הבדיקות, גיל המים המשוקלל, פעולות שבוצעו, המלאי הקיים וכל המשימות הפעילות בלוח השנה.
+מטרתך: לבצע סדר מוחלט וסנכרון מלא של שגרת הטיפולים — למחוק משימות כפולות/מיותרות/שלא רלוונטיות, לעדכן תאריכים ותדירויות לפי מצב המים האמיתי, ולהוסיף משימות שחסרות לשמירה על מים מושלמים.
+
+נתוני הג'קוזי:
+- נפח: ${req.volumeLiters} ליטר
+- שיטת חיטוי: ${req.sanitizationType} (CHLORINE / BROMINE / SALT / ACTIVE_OXYGEN)
+- מיקום: ${req.location}
+- תדירות שימוש: ${req.usageFrequency}
+- גיל מים משוקלל: ${req.waterAgeDays} ימים (תאריך מילוי אחרון: ${new Date(req.lastRefillDate).toLocaleDateString("he-IL")})
+
+משימות קיימות בלוח השנה:
+${JSON.stringify(req.currentTasks, null, 2)}
+
+מדידות ובדיקות מים אחרונות:
+${JSON.stringify(req.recentWaterLogs, null, 2)}
+
+פעולות שתועדו לאחרונה ביומן:
+${JSON.stringify(req.recentDiary, null, 2)}
+
+מלאי חומרים בארון:
+${JSON.stringify(req.inventory, null, 2)}
+
+עקרונות אופטימיזציה מקצועיים:
+1. **מחיקת משימות לא רלוונטיות / כפולות (tasksToDelete)**:
+   - משימה שלא תואמת את שיטת החיטוי (למשל משימת כלור כשהג'קוזי עובד על ברום או להפך).
+   - משימות כפולות לאותו עניין.
+   - משימות שנוצרו בעבר באופן חד-פעמי וכבר אינן רלוונטיות.
+2. **עדכון משימות קיימות (tasksToUpdate)**:
+   - אם משימת שטיפת פילטר או שוק פגת תוקף מזמן או שבוצעה לאחרונה ביומן, עדכן את התאריך הבא והתדירות.
+   - התאמת תדירויות לפי תדירות השימוש (למשל שימוש כבד דורש שטיפת פילטר כל 5 ימים במקום 7).
+3. **הוספת משימות חיוניות שחסרות (tasksToCreate)**:
+   - בדיקת מקלון שבועית (אם לא קיימת).
+   - שטיפת פילטר שבועית.
+   - ניקוי והשריית פילטר חודשית בחומר מסיר שומנים.
+   - ריקון ומילוי מים רבעוני (בהתאם לגיל המים).
+   - שוק מחמצן תקופתי.
+
+החזר אך ורק תשובת JSON תקנית במבנה:
+{
+  "routineHealthScore": 85,
+  "executiveSummary": "ניתוח תמציתי של יעילות השגרה הנוכחית וההתאמות שבוצעו",
+  "waterAgeAnalysis": "ניתוח גיל המים הנוכחי (${req.waterAgeDays} ימים) והמלצה למילוי/החלפה חלקית בעתיד",
+  "tasksToDelete": [
+    {
+      "taskId": "מזהה המשימה למחיקה",
+      "taskTitle": "שם המשימה",
+      "reason": "הסבר מדוע משימה זו מיותרת/לא רלוונטית"
+    }
+  ],
+  "tasksToUpdate": [
+    {
+      "taskId": "מזהה המשימה לעדכון",
+      "taskTitle": "שם המשימה",
+      "currentFrequencyDays": 7,
+      "newFrequencyDays": 7,
+      "currentDueDate": "ISO",
+      "newDueDate": "ISO",
+      "reason": "הסבר מדוע עודכן התאריך/התדירות"
+    }
+  ],
+  "tasksToCreate": [
+    {
+      "title": "שם המשימה החדשה להוספה",
+      "description": "הסבר על המשימה",
+      "category": "WEEKLY" | "MONTHLY" | "QUARTERLY",
+      "frequencyDays": 7,
+      "nextDueDate": "ISO",
+      "priority": "HIGH" | "MEDIUM",
+      "reason": "מדוע משימה זו חיונית לשגרה"
+    }
+  ],
+  "proTips": ["טיפ מקצועי 1", "טיפ מקצועי 2"]
+}`;
+
+      const response = await ai.models.generateContent({
+        model: preferredModel,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.2,
+        },
+      });
+
+      const raw = response.text ? response.text.trim() : "";
+      if (raw) {
+        return JSON.parse(raw) as OptimizeRoutineResponse;
+      }
+    } catch (err) {
+      console.error("AI Routine Optimization error, falling back to rule engine:", err);
+    }
+  }
+
+  return generateRuleBasedRoutineOptimization(req);
+}
+
+function generateRuleBasedRoutineOptimization(
+  req: OptimizeRoutineRequest
+): OptimizeRoutineResponse {
+  const tasksToDelete: TaskToDelete[] = [];
+  const tasksToUpdate: TaskToUpdate[] = [];
+  const tasksToCreate: TaskToCreate[] = [];
+
+  const now = Date.now();
+  const todayIso = new Date(now).toISOString();
+
+  // 1. Check Sanitizer Compatibility
+  const isBromine = req.sanitizationType === "BROMINE";
+  const isChlorine = req.sanitizationType === "CHLORINE";
+
+  for (const task of req.currentTasks) {
+    // Delete chlorine task if jacuzzi is bromine
+    if (isBromine && task.title.includes("כלור") && !task.title.includes("ברום")) {
+      tasksToDelete.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: "שיטת החיטוי המוגדרת בג'קוזי היא ברום - משימת כלור אינה רלוונטית.",
+      });
+    } else if (isChlorine && task.title.includes("ברום") && !task.title.includes("כלור")) {
+      tasksToDelete.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: "שיטת החיטוי המוגדרת בג'קוזי היא כלור - משימת ברום אינה רלוונטית.",
+      });
+    }
+
+    // Check overdue outdated tasks (> 30 days overdue)
+    const dueTime = new Date(task.nextDueDate).getTime();
+    if (!task.isCompleted && now - dueTime > 30 * 24 * 3600 * 1000) {
+      const newDue = new Date(now + 2 * 24 * 3600 * 1000).toISOString();
+      tasksToUpdate.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        currentFrequencyDays: task.frequencyDays,
+        newFrequencyDays: task.frequencyDays,
+        currentDueDate: new Date(task.nextDueDate).toISOString(),
+        newDueDate: newDue,
+        reason: "המשימה פגת תוקף מעל 30 ימים - תאריך היעד רוענן ליומיים הקרובים.",
+      });
+    }
+  }
+
+  // 2. Check Missing Essential Tasks
+  const hasFilterWash = req.currentTasks.some((t) => t.title.includes("פילטר") || t.title.includes("מסנן"));
+  const hasWaterTest = req.currentTasks.some((t) => t.title.includes("בדיק") || t.title.includes("מקלון") || t.title.includes("איכות"));
+  const hasDrainRefill = req.currentTasks.some((t) => t.title.includes("החלפת מים") || t.title.includes("ריקון"));
+  const hasShock = req.currentTasks.some((t) => t.title.includes("שוק") || t.title.includes("חיטוי"));
+
+  if (!hasFilterWash) {
+    tasksToCreate.push({
+      title: "שטיפת פילטר שבועית במים",
+      description: "שטיפת מסנן הג'קוזי בזרם מים חזק להסרת שומנים, לכלוך ושאריות כימיקלים.",
+      category: "WEEKLY",
+      frequencyDays: 7,
+      nextDueDate: new Date(now + 4 * 24 * 3600 * 1000).toISOString(),
+      priority: "HIGH",
+      reason: "משימת שטיפת פילטר חיונית לשמירה על סירקולציה ומים צלולים ואינה מוגדרת בלוח השנה.",
+    });
+  }
+
+  if (!hasWaterTest) {
+    tasksToCreate.push({
+      title: "בדיקת איכות מים שבועית (מקלון)",
+      description: "בדיקת pH, רמת חיטוי ובסיסיות TA באמצעות מקלון בדיקה.",
+      category: "WEEKLY",
+      frequencyDays: 7,
+      nextDueDate: new Date(now + 2 * 24 * 3600 * 1000).toISOString(),
+      priority: "HIGH",
+      reason: "בדיקת מים שבועית היא עמוד השדרה של בריאות הג'קוזי.",
+    });
+  }
+
+  if (!hasDrainRefill) {
+    const daysUntilQuarterly = Math.max(7, 90 - req.waterAgeDays);
+    tasksToCreate.push({
+      title: "ריקון, ניקוי צנרת ומילוי מים מחדש",
+      description: "ריקון מלא של מי הג'קוזי, שטיפת צנרת עם חומר ייעודי ומילוי מים טריים.",
+      category: "QUARTERLY",
+      frequencyDays: 90,
+      nextDueDate: new Date(now + daysUntilQuarterly * 24 * 3600 * 1000).toISOString(),
+      priority: "MEDIUM",
+      reason: `גיל המים הנוכחי הוא ${req.waterAgeDays} ימים. מומלץ לחדש מים כל 90 ימים למניעת עומס מוצקים מומסים (TDS).`,
+    });
+  }
+
+  if (!hasShock) {
+    tasksToCreate.push({
+      title: "שוק מחמצן תקופתי (MPS)",
+      description: "הוספת שוק מחמצן ללא כלור לפירוק תרכובות אורגניות, שמנים וכלוראמינים.",
+      category: "WEEKLY",
+      frequencyDays: 7,
+      nextDueDate: new Date(now + 5 * 24 * 3600 * 1000).toISOString(),
+      priority: "MEDIUM",
+      reason: "שוק שבועי שומר על מתח הפנים ומונע ריחות חריפים והקצפה.",
+    });
+  }
+
+  const score = Math.max(50, 100 - tasksToDelete.length * 15 - (tasksToCreate.length > 0 ? 20 : 0));
+
+  return {
+    routineHealthScore: score,
+    executiveSummary: `נסרקו ${req.currentTasks.length} משימות קיימות. זוהו ${tasksToDelete.length} משימות לא רלוונטיות למחיקה, ${tasksToUpdate.length} משימות לרענון תאריך, ו-${tasksToCreate.length} משימות יסוד חיוניות שמומלץ להוסיף.`,
+    waterAgeAnalysis: `גיל המים המשוקלל הוא ${req.waterAgeDays} ימים. מועד ריקון ומילוי מים מומלץ בעוד כ-${Math.max(1, 90 - req.waterAgeDays)} ימים.`,
+    tasksToDelete,
+    tasksToUpdate,
+    tasksToCreate,
+    proTips: [
+      "שטיפת פילטר קבועה חוסכת עד 40% בצריכת הכימיקלים.",
+      "הקפד על רמת בסיסיות (TA) של 80-120 לפני איזון ה-pH.",
+      "אם החלפת חלק מהמים, גיל המים משתקלל אוטומטית ומאריך את הזמן עד להחלפה המלאה הבאה.",
+    ],
+  };
+}
+
+

@@ -195,6 +195,73 @@ export default function CalendarPage() {
     }
   };
 
+  // Routine Optimizer AI State
+  const [isOptimizingRoutine, setIsOptimizingRoutine] = useState(false);
+  const [routineOptimization, setRoutineOptimization] = useState<any | null>(null);
+  const [isApplyingOptimization, setIsApplyingOptimization] = useState(false);
+  const [selectedDeletions, setSelectedDeletions] = useState<string[]>([]);
+  const [selectedAdditions, setSelectedAdditions] = useState<number[]>([]);
+
+  const handleScanRoutine = async () => {
+    setIsOptimizingRoutine(true);
+    try {
+      const res = await fetch("/api/ai/optimize-routine", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "שגיאה בסריקת שגרת הטיפולים");
+
+      setRoutineOptimization(data.optimization);
+      if (data.optimization?.tasksToDelete) {
+        setSelectedDeletions(data.optimization.tasksToDelete.map((t: any) => t.taskId));
+      }
+      if (data.optimization?.tasksToCreate) {
+        setSelectedAdditions(data.optimization.tasksToCreate.map((_: any, idx: number) => idx));
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsOptimizingRoutine(false);
+    }
+  };
+
+  const handleApplyOptimization = async () => {
+    if (!routineOptimization) return;
+
+    setIsApplyingOptimization(true);
+    try {
+      const tasksToDelete = (routineOptimization.tasksToDelete || [])
+        .filter((t: any) => selectedDeletions.includes(t.taskId))
+        .map((t: any) => t.taskId);
+
+      const tasksToCreate = (routineOptimization.tasksToCreate || []).filter((_: any, idx: number) =>
+        selectedAdditions.includes(idx)
+      );
+
+      const res = await fetch("/api/ai/optimize-routine/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tasksToDelete,
+          tasksToUpdate: routineOptimization.tasksToUpdate || [],
+          tasksToCreate,
+          summary: routineOptimization.executiveSummary,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "שגיאה בהחלת אופטימיזציית השגרה");
+
+      setActionNotice(data.message || "שגרת הטיפולים עודכנה וסונכרנה בהצלחה!");
+      setRoutineOptimization(null);
+      loadData();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsApplyingOptimization(false);
+    }
+  };
+
   const loadData = async () => {
     try {
       const [tasksRes, logsRes, chemRes] = await Promise.all([
@@ -605,6 +672,15 @@ export default function CalendarPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={handleScanRoutine}
+            disabled={isOptimizingRoutine}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-purple-600/30 transition-all hover:scale-105 disabled:opacity-50"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300 animate-spin" style={{ animationDuration: isOptimizingRoutine ? "1s" : "0s" }} />
+            <span>{isOptimizingRoutine ? "סורק ומבצע אופטימיזציה..." : "✨ סנכרון ואופטימיזציית שגרה AI"}</span>
+          </button>
+
           <button
             onClick={() => {
               setIsProactiveModalOpen(true);
@@ -1829,6 +1905,230 @@ export default function CalendarPage() {
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{isApplyingProactive ? "מעדכן לוח שנה ויומן..." : "✓ אשר והחל שינויים בלוח השנה וביומן"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Routine Optimization AI Modal */}
+      {routineOptimization && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 max-w-3xl w-full space-y-5 shadow-2xl max-h-[92vh] overflow-y-auto animate-scale-up">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3.5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-lg shadow-purple-500/10">
+                  <Sparkles className="w-6 h-6 text-purple-300" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-white flex items-center gap-2">
+                    <span>אופטימיזציית שגרת טיפולים חכמה (AI)</span>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">
+                      ציון שגרה: {routineOptimization.routineHealthScore}/100
+                    </span>
+                  </h2>
+                  <p className="text-[11px] text-slate-400">סריקה מלאה של בדיקות העבר, גיל המים, פעולות שבוצעו ודיוק לוח השנה</p>
+                </div>
+              </div>
+              <button onClick={() => setRoutineOptimization(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Executive Summary & Water Age */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-slate-950 p-3.5 rounded-2xl border border-purple-900/40 space-y-1">
+                <div className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>ניתוח מצב השגרה:</span>
+                </div>
+                <div className="text-xs text-slate-300 leading-relaxed">
+                  {routineOptimization.executiveSummary}
+                </div>
+              </div>
+
+              <div className="bg-slate-950 p-3.5 rounded-2xl border border-cyan-900/40 space-y-1">
+                <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                  <Droplets className="w-3.5 h-3.5" />
+                  <span>גיל המים והחלפות:</span>
+                </div>
+                <div className="text-xs text-slate-300 leading-relaxed">
+                  {routineOptimization.waterAgeAnalysis}
+                </div>
+              </div>
+            </div>
+
+            {/* Section 1: Tasks To Delete (מחיקת משימות מיותרות/לא רלוונטיות) */}
+            <div className="space-y-2.5">
+              <h3 className="text-xs font-bold text-rose-400 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Trash2 className="w-4 h-4" />
+                  <span>משימות לא רלוונטיות או כפולות למחיקה מלוח השנה ({routineOptimization.tasksToDelete?.length || 0}):</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">בחר אילו משימות להסיר</span>
+              </h3>
+
+              {(!routineOptimization.tasksToDelete || routineOptimization.tasksToDelete.length === 0) ? (
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>כל המשימות בלוח השנה רלוונטיות – לא נמצאו משימות מיותרות למחיקה!</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {routineOptimization.tasksToDelete.map((task: any) => {
+                    const isChecked = selectedDeletions.includes(task.taskId);
+                    return (
+                      <label
+                        key={task.taskId}
+                        className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                          isChecked
+                            ? "bg-rose-950/30 border-rose-800/60 text-rose-200"
+                            : "bg-slate-950/60 border-slate-800 text-slate-400"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedDeletions([...selectedDeletions, task.taskId]);
+                            } else {
+                              setSelectedDeletions(selectedDeletions.filter((id) => id !== task.taskId));
+                            }
+                          }}
+                          className="mt-1 rounded accent-rose-500"
+                        />
+                        <div className="space-y-0.5 flex-1">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            <span className={isChecked ? "line-through text-rose-300" : "text-slate-300"}>
+                              {task.taskTitle}
+                            </span>
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-rose-950 border border-rose-800 text-rose-300">
+                              מחיקה מומלצת
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-400">💡 {task.reason}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Section 2: Tasks To Update (רענון תאריכים ותדירויות) */}
+            {routineOptimization.tasksToUpdate?.length > 0 && (
+              <div className="space-y-2.5">
+                <h3 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4" />
+                  <span>משימות קיימות שמומלץ לרענן תאריך או תדירות ({routineOptimization.tasksToUpdate.length}):</span>
+                </h3>
+
+                <div className="space-y-2">
+                  {routineOptimization.tasksToUpdate.map((task: any, idx: number) => (
+                    <div key={idx} className="p-3 rounded-2xl bg-slate-950 border border-amber-900/40 space-y-1 text-xs">
+                      <div className="flex items-center justify-between font-bold">
+                        <span className="text-white">{task.taskTitle}</span>
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <span className="line-through text-slate-500">
+                            {new Date(task.currentDueDate).toLocaleDateString("he-IL")}
+                          </span>
+                          <span className="text-amber-400">➔</span>
+                          <span className="text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                            מועד חדש: {new Date(task.newDueDate).toLocaleDateString("he-IL")}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-amber-300/90 leading-relaxed">
+                        💡 {task.reason}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Section 3: Tasks To Create (הוספת משימות חיוניות שחסרות) */}
+            <div className="space-y-2.5">
+              <h3 className="text-xs font-bold text-cyan-400 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Plus className="w-4 h-4" />
+                  <span>משימות יסוד חיוניות שמומלץ להוסיף ללוח השנה ({routineOptimization.tasksToCreate?.length || 0}):</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">בחר אילו משימות להוסיף</span>
+              </h3>
+
+              {(!routineOptimization.tasksToCreate || routineOptimization.tasksToCreate.length === 0) ? (
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>כל משימות היסוד הנדרשות כבר קיימות בלוח השנה שלך!</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {routineOptimization.tasksToCreate.map((task: any, idx: number) => {
+                    const isChecked = selectedAdditions.includes(idx);
+                    return (
+                      <label
+                        key={idx}
+                        className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                          isChecked
+                            ? "bg-cyan-950/30 border-cyan-800/60 text-cyan-200"
+                            : "bg-slate-950/60 border-slate-800 text-slate-400"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedAdditions([...selectedAdditions, idx]);
+                            } else {
+                              setSelectedAdditions(selectedAdditions.filter((i) => i !== idx));
+                            }
+                          }}
+                          className="mt-1 rounded accent-cyan-500"
+                        />
+                        <div className="space-y-0.5 flex-1">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            <span className="text-white">{task.title}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300">
+                                כל {task.frequencyDays} ימים
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                יעד ראשון: {new Date(task.nextDueDate).toLocaleDateString("he-IL")}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-[11px] text-slate-300">{task.description}</div>
+                          <div className="text-[10px] text-cyan-400/90 pt-0.5">💡 {task.reason}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-800 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setRoutineOptimization(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all"
+              >
+                ✕ בטל (אל תשנה שגרה)
+              </button>
+
+              <button
+                type="button"
+                disabled={isApplyingOptimization}
+                onClick={handleApplyOptimization}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-black text-xs shadow-lg shadow-purple-600/30 flex items-center gap-2 transition-all hover:scale-105 disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{isApplyingOptimization ? "מעדכן שגרה ולוח שנה..." : "✓ אשר והחל אופטימיזציית שגרה בלוח השנה"}</span>
               </button>
             </div>
           </div>

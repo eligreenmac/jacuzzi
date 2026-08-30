@@ -68,12 +68,39 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 4. Update Jacuzzi refill date if full/major refill
-    if (updateJacuzziRefill) {
-      await prisma.jacuzzi.updateMany({
-        where: { userId: user.id },
-        data: { lastRefillDate: actionDateObj },
-      });
+    // 4. Update Jacuzzi water age (Weighted for partial refills or reset for 100% full refills)
+    const refillPct = body.refillPercentage || (updateJacuzziRefill ? 100 : 0);
+    let updatedWaterAgeMessage = "";
+
+    const jacuzzi = await prisma.jacuzzi.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (jacuzzi && refillPct > 0) {
+      const currentRefillTime = new Date(jacuzzi.lastRefillDate || jacuzzi.createdAt).getTime();
+      const currentAgeMs = Math.max(0, actionDateObj.getTime() - currentRefillTime);
+
+      if (refillPct >= 95 || updateJacuzziRefill) {
+        // 100% Full Refill
+        await prisma.jacuzzi.update({
+          where: { userId: user.id },
+          data: { lastRefillDate: actionDateObj },
+        });
+        updatedWaterAgeMessage = "גיל המים אופס ל-0 ימים (מילוי מלא).";
+      } else {
+        // Partial refill: New effective age = currentAge * (1 - refillPercentage/100)
+        const factor = Math.max(0, 1 - refillPct / 100);
+        const newAgeMs = currentAgeMs * factor;
+        const newEffectiveRefillDate = new Date(actionDateObj.getTime() - newAgeMs);
+
+        await prisma.jacuzzi.update({
+          where: { userId: user.id },
+          data: { lastRefillDate: newEffectiveRefillDate },
+        });
+
+        const newAgeDays = Math.round(newAgeMs / (24 * 3600 * 1000));
+        updatedWaterAgeMessage = `גיל המים שוקלל מחדש ל-${newAgeDays} ימים (בעקבות החלפת ${refillPct}% מים).`;
+      }
     }
 
     return NextResponse.json({
@@ -81,7 +108,7 @@ export async function POST(req: NextRequest) {
       diaryEntry,
       shiftedTasksCount: shiftedTasksSummary.length,
       createdTasksCount: createdTasks.length,
-      message: `פעולת האחזקה היזומה תועדה ביומן בהצלחה! ${shiftedTasksSummary.length > 0 ? `עודכנו ${shiftedTasksSummary.length} זימונים בלוח השנה` : ""} ${createdTasks.length > 0 ? `ונוספו ${createdTasks.length} משימות מעקב חדשות` : ""}.`,
+      message: `פעולת האחזקה היזומה תועדה ביומן בהצלחה! ${updatedWaterAgeMessage} ${shiftedTasksSummary.length > 0 ? `עודכנו ${shiftedTasksSummary.length} זימונים בלוח השנה` : ""} ${createdTasks.length > 0 ? `ונוספו ${createdTasks.length} משימות מעקב חדשות` : ""}.`,
     });
   } catch (error: any) {
     console.error("Apply proactive maintenance error:", error);
