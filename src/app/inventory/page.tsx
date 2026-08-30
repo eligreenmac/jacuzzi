@@ -32,6 +32,12 @@ export default function InventoryPage() {
   const [isScanningPhoto, setIsScanningPhoto] = useState(false);
   const [identifiedData, setIdentifiedData] = useState<any>(null);
 
+  // Editable fields (auto-filled by AI Vision OCR, with full manual override)
+  const [customName, setCustomName] = useState("");
+  const [customCategory, setCustomCategory] = useState("OTHER");
+  const [customUnit, setCustomUnit] = useState("GRAMS");
+  const [customActiveIngredients, setCustomActiveIngredients] = useState("");
+
   const [quantity, setQuantity] = useState("500");
   const [minThreshold, setMinThreshold] = useState("100");
   const [addedDate, setAddedDate] = useState(new Date().toISOString().split("T")[0]);
@@ -82,15 +88,19 @@ export default function InventoryPage() {
         const json = await res.json();
         if (json.success && json.data) {
           setIdentifiedData(json.data);
+          setCustomName(json.data.name || "");
+          setCustomCategory(json.data.category || "OTHER");
+          setCustomUnit(json.data.unit || "GRAMS");
+          setCustomActiveIngredients(json.data.activeIngredients || "");
           if (json.data.defaultMinThreshold) {
             setMinThreshold(json.data.defaultMinThreshold.toString());
           }
         } else {
-          setErrorMsg(json.error || "לא ניתן היה לפענח את התמונה. אנא ודא שהתמונה ברורה.");
+          setErrorMsg(json.error || "לא ניתן היה לפענח את התמונה. ניתן להזין את פרטי החומר ידנית.");
         }
       } catch (err: any) {
         console.error("Failed to identify photo:", err);
-        setErrorMsg(err.message || "שגיאה בפענוח התמונה מול שרתי ה-AI");
+        setErrorMsg(err.message || "שגיאה בפענוח התמונה. ניתן להזין את פרטי החומר ידנית.");
       } finally {
         setIsScanningPhoto(false);
       }
@@ -108,18 +118,22 @@ export default function InventoryPage() {
     setSaving(true);
     setErrorMsg("");
 
+    const finalName = customName.trim() || identifiedData?.name || "חומר ללא שם";
+    const finalCategory = customCategory || identifiedData?.category || "OTHER";
+    const finalUnit = customUnit || identifiedData?.unit || "GRAMS";
+
     try {
       const res = await fetch("/api/chemicals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: identifiedData?.name || "חומר שזוהה מצילום",
-          category: identifiedData?.category || "OTHER",
+          name: finalName,
+          category: finalCategory,
           quantity: parseFloat(quantity) || 0,
-          unit: identifiedData?.unit || "GRAMS",
+          unit: finalUnit,
           minThreshold: parseFloat(minThreshold) || 100,
           imageUrl: imagePreview,
-          notes: identifiedData?.usageSummary || identifiedData?.safetyNotes || "",
+          notes: customActiveIngredients ? `חומר פעיל: ${customActiveIngredients}. ` + (identifiedData?.usageSummary || "") : (identifiedData?.usageSummary || identifiedData?.safetyNotes || ""),
           addedDate: addedDate ? new Date(addedDate).toISOString() : new Date().toISOString(),
         }),
       });
@@ -128,6 +142,9 @@ export default function InventoryPage() {
         setIsAddModalOpen(false);
         setImagePreview("");
         setIdentifiedData(null);
+        setCustomName("");
+        setCustomCategory("OTHER");
+        setCustomActiveIngredients("");
         setQuantity("500");
         setAddedDate(new Date().toISOString().split("T")[0]);
         loadChemicals();
@@ -442,38 +459,100 @@ export default function InventoryPage() {
                 </div>
               )}
 
-              {/* Step 2: AI Recognized Metadata */}
-              {identifiedData && (
-                <div className="space-y-4 p-4 rounded-2xl bg-slate-950/80 border border-cyan-900/60">
-                  <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold">
-                    <Sparkles className="w-4 h-4" />
-                    <span>החומר זוהה בהצלחה על ידי הבינה המלאכותית:</span>
+              {/* Step 2: Recognized or Editable Chemical Form */}
+              {imagePreview && !isScanningPhoto && (
+                <div className="space-y-4 p-4 rounded-2xl bg-slate-950/90 border border-cyan-900/60 shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold">
+                      <Sparkles className="w-4 h-4" />
+                      <span>{identifiedData ? "פרטי החומר (זוהה על ידי ה-AI):" : "פרטי החומר לארון:"}</span>
+                    </div>
+                    {identifiedData && (
+                      <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded-full font-bold">
+                        זיהוי חכם ✓
+                      </span>
+                    )}
                   </div>
 
+                  {/* Chemical Name */}
                   <div className="space-y-1">
-                    <div className="text-sm font-bold text-white">{identifiedData.name}</div>
-                    <div className="text-xs text-cyan-300">
-                      קטגוריה: {categoryLabels[identifiedData.category] || identifiedData.category}
-                      {identifiedData.activeIngredients && ` • חומר פעיל: ${identifiedData.activeIngredients}`}
+                    <label className="text-[11px] font-bold text-slate-300 block">
+                      שם המוצר והמותג:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="לדוגמה: מסיר קצף Anti-Foam SpaTime או טבליות ברום"
+                      value={customName}
+                      onChange={(e) => setCustomName(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-bold text-sm focus:border-cyan-500"
+                    />
+                  </div>
+
+                  {/* Category & Unit */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-300 block">
+                        קטגוריית החומר:
+                      </label>
+                      <select
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-bold focus:border-cyan-500"
+                      >
+                        <option value="SANITIZER">חומר חיטוי (כלור / ברום)</option>
+                        <option value="PH_MINUS">מוריד pH (חומצה)</option>
+                        <option value="PH_PLUS">מעלה pH / בסיסיות</option>
+                        <option value="SHOCK">שוק מחמצן (ללא כלור / מהיר)</option>
+                        <option value="ANTI_FOAM">מסיר / מונע קצף (Anti-Foam)</option>
+                        <option value="CLARIFIER">מצליל מים (Clarifier)</option>
+                        <option value="TEST_STRIPS">מקלונים / ערכת בדיקה</option>
+                        <option value="CLEANER">חומר ניקוי / שטיפת פילטר</option>
+                        <option value="OTHER">אחר / תוסף תחזוקה</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-300 block">
+                        יחידת מידה:
+                      </label>
+                      <select
+                        value={customUnit}
+                        onChange={(e) => setCustomUnit(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-bold focus:border-cyan-500"
+                      >
+                        <option value="GRAMS">גרם (אבקה / גרגירים)</option>
+                        <option value="ML">מ"ל (נוזל)</option>
+                        <option value="TABLETS">טבליות / כדורים</option>
+                        <option value="STRIPS">מקלונים</option>
+                        <option value="PIECES">יחידות</option>
+                      </select>
                     </div>
                   </div>
 
-                  {identifiedData.usageSummary && (
+                  {/* Active Ingredients & Usage Summary from OCR */}
+                  {identifiedData?.activeIngredients && (
+                    <div className="text-[11px] text-cyan-300 bg-cyan-950/40 p-2.5 rounded-xl border border-cyan-900/60 font-semibold">
+                      🧪 חומר פעיל שזוהה: {identifiedData.activeIngredients}
+                    </div>
+                  )}
+
+                  {identifiedData?.usageSummary && (
                     <div className="text-[11px] text-slate-300 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
                       💡 {identifiedData.usageSummary}
                     </div>
                   )}
 
-                  {/* Step 3: User enters quantity and addition date */}
+                  {/* Quantity & Addition Date */}
                   <div className="pt-2 border-t border-slate-800/80 space-y-3">
                     <label className="text-xs font-bold text-white block">
-                      2. הזן את הכמות ותאריך ההוספה לארון:
+                      כמות באריזה ותאריך הוספה לארון:
                     </label>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <span className="text-[11px] text-slate-400">
-                          כמות שנותרה באריזה ({identifiedData.unit === "GRAMS" ? 'גר\'' : identifiedData.unit === "ML" ? 'מ"ל' : identifiedData.unit})
+                          כמות שנותרה באריזה ({customUnit === "GRAMS" ? 'גר\'' : customUnit === "ML" ? 'מ"ל' : customUnit === "TABLETS" ? 'טבליות' : customUnit})
                         </span>
                         <input
                           type="number"

@@ -187,6 +187,7 @@ export async function identifyChemicalFromImage(
   "safetyNotes": "הוראות בטיחות ואחסון מהאריזה"
 }`;
 
+  const apiKeyStr = (process.env.GEMINI_API_KEY || "").trim();
   const modelsToTry = [
     process.env.GEMINI_MODEL,
     "gemini-2.5-flash",
@@ -196,6 +197,7 @@ export async function identifyChemicalFromImage(
 
   let lastError: any = null;
 
+  // 1. Try via official SDK
   for (const model of modelsToTry) {
     try {
       const response = await ai.models.generateContent({
@@ -220,13 +222,62 @@ export async function identifyChemicalFromImage(
         }
       }
     } catch (err: any) {
-      console.warn(`Gemini model ${model} vision identification attempt failed:`, err?.message || err);
+      console.warn(`Gemini SDK model ${model} vision identification attempt failed:`, err?.message || err);
       lastError = err;
     }
   }
 
+  // 2. Direct REST fallback via Google Generative Language API
+  if (apiKeyStr) {
+    for (const model of ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]) {
+      try {
+        const restRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKeyStr}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: prompt },
+                    {
+                      inline_data: {
+                        mime_type: mime,
+                        data: cleanBase64,
+                      },
+                    },
+                  ],
+                },
+              ],
+            }),
+          }
+        );
+
+        if (restRes.ok) {
+          const restJson = await restRes.json();
+          const text = restJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]) as IdentifyChemicalResponse;
+            if (parsed.name && parsed.name.trim() !== "") {
+              return parsed;
+            }
+          }
+        } else {
+          const errData = await restRes.json().catch(() => ({}));
+          console.warn(`Direct REST model ${model} error:`, errData);
+          lastError = errData?.error || lastError;
+        }
+      } catch (err: any) {
+        console.warn(`Direct REST model ${model} fetch failed:`, err);
+        lastError = err;
+      }
+    }
+  }
+
   throw new Error(
-    `שגיאה בזיהוי התמונה ב-AI: ${lastError?.message || "לא התקבל מענה ממודל הראייה"}. אנא ודא שהתמונה ברורה ושמפתח ה-GEMINI_API_KEY מוגדר ב-Vercel.`
+    `שגיאה בזיהוי התמונה ב-AI: ${lastError?.message || JSON.stringify(lastError) || "לא התקבל מענה ממודל הראייה"}. אנא ודא שהתמונה ברורה ושמפתח ה-GEMINI_API_KEY מוגדר ותקין ב-Vercel.`
   );
 }
 
