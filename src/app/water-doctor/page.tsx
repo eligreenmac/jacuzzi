@@ -97,6 +97,8 @@ export default function WaterDoctorPage() {
     { value: "VERY_CLOUDY", label: "עכורים מאוד", icon: "🥛", desc: "מים חלביים / אטומים" },
     { value: "FOAMY", label: "מקציפים", icon: "🧼", desc: "שכבת קצף בעת הפעלת ג'טים" },
     { value: "GREEN", label: "ירוקים / אצות", icon: "🌿", desc: "גוון ירקרק או דפנות חלקלקות" },
+    { value: "METALLIC_COPPER", label: "ירוק-טורקיז / נחושת", icon: "🪙", desc: "מים צלולים בגוון טורקיז הנובעים מחמצון נחושת (שחיקת גופי חימום)" },
+    { value: "METALLIC_RUST", label: "חום / חלודה / ברזל", icon: "⚙️", desc: "מים בגוון צהבהב, חום או חלודה מנוכחות ברזל במים" },
     { value: "BAD_ODOR", label: "ריח חריף / צריבה", icon: "👃", desc: "ריח כלוראמינים חזק או צריבה בעיניים" },
   ];
 

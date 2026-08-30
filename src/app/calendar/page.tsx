@@ -1243,7 +1243,9 @@ export default function CalendarPage() {
                       <option value="SLIGHTLY_CLOUDY">🌫️ מעט עכורים</option>
                       <option value="VERY_CLOUDY">🥛 עכורים מאוד</option>
                       <option value="FOAMY">🧼 מקציפים</option>
-                      <option value="GREEN">🌿 ירוקים</option>
+                      <option value="GREEN">🌿 ירוקים / אצות</option>
+                      <option value="METALLIC_COPPER">🪙 ירוק-טורקיז / נחושת (Copper)</option>
+                      <option value="METALLIC_RUST">⚙️ חום / חלודה / ברזל (Iron / Rust)</option>
                       <option value="BAD_ODOR">👃 ריח חריף</option>
                     </select>
                   </div>

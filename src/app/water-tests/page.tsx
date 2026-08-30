@@ -225,6 +225,8 @@ export default function WaterTestsPage() {
     FOAMY: { label: "מקציפים", icon: "🧼", color: "text-indigo-400 border-indigo-800 bg-indigo-950/40" },
     GREEN: { label: "ירוקים / אצות", icon: "🌿", color: "text-rose-400 border-rose-800 bg-rose-950/40" },
     BAD_ODOR: { label: "ריח חריף / צריבה", icon: "👃", color: "text-rose-400 border-rose-800 bg-rose-950/40" },
+    METALLIC_COPPER: { label: "ירוק-טורקיז / נחושת (Copper)", icon: "🪙", color: "text-teal-400 border-teal-800 bg-teal-950/40" },
+    METALLIC_RUST: { label: "חום / חלודה / ברזל (Iron)", icon: "⚙️", color: "text-orange-400 border-orange-800 bg-orange-950/40" },
   };
 
   // Metrics calculation
@@ -250,7 +252,7 @@ export default function WaterTestsPage() {
             <span>יומן בדיקות איכות מים</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            תיעוד כרונולוגי לפי סולם טווחי מקלונים (pH, כלור/ברום, בסיסיות וצלילות מים).
+            תיעוד כרונולוגי לפי סולם טווחי מקלונים (pH, כלור/ברום, בסיסיות, צלילות והשפעות מתכות).
           </p>
         </div>
 
@@ -607,7 +609,7 @@ export default function WaterTestsPage() {
                 </div>
               </div>
 
-              {/* 4. Clarity Picker */}
+              {/* 4. Clarity Picker (Including Copper & Rust) */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">4. מראה וצלילות המים</label>
                 <select
@@ -620,6 +622,8 @@ export default function WaterTestsPage() {
                   <option value="VERY_CLOUDY">🥛 עכורים מאוד / מים חלביים</option>
                   <option value="FOAMY">🧼 מקציפים בהפעלת ג'טים</option>
                   <option value="GREEN">🌿 ירוקים / חשד לאצות</option>
+                  <option value="METALLIC_COPPER">🪙 גוון ירוק-טורקיז צלול / חשד לחמצון נחושת (Copper)</option>
+                  <option value="METALLIC_RUST">⚙️ גוון צהבהב-חום / חלודה / ברזל (Iron / Rust)</option>
                   <option value="BAD_ODOR">👃 ריח חריף / צריבה בעיניים</option>
                 </select>
               </div>
@@ -733,7 +737,9 @@ export default function WaterTestsPage() {
                   <option value="SLIGHTLY_CLOUDY">🌫️ מעט עכורים</option>
                   <option value="VERY_CLOUDY">🥛 עכורים מאוד</option>
                   <option value="FOAMY">🧼 מקציפים</option>
-                  <option value="GREEN">🌿 ירוקים</option>
+                  <option value="GREEN">🌿 ירוקים / אצות</option>
+                  <option value="METALLIC_COPPER">🪙 גוון ירוק-טורקיז / נחושת (Copper)</option>
+                  <option value="METALLIC_RUST">⚙️ חום / חלודה / ברזל (Iron)</option>
                   <option value="BAD_ODOR">👃 ריח חריף</option>
                 </select>
               </div>
