@@ -94,9 +94,11 @@ export async function PUT(req: NextRequest) {
 
     let updateData: any = {};
     let deductedChemicalName = "";
+    let deductedInventoryId: string | null = null;
+    let actualDeductNum: number | null = null;
     let safetyCheck = null;
 
-    // Deduct chemical from inventory if requested
+    // Deduct chemical from inventory if selected
     if (markDoneAndReschedule && chemicalInventoryId && deductAmount && parseFloat(deductAmount) > 0) {
       const chem = await prisma.chemicalInventory.findFirst({
         where: { id: chemicalInventoryId, userId: user.id },
@@ -104,20 +106,25 @@ export async function PUT(req: NextRequest) {
 
       if (chem) {
         deductedChemicalName = chem.name;
-        const amountNum = parseFloat(deductAmount);
-        const newQuantity = Math.max(0, chem.quantity - amountNum);
+        deductedInventoryId = chem.id;
+        actualDeductNum = parseFloat(deductAmount);
+        const newQuantity = Math.max(0, chem.quantity - actualDeductNum);
 
         await prisma.chemicalInventory.update({
           where: { id: chem.id },
-          data: { quantity: newQuantity },
+          data: {
+            quantity: newQuantity,
+            lastUsedDate: new Date(),
+            lastUsedAmount: actualDeductNum,
+          },
         });
 
         // Run overdose safety check
-        safetyCheck = checkChemicalOverdoseSafety(chem.name, chem.category, amountNum, volumeLiters);
+        safetyCheck = checkChemicalOverdoseSafety(chem.name, chem.category, actualDeductNum, volumeLiters);
       }
     } else if (markDoneAndReschedule && chemicalUsed && deductAmount) {
-      const amountNum = parseFloat(deductAmount);
-      safetyCheck = checkChemicalOverdoseSafety(chemicalUsed, "OTHER", amountNum, volumeLiters);
+      actualDeductNum = parseFloat(deductAmount);
+      safetyCheck = checkChemicalOverdoseSafety(chemicalUsed, "OTHER", actualDeductNum, volumeLiters);
     }
 
     if (markDoneAndReschedule) {
@@ -126,7 +133,7 @@ export async function PUT(req: NextRequest) {
       const nextDate = new Date(now.getTime() + freq * 24 * 60 * 60 * 1000);
 
       const effectiveChemical = deductedChemicalName || chemicalUsed || null;
-      const effectiveAmount = amountAdded || (deductAmount ? `${deductAmount} גרם/מ"ל` : null);
+      const effectiveAmount = amountAdded || (actualDeductNum ? `${actualDeductNum} גרם/מ"ל` : null);
 
       updateData = {
         lastDoneDate: now,
@@ -136,6 +143,8 @@ export async function PUT(req: NextRequest) {
         lastValueAfter: valueAfter || null,
         lastAmountAdded: effectiveAmount,
         lastChemicalUsed: effectiveChemical,
+        lastChemicalInventoryId: deductedInventoryId || null,
+        lastDeductAmount: actualDeductNum || null,
       };
 
       // Create / sync Diary record
@@ -170,6 +179,8 @@ export async function PUT(req: NextRequest) {
       if (valueAfter !== undefined) updateData.lastValueAfter = valueAfter;
       if (amountAdded !== undefined) updateData.lastAmountAdded = amountAdded;
       if (chemicalUsed !== undefined) updateData.lastChemicalUsed = chemicalUsed;
+      if (chemicalInventoryId !== undefined) updateData.lastChemicalInventoryId = chemicalInventoryId;
+      if (deductAmount !== undefined) updateData.lastDeductAmount = parseFloat(deductAmount) || null;
     }
 
     const updated = await prisma.maintenanceTask.update({
@@ -195,7 +206,6 @@ export async function DELETE(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    const restoreInventory = searchParams.get("restoreInventory") === "true";
 
     if (!id) {
       return NextResponse.json({ error: "מזהה משימה חסר" }, { status: 400 });
@@ -209,15 +219,27 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "משימה לא נמצאה" }, { status: 404 });
     }
 
-    // If restoring inventory on task deletion
-    if (restoreInventory && existing.lastChemicalUsed && existing.lastAmountAdded) {
+    // Always restore inventory if chemical was deducted for this task!
+    if (existing.lastChemicalInventoryId && existing.lastDeductAmount && existing.lastDeductAmount > 0) {
+      const chem = await prisma.chemicalInventory.findFirst({
+        where: { id: existing.lastChemicalInventoryId, userId: user.id },
+      });
+
+      if (chem) {
+        await prisma.chemicalInventory.update({
+          where: { id: chem.id },
+          data: { quantity: chem.quantity + existing.lastDeductAmount },
+        });
+      }
+    } else if (existing.lastChemicalUsed && existing.lastAmountAdded) {
+      // Fallback matching by name if lastChemicalInventoryId wasn't set previously
       const numMatch = existing.lastAmountAdded.match(/(\d+(\.\d+)?)/);
       if (numMatch) {
         const amountToRestore = parseFloat(numMatch[0]);
         const chem = await prisma.chemicalInventory.findFirst({
           where: {
             userId: user.id,
-            name: { contains: existing.lastChemicalUsed },
+            name: { contains: existing.lastChemicalUsed.trim() },
           },
         });
         if (chem) {
@@ -241,8 +263,9 @@ export async function DELETE(req: NextRequest) {
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, restocked: true });
   } catch (error: any) {
+    console.error("Task delete error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

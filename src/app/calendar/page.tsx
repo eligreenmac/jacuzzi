@@ -72,17 +72,11 @@ export default function CalendarPage() {
     priority: "MEDIUM",
   });
 
-  // Add Diary Note Modal
+  // Add Diary Note Modal (dedicated to pure maintenance logs & observations)
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
-  const [noteChemicalSource, setNoteChemicalSource] = useState<"NONE" | "INVENTORY" | "EXTERNAL">("NONE");
-  const [noteChemicalId, setNoteChemicalId] = useState("");
-  const [noteDeductAmount, setNoteDeductAmount] = useState("20");
-  const [noteExternalChem, setNoteExternalChem] = useState("");
   const [noteForm, setNoteForm] = useState({
     title: "",
     content: "",
-    valueBefore: "",
-    valueAfter: "",
     waterQualityRating: "5",
   });
 
@@ -246,7 +240,6 @@ export default function CalendarPage() {
 
       const data = await res.json();
 
-      // Check if backend flagged an overdose!
       if (data.safetyCheck) {
         setOverdoseAlert(data.safetyCheck);
       }
@@ -300,9 +293,9 @@ export default function CalendarPage() {
   };
 
   const handleDeleteTask = async (id: string) => {
-    if (!confirm("האם למחוק משימה זו ורשומותיה ממסד הנתונים?")) return;
+    if (!confirm("האם למחוק משימה זו? המלאי בארון יוחזר אוטומטית.")) return;
     try {
-      await fetch(`/api/tasks?id=${id}&restoreInventory=true`, { method: "DELETE" });
+      await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
       loadData();
     } catch (err) {
       console.error(err);
@@ -332,20 +325,12 @@ export default function CalendarPage() {
     e.preventDefault();
     try {
       const targetDate = selectedDay || new Date();
-      const isFromInventory = noteChemicalSource === "INVENTORY" && noteChemicalId;
-
       await fetch("/api/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...noteForm,
           entryDate: targetDate.toISOString(),
-          chemicalInventoryId: isFromInventory ? noteChemicalId : null,
-          deductAmount: isFromInventory ? noteDeductAmount : null,
-          chemicalsAdded:
-            noteChemicalSource === "EXTERNAL"
-              ? `${noteExternalChem}: ${noteDeductAmount} גרם/מ"ל`
-              : null,
         }),
       });
       setIsNoteModalOpen(false);
@@ -397,10 +382,10 @@ export default function CalendarPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
             <CalendarIcon className="w-8 h-8 text-cyan-400" />
-            <span>לוח שנה ויומן טיפולים חודשי</span>
+            <span>לוח שנה ויומן תחזוקה חודשי</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            מעקב טיפולים מחזורי, הפחתת חומרים מארון הכימיקלים, התראות בטיחות ועריכת משימות.
+            מעקב טיפולים מחזורי, עדכון מלאי אוטומטי בעת ביצוע, והתראות בטיחות.
           </p>
         </div>
 
@@ -512,7 +497,7 @@ export default function CalendarPage() {
                       : isToday
                       ? "bg-slate-950/90 border-cyan-500/60 shadow-cyan-950/20"
                       : cell.isCurrentMonth
-                      ? "bg-slate-950/60 border-slate-855 hover:border-slate-700"
+                      ? "bg-slate-950/60 border-slate-850 hover:border-slate-700"
                       : "bg-slate-950/20 border-slate-900 text-slate-600"
                   }`}
                 >
@@ -702,13 +687,22 @@ export default function CalendarPage() {
                               <CheckCircle2 className="w-4 h-4" />
                               <span>{task.title}</span>
                             </div>
-                            <button
-                              onClick={() => openEditTaskModal(task)}
-                              className="text-slate-400 hover:text-cyan-300 p-1"
-                              title="ערוך פרטי ביצוע"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => openEditTaskModal(task)}
+                                className="text-slate-400 hover:text-cyan-300 p-1"
+                                title="ערוך פרטי ביצוע"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTask(task.id)}
+                                className="text-slate-400 hover:text-rose-400 p-1"
+                                title="מחק טיפול והחזר מלאי"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           {task.lastChemicalUsed && (
@@ -741,7 +735,7 @@ export default function CalendarPage() {
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
                       <BookOpen className="w-4 h-4" />
-                      <span>רשומות יומן:</span>
+                      <span>רשומות יומן תחזוקה:</span>
                     </h3>
 
                     <div className="space-y-2">
@@ -787,7 +781,6 @@ export default function CalendarPage() {
               {overdoseAlert.whatHappened}
             </div>
 
-            {/* Immediate actions */}
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4" />
@@ -800,7 +793,6 @@ export default function CalendarPage() {
               </ul>
             </div>
 
-            {/* What not to do */}
             <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
               <h3 className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4" />
@@ -839,7 +831,6 @@ export default function CalendarPage() {
             </div>
 
             <form onSubmit={handleSaveCompletion} className="space-y-5">
-              {/* Chemical selection source */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-slate-300">1. מאיזה מקור נלקח החומר שהוספת?</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -877,7 +868,6 @@ export default function CalendarPage() {
                 </div>
               </div>
 
-              {/* Inventory picker */}
               {chemicalSource === "INVENTORY" ? (
                 <div className="space-y-3 bg-slate-950/80 p-4 rounded-2xl border border-cyan-900/60">
                   <div className="space-y-1">
@@ -1182,12 +1172,12 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Modal: Add Diary Note with Chemical Deduction */}
+      {/* Modal: Add Diary Note */}
       {isNoteModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-lg font-bold text-white">רישום הערה / טיפול ביומן</h2>
+              <h2 className="text-lg font-bold text-white">רישום הערה ביומן</h2>
               <button onClick={() => setIsNoteModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -1201,92 +1191,9 @@ export default function CalendarPage() {
                   required
                   value={noteForm.title}
                   onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
-                  placeholder="למשל: טיפול שוק אחרי אירוח, שטיפת פילטר"
+                  placeholder="למשל: אירוח בסופש, שטיפת פילטר, החלפת מים..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
                 />
-              </div>
-
-              <div className="space-y-2 bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
-                <label className="text-xs font-semibold text-slate-300 block">האם נוסף חומר לג'קוזי בטיפול זה?</label>
-                <div className="grid grid-cols-3 gap-1.5 text-center text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setNoteChemicalSource("NONE")}
-                    className={`py-1.5 rounded-lg border ${
-                      noteChemicalSource === "NONE"
-                        ? "bg-slate-800 border-cyan-500 text-white font-bold"
-                        : "bg-slate-900 border-slate-800 text-slate-400"
-                    }`}
-                  >
-                    ללא חומר
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNoteChemicalSource("INVENTORY")}
-                    className={`py-1.5 rounded-lg border ${
-                      noteChemicalSource === "INVENTORY"
-                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold"
-                        : "bg-slate-900 border-slate-800 text-slate-400"
-                    }`}
-                  >
-                    מהארון שלי
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNoteChemicalSource("EXTERNAL")}
-                    className={`py-1.5 rounded-lg border ${
-                      noteChemicalSource === "EXTERNAL"
-                        ? "bg-purple-500/20 border-purple-400 text-purple-300 font-bold"
-                        : "bg-slate-900 border-slate-800 text-slate-400"
-                    }`}
-                  >
-                    מקור חיצוני
-                  </button>
-                </div>
-
-                {noteChemicalSource === "INVENTORY" && chemicals.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    <select
-                      value={noteChemicalId || chemicals[0].id}
-                      onChange={(e) => setNoteChemicalId(e.target.value)}
-                      className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white"
-                    >
-                      {chemicals.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.quantity} {c.unit === "GRAMS" ? "ג'" : 'מ"ל'})
-                        </option>
-                      ))}
-                    </select>
-
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="כמות"
-                      value={noteDeductAmount}
-                      onChange={(e) => setNoteDeductAmount(e.target.value)}
-                      className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white font-bold"
-                    />
-                  </div>
-                )}
-
-                {noteChemicalSource === "EXTERNAL" && (
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    <input
-                      type="text"
-                      placeholder="שם החומר"
-                      value={noteExternalChem}
-                      onChange={(e) => setNoteExternalChem(e.target.value)}
-                      className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white"
-                    />
-                    <input
-                      type="number"
-                      placeholder="כמות"
-                      value={noteDeductAmount}
-                      onChange={(e) => setNoteDeductAmount(e.target.value)}
-                      className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white"
-                    />
-                  </div>
-                )}
               </div>
 
               <div className="space-y-1">
@@ -1305,13 +1212,13 @@ export default function CalendarPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">תוכן ההערה / מה נעשה</label>
+                <label className="text-xs font-semibold text-slate-300">תוכן ההערה</label>
                 <textarea
                   required
                   value={noteForm.content}
                   onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
                   rows={3}
-                  placeholder="פרט מה בוצע, כמה גרם הוספת..."
+                  placeholder="פרט הערות כלליות, מצב מים, תקלות או אירועים..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
                 />
               </div>

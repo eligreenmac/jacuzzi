@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
     const chemicals = await prisma.chemicalInventory.findMany({
       where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
+      orderBy: { addedDate: "desc" },
     });
 
     return NextResponse.json({ chemicals });
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
 
     const body = await req.json();
-    const { name, category, quantity, unit, minThreshold, imageUrl, notes } = body;
+    const { name, category, quantity, unit, minThreshold, imageUrl, notes, addedDate } = body;
 
     if (!name) {
       return NextResponse.json({ error: "שם החומר הוא שדה חובה" }, { status: 400 });
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
         minThreshold: minThreshold ? parseFloat(minThreshold) : 100,
         imageUrl: imageUrl || null,
         notes: notes || null,
+        addedDate: addedDate ? new Date(addedDate) : new Date(),
       },
     });
 
@@ -56,7 +57,7 @@ export async function PUT(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
 
     const body = await req.json();
-    const { id, name, category, quantity, unit, minThreshold, imageUrl, notes } = body;
+    const { id, name, category, quantity, unit, minThreshold, imageUrl, notes, addedDate } = body;
 
     if (!id) {
       return NextResponse.json({ error: "מזהה פריט חסר" }, { status: 400 });
@@ -80,6 +81,7 @@ export async function PUT(req: NextRequest) {
         minThreshold: minThreshold !== undefined ? parseFloat(minThreshold) : undefined,
         imageUrl: imageUrl !== undefined ? imageUrl : undefined,
         notes: notes !== undefined ? notes : undefined,
+        addedDate: addedDate ? new Date(addedDate) : undefined,
       },
     });
 
