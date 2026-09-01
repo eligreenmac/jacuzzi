@@ -760,66 +760,67 @@ export default function CalendarPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* 1. הזן משימה עתידית */}
           <button
-            onClick={handleScanRoutine}
-            disabled={isOptimizingRoutine}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-purple-600/30 transition-all hover:scale-105 disabled:opacity-50"
+            onClick={() => {
+              setSelectedDay(new Date());
+              setIsTaskModalOpen(true);
+            }}
+            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
           >
-            <Sparkles className="w-4 h-4 text-amber-300 animate-spin" style={{ animationDuration: isOptimizingRoutine ? "1s" : "0s" }} />
-            <span>{isOptimizingRoutine ? "סורק ומבצע אופטימיזציה..." : "✨ סנכרון ואופטימיזציית שגרה AI"}</span>
+            <Plus className="w-4 h-4 text-cyan-400" />
+            <span>הזן משימה עתידית</span>
           </button>
 
+          {/* 2. הזן פעולת אחזקה שבוצעה */}
           <button
             onClick={() => {
               setIsProactiveModalOpen(true);
               setProactiveAnalysis(null);
               setProactiveText("");
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/25 transition-all hover:scale-105"
+            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
           >
-            <Zap className="w-4 h-4 text-slate-950 fill-slate-950" />
-            <span>⚡ פעולת אחזקה יזומה</span>
+            <Zap className="w-4 h-4 text-amber-400" />
+            <span>הזן פעולת אחזקה שבוצעה</span>
           </button>
 
-          <button
-            onClick={() => {
-              setSelectedDay(new Date());
-              setIsTaskModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/40 text-xs font-bold transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>משימה חדשה</span>
-          </button>
-
+          {/* 3. הערה ביומן */}
           <button
             onClick={() => {
               setSelectedDay(new Date());
               setIsNoteModalOpen(true);
             }}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/40 text-xs font-bold transition-all"
+            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-4 h-4 text-purple-400" />
             <span>הערה ביומן</span>
           </button>
 
+          {/* 4. סנכרון שגרה AI */}
+          <button
+            onClick={handleScanRoutine}
+            disabled={isOptimizingRoutine}
+            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+          >
+            <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" style={{ animationDuration: isOptimizingRoutine ? "1s" : "0s" }} />
+            <span>{isOptimizingRoutine ? "מסנכרן שגרה..." : "סנכרון שגרה AI"}</span>
+          </button>
+
+          {/* 5. שלח התראה */}
           <button
             onClick={handleSendEmailReminder}
             disabled={emailSending}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-xs shadow-lg transition-all disabled:opacity-50 ${
-              dueTodayOrOverdueCount > 0
-                ? "bg-rose-600 hover:bg-rose-500 shadow-rose-600/30 animate-pulse"
-                : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20"
-            }`}
+            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-4 h-4 text-rose-400" />
             <span>
               {emailSending
-                ? "בודק משימות ושולח..."
+                ? "בודק משימות..."
                 : dueTodayOrOverdueCount > 0
                 ? `שלח התראה (${dueTodayOrOverdueCount} פג תוקף)`
-                : "בדוק ושלח התראות פג תוקף"}
+                : "שלח התראות"}
             </span>
           </button>
         </div>
@@ -1960,7 +1961,7 @@ export default function CalendarPage() {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-lg font-bold text-white">הוספת משימת תחזוקה חדשה</h2>
+              <h2 className="text-lg font-bold text-white">הזנת משימה עתידית</h2>
               <button onClick={() => setIsTaskModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -2117,7 +2118,7 @@ export default function CalendarPage() {
                   <Zap className="w-5 h-5 fill-amber-400" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-white">פעולת אחזקה יזומה (מלל חופשי)</h2>
+                  <h2 className="text-base font-bold text-white">הזנת פעולת אחזקה שבוצעה</h2>
                   <p className="text-[11px] text-slate-400">ה-AI ינתח את הפעולה, ויציג התרעה לאישורך לפני שינוי זימונים</p>
                 </div>
               </div>
