@@ -68,15 +68,65 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 4. Update Jacuzzi water age (Weighted for partial refills or reset for 100% full refills)
-    const refillPct = body.refillPercentage !== undefined ? body.refillPercentage : (updateJacuzziRefill ? 100 : 0);
+    // 4. Update lastDoneDate on executed task categories for accurate future scheduling
+    const textLower = (freeText || "").toLowerCase();
+    if (textLower.includes("דפנ") || textLower.includes("קו מים") || textLower.includes("דופן")) {
+      await prisma.maintenanceTask.updateMany({
+        where: { userId: user.id, OR: [{ title: { contains: "דפנ" } }, { title: { contains: "קו מים" } }, { title: { contains: "דופן" } }] },
+        data: { lastDoneDate: actionDateObj },
+      });
+    }
+    if (textLower.includes("שטיפת פילטר") || textLower.includes("שטפתי פילטר") || textLower.includes("ניקוי פילטר בזרם") || (textLower.includes("פילטר") && textLower.includes("שטיפ"))) {
+      await prisma.maintenanceTask.updateMany({
+        where: { userId: user.id, title: { contains: "פילטר" }, NOT: [{ title: { contains: "חדש" } }, { title: { contains: "החלפ" } }, { title: { contains: "השריה" } }] },
+        data: { lastDoneDate: actionDateObj },
+      });
+    }
+    if (textLower.includes("החלפת פילטר") || textLower.includes("פילטר חדש")) {
+      await prisma.jacuzzi.update({
+        where: { userId: user.id },
+        data: { lastFilterReplaceDate: actionDateObj },
+      });
+      await prisma.maintenanceTask.updateMany({
+        where: { userId: user.id, OR: [{ title: { contains: "החלפת פילטר" } }, { title: { contains: "פילטר חדש" } }, { category: "ANNUAL" }] },
+        data: { lastDoneDate: actionDateObj },
+      });
+    }
+    if (textLower.includes("השרי") || textLower.includes("השריה")) {
+      await prisma.maintenanceTask.updateMany({
+        where: { userId: user.id, OR: [{ title: { contains: "השריה" } }, { title: { contains: "עמוק" } }] },
+        data: { lastDoneDate: actionDateObj },
+      });
+    }
+    if (textLower.includes("אנזים") || textLower.includes("אנזימים")) {
+      await prisma.maintenanceTask.updateMany({
+        where: { userId: user.id, title: { contains: "אנזים" } },
+        data: { lastDoneDate: actionDateObj },
+      });
+    }
+    if (textLower.includes("כיסוי")) {
+      await prisma.maintenanceTask.updateMany({
+        where: { userId: user.id, title: { contains: "כיסוי" } },
+        data: { lastDoneDate: actionDateObj },
+      });
+    }
+    if (textLower.includes("צנרת") || textLower.includes("flush") || textLower.includes("ביופילם")) {
+      await prisma.maintenanceTask.updateMany({
+        where: { userId: user.id, OR: [{ title: { contains: "צנרת" } }, { title: { contains: "Flush" } }] },
+        data: { lastDoneDate: actionDateObj },
+      });
+    }
+
+    // 5. Update Jacuzzi water age (ONLY if an actual water change or full drain occurred)
+    const isActualWaterChange = updateJacuzziRefill || textLower.includes("החלפת מים") || textLower.includes("החלפתי מים") || textLower.includes("מים חדשים") || textLower.includes("מילאתי מים") || textLower.includes("מילוי מים") || textLower.includes("ריקון") || textLower.includes("ריענון מים");
+    const refillPct = (isActualWaterChange && body.refillPercentage !== undefined) ? body.refillPercentage : (updateJacuzziRefill ? 100 : 0);
     let updatedWaterAgeMessage = "";
 
     const jacuzzi = await prisma.jacuzzi.findUnique({
       where: { userId: user.id },
     });
 
-    if (jacuzzi && refillPct > 0) {
+    if (jacuzzi && refillPct > 0 && isActualWaterChange) {
       if (refillPct >= 95 || updateJacuzziRefill) {
         // 100% Full Refill
         await prisma.jacuzzi.update({
