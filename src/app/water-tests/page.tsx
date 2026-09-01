@@ -310,8 +310,22 @@ export default function WaterTestsPage() {
     const hasClNum = typeof test.freeChlorine === "number" && !isNaN(test.freeChlorine);
     const hasAlkNum = typeof test.alkalinity === "number" && !isNaN(test.alkalinity);
 
+    let formattedDate = "";
+    if (test.testedAt) {
+      const d = new Date(test.testedAt);
+      if (!isNaN(d.getTime())) {
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        formattedDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+    }
+    if (!formattedDate) {
+      const d = new Date();
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      formattedDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
     setEditForm({
-      testedAt: test.testedAt ? new Date(test.testedAt).toISOString().slice(0, 16) : "",
+      testedAt: formattedDate,
       phRangeId: phId,
       noNumericPh: !hasPhNum,
       manualPh: hasPhNum ? `${test.ph}` : "",
@@ -340,12 +354,22 @@ export default function WaterTestsPage() {
     const parsedAlk = (!editForm.noNumericAlk && editForm.manualAlk?.trim()) ? parseFloat(editForm.manualAlk) : null;
 
     try {
-      await fetch("/api/water-tests", {
+      let validIsoDate = new Date().toISOString();
+      if (editForm.testedAt) {
+        const d = new Date(editForm.testedAt);
+        if (!isNaN(d.getTime())) {
+          validIsoDate = d.toISOString();
+        } else if (editingTest.testedAt) {
+          validIsoDate = new Date(editingTest.testedAt).toISOString();
+        }
+      }
+
+      const res = await fetch("/api/water-tests", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: editingTest.id,
-          testedAt: new Date(editForm.testedAt).toISOString(),
+          testedAt: validIsoDate,
           ph: parsedPh,
           phRange: phObj?.label || editForm.phRangeId,
           freeChlorine: parsedCl,
@@ -357,10 +381,16 @@ export default function WaterTestsPage() {
         }),
       });
 
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "שגיאה בשמירת שינויים");
+      }
+
       setEditingTest(null);
-      loadTests();
-    } catch (err) {
+      await loadTests();
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || "שגיאה בעדכון בדיקה");
     } finally {
       setSavingEdit(false);
     }
