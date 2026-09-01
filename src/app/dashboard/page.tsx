@@ -182,6 +182,18 @@ export default function DashboardPage() {
     : null;
   const daysUntilNextFilterReplace = Math.max(0, 365 - (daysSinceFilterReplace || 0));
 
+  // Calculate Cover Cleaning / Maintenance (ניקוי וטיפוח כיסוי)
+  const coverCleanTask = tasks.find((t: any) => t.title?.includes("כיסוי"));
+  const coverCleanDiary = data?.diaryEntries?.find((d: any) => d.title?.includes("כיסוי") || d.content?.includes("כיסוי"));
+  const lastCoverCleanDate = coverCleanTask?.lastDoneDate
+    ? new Date(coverCleanTask.lastDoneDate)
+    : coverCleanDiary?.createdAt
+    ? new Date(coverCleanDiary.createdAt)
+    : null;
+  const daysSinceCoverClean = lastCoverCleanDate
+    ? Math.max(0, Math.floor((Date.now() - lastCoverCleanDate.getTime()) / (1000 * 60 * 60 * 24)))
+    : null;
+
   // Filter urgent & upcoming tasks based on Saturday-to-Saturday weekly cycle
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -339,16 +351,24 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Card 2: מצב ג'קוזי ותחזוקת חומרה */}
+          {/* Card 2: תחזוקה (משימות השבוע, צנרת, דפנות, פילטר וכיסוי) */}
           <div className="bg-[#0a0f13] border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="text-xs font-bold text-teal-300">מצב ג'קוזי וחומרה</span>
+              <span className="text-xs font-bold text-teal-300">תחזוקה</span>
               <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                {jacuzzi?.name || "הג'קוזי שלי"}
+                {pendingTasks.length} משימות לשבוע (בוצעו: {completedTasks.length})
               </span>
             </div>
 
             <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">משימות השבוע:</span>
+                <span className="font-semibold text-white">
+                  {pendingTasks.length > 0
+                    ? pendingTasks.map((t: any) => t.title).slice(0, 2).join(", ") + (pendingTasks.length > 2 ? ` (+${pendingTasks.length - 2})` : "")
+                    : "כל המשימות הושלמו ✓"}
+                </span>
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי צנרת ושטיפה:</span>
                 <span className="font-semibold text-slate-200">
@@ -367,39 +387,45 @@ export default function DashboardPage() {
                   {lastFilterWashDate ? `לפני ${daysSinceFilterWash} ימים` : "שגרה שבועית"}
                 </span>
               </div>
-              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
-                <span className="text-slate-400">החלפת פילטר חדש:</span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">החלפת פילטר:</span>
                 <span className="font-semibold text-teal-300">
                   {lastFilterReplaceDate ? `החלפה בעוד ${daysUntilNextFilterReplace} יום` : "שנתי (365 יום)"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
+                <span className="text-slate-400">ניקוי כיסוי:</span>
+                <span className="font-semibold text-slate-200">
+                  {lastCoverCleanDate ? `לפני ${daysSinceCoverClean} ימים` : "שגרה חודשית"}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Card 3: משימות, אנזימים ומלאי */}
+          {/* Card 3: ארון חומרים ומלאי */}
           <div className="bg-[#0a0f13] border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="text-xs font-bold text-purple-300">משימות, אנזימים ומלאי</span>
+              <span className="text-xs font-bold text-purple-300">ארון חומרים ומלאי</span>
               <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                {pendingTasks.length} פתוחות
+                {chemicals.length} פריטים
               </span>
             </div>
 
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">משימות לשבוע:</span>
-                <span className="text-sm font-black text-white">{pendingTasks.length} (בוצעו: {completedTasks.length})</span>
+                <span className="text-slate-400">סך הכל חומרים:</span>
+                <span className="text-sm font-black text-white">{chemicals.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">סטטוס מלאי:</span>
+                <span className={`font-semibold ${lowStockChemicals.length > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                  {lowStockChemicals.length > 0 ? `${lowStockChemicals.length} במלאי נמוך` : "תקין ומלא ✓"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">שגרת אנזימים:</span>
                 <span className="font-semibold text-slate-200">
-                  {lastEnzymeDate ? `לפני ${daysSinceEnzyme} ימים` : "שגרה שבועית"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">ארון חומרים:</span>
-                <span className={`font-semibold ${lowStockChemicals.length > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-                  {chemicals.length} פריטים ({lowStockChemicals.length > 0 ? `${lowStockChemicals.length} נמוך` : "מלאי תקין"})
+                  {lastEnzymeDate ? `הוספה לפני ${daysSinceEnzyme} ימים` : "שגרה שבועית"}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
