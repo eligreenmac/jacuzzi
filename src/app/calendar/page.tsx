@@ -1118,7 +1118,7 @@ export default function CalendarPage() {
 
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {calendarDays.map((cell, idx) => {
-              const { dayTasks, doneTasks, dayEntries } = getEventsForDay(cell.date);
+              const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(cell.date);
               const isToday = isSameDay(cell.date, new Date());
               const isSelected = selectedDay && isSameDay(cell.date, selectedDay);
 
@@ -1179,6 +1179,17 @@ export default function CalendarPage() {
                       </div>
                     ))}
 
+                    {dayWaterLogs.map((w: any) => (
+                      <div
+                        key={`w-${w.id}`}
+                        className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 truncate flex items-center gap-1 font-medium"
+                        title="בדיקת איכות מים (מקלון)"
+                      >
+                        <FlaskConical className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+                        <span className="truncate">בדיקת מים</span>
+                      </div>
+                    ))}
+
                     {dayEntries.map((e) => (
                       <div
                         key={e.id}
@@ -1194,6 +1205,7 @@ export default function CalendarPage() {
                   <div className="sm:hidden flex items-center gap-1 justify-end">
                     {dayTasks.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />}
                     {doneTasks.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                    {dayWaterLogs.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-cyan-300" />}
                     {dayEntries.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />}
                   </div>
                 </div>
@@ -1239,8 +1251,8 @@ export default function CalendarPage() {
           </div>
 
           {(() => {
-            const { dayTasks, doneTasks, dayEntries } = getEventsForDay(selectedDay);
-            const total = dayTasks.length + doneTasks.length + dayEntries.length;
+            const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(selectedDay);
+            const total = dayTasks.length + doneTasks.length + dayEntries.length + dayWaterLogs.length;
 
             if (total === 0) {
               return (
@@ -1318,25 +1330,23 @@ export default function CalendarPage() {
                             </div>
 
                             {/* Button: Disabled if future, enabled starting from planned date */}
-                            {isFuture ? (
-                              <button
-                                type="button"
-                                disabled
-                                className="w-full py-2.5 bg-slate-900/90 border border-slate-800 text-slate-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed opacity-70 select-none"
-                                title={`משימה עתידית - סימון ביצוע ועדכון נתונים ייפתחו ב-${new Date(task.nextDueDate).toLocaleDateString("he-IL")}`}
-                              >
-                                <Clock className="w-3.5 h-3.5 text-slate-500" />
-                                <span>⏳ ייפתח לביצוע ב-{new Date(task.nextDueDate).toLocaleDateString("he-IL")}</span>
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => openCompletionModal(task)}
-                                className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
-                              >
-                                <CheckCircle2 className="w-4 h-4" />
-                                <span>סמן ביצוע ועדכן נתונים</span>
-                              </button>
-                            )}
+                            <div className="pt-2 border-t border-slate-800/80">
+                              {isFuture ? (
+                                <div className="text-[10px] text-slate-400 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 flex items-center justify-center gap-1 font-medium">
+                                  <Lock className="w-3 h-3 text-slate-500" />
+                                  <span>ייפתח לביצוע במועד ({new Date(task.nextDueDate).toLocaleDateString("he-IL")})</span>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => openCompletionModal(task)}
+                                  className="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>סמן ביצוע</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -1344,6 +1354,7 @@ export default function CalendarPage() {
                   </div>
                 )}
 
+                {/* Completed Tasks */}
                 {doneTasks.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
@@ -1403,6 +1414,58 @@ export default function CalendarPage() {
                           )}
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Water Tests performed on this date */}
+                {dayWaterLogs.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                      <FlaskConical className="w-4 h-4" />
+                      <span>בדיקות איכות מים שבוצעו ותועדו:</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {dayWaterLogs.map((w: any) => {
+                        const phStr = w.phRange || (w.ph !== null ? `pH ${w.ph}` : null);
+                        const clStr = w.chlorineRange || (w.freeChlorine !== null ? `${w.freeChlorine} ppm` : null);
+                        const alkStr = w.alkalinityRange || (w.alkalinity !== null ? `${w.alkalinity} ppm` : null);
+                        return (
+                          <div key={w.id} className="bg-slate-950/90 border border-cyan-900/60 rounded-2xl p-4 space-y-2 shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center border border-cyan-800">
+                                  <FlaskConical className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="font-bold text-white text-xs">בדיקת איכות מים (מקלון)</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400">
+                                שעה {new Date(w.testedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-center text-[10px] pt-1 border-t border-slate-800">
+                              <div className="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
+                                <div className="text-slate-400">חומציות</div>
+                                <div className="font-bold text-cyan-300">{phStr || "—"}</div>
+                              </div>
+                              <div className="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
+                                <div className="text-slate-400">חיטוי</div>
+                                <div className="font-bold text-cyan-300">{clStr || "—"}</div>
+                              </div>
+                              <div className="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
+                                <div className="text-slate-400">בסיסיות</div>
+                                <div className="font-bold text-cyan-300">{alkStr || "—"}</div>
+                              </div>
+                            </div>
+                            {w.aiDiagnosis && (
+                              <div className="text-[11px] text-slate-300 bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+                                {w.aiDiagnosis}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

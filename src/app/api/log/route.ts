@@ -15,10 +15,46 @@ export async function GET(req: NextRequest) {
     const waterLogs = await prisma.waterLog.findMany({
       where: { userId: user.id },
       orderBy: { testedAt: "desc" },
-      take: 20,
     });
 
-    return NextResponse.json({ entries, waterLogs });
+    // Make sure EVERY waterLog that does not have an existing diary entry is included in the entries array
+    const synthesizedWaterTestEntries = waterLogs.map((w) => {
+      const phStr = w.phRange || (w.ph !== null ? `pH ${w.ph}` : null);
+      const clStr = w.chlorineRange || (w.freeChlorine !== null ? `${w.freeChlorine} ppm` : null);
+      const alkStr = w.alkalinityRange || (w.alkalinity !== null ? `${w.alkalinity} ppm` : null);
+      const valStr = [phStr && `חומציות: ${phStr}`, clStr && `חיטוי: ${clStr}`, alkStr && `בסיסיות: ${alkStr}`].filter(Boolean).join(", ") || "נבדק";
+
+      return {
+        id: "wlog-" + w.id,
+        userId: user.id,
+        title: "בדיקת איכות מים (מקלון)",
+        content: `בוצעה בדיקת מים דרך לשונית בדיקות מים.\n• תוצאות: ${valStr}\n• צלילות: ${w.waterClarity || "צלול"}${w.description ? `\n• הערות: ${w.description}` : ""}${w.aiDiagnosis ? `\n• אבחון: ${w.aiDiagnosis}` : ""}`,
+        entryDate: w.testedAt,
+        valueAfter: valStr,
+        chemicalsAdded: null,
+        waterQualityRating: 5,
+        isWaterTest: true,
+        createdAt: w.createdAt,
+        updatedAt: w.createdAt,
+      };
+    });
+
+    // Merge entries avoiding duplicates on same timestamp (within 2 minutes)
+    const combinedEntries = [...entries];
+    for (const syn of synthesizedWaterTestEntries) {
+      const synTime = new Date(syn.entryDate).getTime();
+      const alreadyHasDiary = entries.some((e) => {
+        const eTime = new Date(e.entryDate).getTime();
+        return Math.abs(eTime - synTime) < 120000 && (e.title.includes("בדיק") || e.title.includes("מקלון"));
+      });
+      if (!alreadyHasDiary) {
+        combinedEntries.push(syn as any);
+      }
+    }
+
+    combinedEntries.sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime());
+
+    return NextResponse.json({ entries: combinedEntries, waterLogs });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
