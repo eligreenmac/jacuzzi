@@ -33,6 +33,7 @@ export async function PUT(req: NextRequest) {
       usageFrequency,
       lastRefillDate,
       lastDeepCleanDate,
+      lastFilterReplaceDate,
       emailNotificationsEnabled,
       notificationEmail,
       notifySameDayTasks,
@@ -70,6 +71,7 @@ export async function PUT(req: NextRequest) {
         usageFrequency: usageFrequency || "MEDIUM",
         lastRefillDate: lastRefillDate ? new Date(lastRefillDate) : new Date(),
         lastDeepCleanDate: lastDeepCleanDate ? new Date(lastDeepCleanDate) : new Date(),
+        lastFilterReplaceDate: lastFilterReplaceDate ? new Date(lastFilterReplaceDate) : null,
       },
       update: {
         name: name || undefined,
@@ -81,6 +83,7 @@ export async function PUT(req: NextRequest) {
         usageFrequency: usageFrequency || undefined,
         lastRefillDate: lastRefillDate ? new Date(lastRefillDate) : undefined,
         lastDeepCleanDate: lastDeepCleanDate ? new Date(lastDeepCleanDate) : undefined,
+        lastFilterReplaceDate: lastFilterReplaceDate !== undefined ? (lastFilterReplaceDate ? new Date(lastFilterReplaceDate) : null) : undefined,
       },
     });
 
@@ -127,6 +130,54 @@ export async function PUT(req: NextRequest) {
             isCompleted: false,
             category: "QUARTERLY",
             priority: "URGENT",
+          },
+        });
+      }
+    }
+
+    // Automatically synchronize & schedule the 365-day (12 months) Filter Replacement task in Calendar
+    if (lastFilterReplaceDate) {
+      const replaceDate = new Date(lastFilterReplaceDate);
+      const nextReplaceDate = new Date(replaceDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+      const existingFilterTask = await prisma.maintenanceTask.findFirst({
+        where: {
+          userId: user.id,
+          OR: [
+            { title: { contains: "החלפת פילטר" } },
+            { title: { contains: "פילטר חדש" } },
+            { title: { contains: "החלפת מסנן" } },
+            { category: "ANNUAL" },
+          ],
+        },
+      });
+
+      if (existingFilterTask) {
+        await prisma.maintenanceTask.update({
+          where: { id: existingFilterTask.id },
+          data: {
+            title: "החלפת פילטר חדש (שנתי)",
+            description: "החלפת מחסנית סינון ישנה בפילטר חדש ונקי לשמירה על צלילות המים ותקינות המשאבה (מחזור שנתי).",
+            frequencyDays: 365,
+            lastDoneDate: replaceDate,
+            nextDueDate: nextReplaceDate,
+            isCompleted: false,
+            category: "ANNUAL",
+            priority: "MEDIUM",
+          },
+        });
+      } else {
+        await prisma.maintenanceTask.create({
+          data: {
+            userId: user.id,
+            title: "החלפת פילטר חדש (שנתי)",
+            description: "החלפת מחסנית סינון ישנה בפילטר חדש ונקי לשמירה על צלילות המים ותקינות המשאבה (מחזור שנתי).",
+            frequencyDays: 365,
+            lastDoneDate: replaceDate,
+            nextDueDate: nextReplaceDate,
+            isCompleted: false,
+            category: "ANNUAL",
+            priority: "MEDIUM",
           },
         });
       }

@@ -39,6 +39,7 @@ model Jacuzzi {
   usageFrequency    String   @default("MEDIUM")   // LIGHT, MEDIUM, HEAVY
   lastRefillDate    DateTime @default(now())
   lastDeepCleanDate DateTime @default(now())
+  lastFilterReplaceDate DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

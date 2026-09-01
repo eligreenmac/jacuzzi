@@ -29,6 +29,7 @@ export default function SettingsPage() {
     usageFrequency: "MEDIUM",
     lastRefillDate: "",
     lastDeepCleanDate: "",
+    lastFilterReplaceDate: "",
     emailNotificationsEnabled: true,
     notifySameDayTasks: true,
     notifyOverdueTasks: true,
@@ -57,6 +58,7 @@ export default function SettingsPage() {
           usageFrequency: j?.usageFrequency || "MEDIUM",
           lastRefillDate: j?.lastRefillDate ? new Date(j.lastRefillDate).toISOString().split("T")[0] : "",
           lastDeepCleanDate: j?.lastDeepCleanDate ? new Date(j.lastDeepCleanDate).toISOString().split("T")[0] : "",
+          lastFilterReplaceDate: j?.lastFilterReplaceDate ? new Date(j.lastFilterReplaceDate).toISOString().split("T")[0] : "",
           emailNotificationsEnabled: data.user.emailNotificationsEnabled ?? true,
           notifySameDayTasks: data.user.notifySameDayTasks ?? true,
           notifyOverdueTasks: data.user.notifyOverdueTasks ?? true,
@@ -264,10 +266,10 @@ export default function SettingsPage() {
           <div className="pt-4 border-t border-slate-800/80 space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Calendar className="w-4 h-4 text-cyan-400" />
-              <span>מעקב החלפת מים וניקוי צנרת</span>
+              <span>מעקב החלפת מים, ניקוי צנרת והחלפת פילטר</span>
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">תאריך מילוי מים אחרון</label>
                 <input
@@ -280,14 +282,25 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">תאריך שטיפת צנרת וניקוי עמוק אחרון</label>
+                <label className="text-xs font-semibold text-slate-300">תאריך ניקוי צנרת ושטיפה אחרון</label>
                 <input
                   type="date"
                   value={formData.lastDeepCleanDate}
                   onChange={(e) => setFormData({ ...formData, lastDeepCleanDate: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white text-xs"
                 />
-                <span className="text-[10px] text-cyan-400/90 block">⚡ עדכון תאריך זה ישבץ אוטומטית ביומן את שטיפת הצנרת הבאה בעוד 3 חודשים.</span>
+                <span className="text-[10px] text-cyan-400/90 block">⚡ משבץ אוטומטית ביומן את שטיפת הצנרת הבאה בעוד 90 יום.</span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">תאריך החלפת פילטר חדש אחרון</label>
+                <input
+                  type="date"
+                  value={formData.lastFilterReplaceDate}
+                  onChange={(e) => setFormData({ ...formData, lastFilterReplaceDate: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white text-xs"
+                />
+                <span className="text-[10px] text-emerald-400/90 block">⚡ משבץ אוטומטית ביומן את החלפת הפילטר השנתית הבאה (כל 365 יום).</span>
               </div>
             </div>
           </div>

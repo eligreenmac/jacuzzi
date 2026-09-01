@@ -170,17 +170,20 @@ export default function DashboardPage() {
   // Calculate New Filter Replacement (annual)
   const filterReplaceTask = tasks.find((t: any) => t.title?.includes("החלפת פילטר") || t.title?.includes("פילטר חדש") || t.title?.includes("החלפת מסנן"));
   const filterReplaceDiary = data?.diaryEntries?.find((d: any) => d.title?.includes("החלפת פילטר") || d.content?.includes("החלפת פילטר") || d.title?.includes("פילטר חדש"));
-  const lastFilterReplaceDate = filterReplaceTask?.lastDoneDate
+  const lastFilterReplaceDate = jacuzzi?.lastFilterReplaceDate
+    ? new Date(jacuzzi.lastFilterReplaceDate)
+    : filterReplaceTask?.lastDoneDate
     ? new Date(filterReplaceTask.lastDoneDate)
     : filterReplaceDiary?.createdAt
     ? new Date(filterReplaceDiary.createdAt)
-    : jacuzzi?.createdAt
-    ? new Date(jacuzzi.createdAt)
     : null;
   const daysSinceFilterReplace = lastFilterReplaceDate
     ? Math.max(0, Math.floor((Date.now() - lastFilterReplaceDate.getTime()) / (1000 * 60 * 60 * 24)))
     : null;
-  const daysUntilNextFilterReplace = Math.max(0, 365 - (daysSinceFilterReplace || 0));
+  const daysUntilNextFilterReplace = lastFilterReplaceDate ? Math.max(0, 365 - (daysSinceFilterReplace || 0)) : 365;
+  const nextFilterReplaceDate = lastFilterReplaceDate
+    ? new Date(lastFilterReplaceDate.getTime() + 365 * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 
   // Calculate Cover Cleaning / Maintenance (ניקוי וטיפוח כיסוי)
   const coverCleanTask = tasks.find((t: any) => t.title?.includes("כיסוי"));
@@ -390,7 +393,9 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">החלפת פילטר:</span>
                 <span className="font-semibold text-teal-300">
-                  {lastFilterReplaceDate ? `החלפה בעוד ${daysUntilNextFilterReplace} יום` : "שנתי (365 יום)"}
+                  {lastFilterReplaceDate
+                    ? `לפני ${daysSinceFilterReplace} ימים (הבא: בעוד ${daysUntilNextFilterReplace} יום)`
+                    : "שנתי (365 יום)"}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
