@@ -362,8 +362,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 2 Quick Metrics Cards (Unified & Minimalist, No Icons) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        {/* 3 Quick Metrics Cards (Unified & Minimalist, No Icons) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {/* Card 1: מצב ואיכות המים (Unified Full Card - Clickable for full details) */}
           <div
             onClick={() => setIsWaterAgeModalOpen(true)}
@@ -543,81 +543,56 @@ export default function DashboardPage() {
               })}
             </div>
           </div>
-        </div>
 
-        {/* Full Chemical Inventory Cabinet Section */}
-        <div className="bg-[#0a0f13] border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-purple-400" />
-              <span className="text-xs sm:text-sm font-bold text-white">ארון חומרים ומלאי</span>
-              <span className="text-[10px] text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800/60 font-semibold">
-                {chemicals.length} פריטים
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {lowStockChemicals.length > 0 ? (
-                <span className="text-[11px] font-bold text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-800/60 flex items-center gap-1">
-                  <span>{lowStockChemicals.length} במלאי נמוך</span>
-                </span>
-              ) : (
-                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-800/60">
-                  המלאי תקין ומלא ✓
-                </span>
-              )}
+          {/* Card 3: ארון חומרים ומלאי (Exact Key-Value List Format) */}
+          <div className="bg-[#0a0f13] border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <span className="text-xs font-bold text-purple-300">ארון חומרים ומלאי</span>
               <Link
                 href="/inventory"
-                className="text-[11px] font-semibold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 px-3 py-1 rounded-xl border border-slate-800 transition-all flex items-center gap-1"
+                className="text-[10px] text-slate-400 hover:text-purple-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 transition-colors"
+                title="לחץ למעבר לניהול ארון החומרים"
               >
-                <span>נהל ארון חומרים</span>
-                <ArrowLeft className="w-3.5 h-3.5" />
+                {chemicals.length} פריטים
               </Link>
             </div>
-          </div>
 
-          {/* Chemical Items Grid */}
-          {chemicals.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-800/50">
+                <span className="text-slate-400">סך הכל חומרים:</span>
+                <span className="text-sm font-black text-white">{chemicals.length}</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">סטטוס מלאי:</span>
+                <span className={`font-semibold ${lowStockChemicals.length > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                  {lowStockChemicals.length > 0 ? `${lowStockChemicals.length} במלאי נמוך ⚠️` : "תקין ומלא ✓"}
+                </span>
+              </div>
+
               {chemicals.map((chem: any) => {
                 const isLow = chem.minThreshold && chem.quantity <= chem.minThreshold;
                 const unitLabel = chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit === "TABLETS" ? "טבליות" : chem.unit;
                 return (
-                  <div
-                    key={chem.id}
-                    className={`p-3 rounded-2xl border transition-all flex flex-col justify-between space-y-2 ${
-                      isLow
-                        ? "bg-amber-950/20 border-amber-900/60 hover:border-amber-700"
-                        : "bg-slate-900/80 border-slate-800 hover:border-purple-800/60"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-1">
-                        <span className="text-xs font-bold text-white truncate" title={chem.name}>
-                          {chem.name}
-                        </span>
-                      </div>
-                      <div className="text-lg font-black text-purple-300 mt-1">
-                        {chem.quantity} <span className="text-[10px] font-medium text-slate-400">{unitLabel}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[9px] pt-1 border-t border-slate-800/60">
-                      <span className={isLow ? "text-amber-400 font-bold" : "text-emerald-400 font-semibold"}>
-                        {isLow ? "מלאי נמוך ⚠️" : "תקין ✓"}
-                      </span>
-                      {chem.minThreshold && (
-                        <span className="text-slate-500">סף: {chem.minThreshold}</span>
-                      )}
-                    </div>
+                  <div key={chem.id} className="flex items-center justify-between">
+                    <span className="text-slate-400 truncate max-w-[150px]" title={chem.name}>
+                      {chem.name}:
+                    </span>
+                    <span className={`font-semibold ${isLow ? "text-amber-400 font-bold" : "text-slate-200"}`}>
+                      {chem.quantity} {unitLabel} {isLow ? "(נמוך)" : ""}
+                    </span>
                   </div>
                 );
               })}
+
+              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
+                <span className="text-slate-400">רכש מומלץ:</span>
+                <span className="font-semibold text-slate-300 truncate max-w-[140px]">
+                  {lowStockChemicals.length > 0 ? lowStockChemicals.map((c: any) => c.name).join(", ") : "אין חוסרים ✓"}
+                </span>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-6 text-xs text-slate-500 bg-slate-950/60 rounded-2xl border border-slate-800/60">
-              ארון החומרים ריק כרגע. הוסף חומרים כדי לנהל מעקב צריכה ומלאי חכם.
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
