@@ -347,14 +347,13 @@ export default function CalendarPage() {
   const getWeekDays = (baseDate: Date) => {
     const current = new Date(baseDate);
     const day = current.getDay(); // 0 (Sunday) to 6 (Saturday)
-    const offsetFromSaturday = (day + 1) % 7;
-    const saturday = new Date(current);
-    saturday.setDate(current.getDate() - offsetFromSaturday);
-    saturday.setHours(0, 0, 0, 0);
+    const sunday = new Date(current);
+    sunday.setDate(current.getDate() - day);
+    sunday.setHours(0, 0, 0, 0);
 
     return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(saturday);
-      d.setDate(saturday.getDate() + i);
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + i);
       return d;
     });
   };
@@ -382,7 +381,7 @@ export default function CalendarPage() {
   ];
 
   const firstDay = new Date(year, month, 1).getDay();
-  const firstDayIndex = (firstDay + 1) % 7;
+  const firstDayIndex = firstDay;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
@@ -1109,7 +1108,7 @@ export default function CalendarPage() {
         /* MONTHLY GRID VIEW */
         <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-2 overflow-hidden">
           <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center pb-2 border-b border-slate-800 text-xs font-bold text-slate-400">
-            {["שבת", "ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"].map((day, idx) => (
+            {["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"].map((day, idx) => (
               <div key={idx} className="py-1">
                 {day}
               </div>
