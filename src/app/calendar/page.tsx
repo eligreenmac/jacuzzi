@@ -1157,51 +1157,48 @@ export default function CalendarPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
             <CalendarIcon className="w-8 h-8 text-cyan-400" />
-            <span>לוח שנה ויומן תחזוקה שבועי</span>
+            <span>יומן תחזוקה</span>
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            מעקב טיפולים מחזורי, סקירה שבועית מפורטת, עדכון מלאי אוטומטי ואופטימיזציית AI.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* 1. הזן פעולת אחזקה שבוצעה */}
+        <div className="grid grid-cols-3 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full md:w-auto">
+          {/* 1. פעולת אחזקה חדשה */}
           <button
             onClick={() => {
               setIsProactiveModalOpen(true);
               setProactiveAnalysis(null);
               setProactiveText("");
             }}
-            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
+            className="h-10 px-3 sm:px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm whitespace-nowrap min-w-0"
           >
-            <Zap className="w-4 h-4 text-amber-400" />
-            <span>הזן פעולת אחזקה שבוצעה</span>
+            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>פעולת אחזקה חדשה</span>
           </button>
 
-          {/* 2. הערה ביומן */}
+          {/* 2. הערה חדשה */}
           <button
             onClick={() => {
               setSelectedDay(new Date());
               setIsNoteModalOpen(true);
             }}
-            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
+            className="h-10 px-3 sm:px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm whitespace-nowrap min-w-0"
           >
-            <BookOpen className="w-4 h-4 text-purple-400" />
-            <span>הערה ביומן</span>
+            <BookOpen className="w-4 h-4 text-purple-400 shrink-0" />
+            <span>הערה חדשה</span>
           </button>
 
-          {/* 3. שלח התראה */}
+          {/* 3. שלח התראות */}
           <button
             onClick={handleSendEmailReminder}
             disabled={emailSending}
-            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+            className="h-10 px-3 sm:px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm disabled:opacity-50 whitespace-nowrap min-w-0"
           >
-            <Send className="w-4 h-4 text-rose-400" />
+            <Send className="w-4 h-4 text-rose-400 shrink-0" />
             <span>
               {emailSending
                 ? "בודק משימות..."
                 : dueTodayOrOverdueCount > 0
-                ? `שלח התראה (${dueTodayOrOverdueCount} פג תוקף)`
+                ? `שלח התראות (${dueTodayOrOverdueCount})`
                 : "שלח התראות"}
             </span>
           </button>
