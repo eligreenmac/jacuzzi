@@ -224,19 +224,34 @@ export async function POST(req: NextRequest) {
       });
 
       for (const task of openWaterTasks) {
-        const freq = task.frequencyDays || 7;
-        const nextDate = new Date(now.getTime() + freq * 24 * 60 * 60 * 1000);
         const valAfter = `pH: ${phRange || (parsedPh ? `pH ${parsedPh}` : "נבדק")}, חיטוי: ${chlorineRange || (parsedCl ? `${parsedCl} ppm` : "נבדק")}, TA: ${alkalinityRange || (parsedAlk ? `${parsedAlk} ppm` : "נבדק")}`;
+        const isOneTime = task.category === "CUSTOM" || task.title.includes("חוזרת") || task.title.includes("מעקב") || (task.frequencyDays && task.frequencyDays <= 1);
 
-        await prisma.maintenanceTask.update({
-          where: { id: task.id },
-          data: {
-            lastDoneDate: now,
-            nextDueDate: nextDate,
-            isCompleted: false,
-            lastValueAfter: valAfter,
-          },
-        });
+        if (isOneTime) {
+          await prisma.maintenanceTask.update({
+            where: { id: task.id },
+            data: {
+              lastDoneDate: now,
+              isCompleted: true,
+              lastValueAfter: valAfter,
+            },
+          });
+        } else {
+          // Regular weekly water test routine: schedule 7 days ahead (weekly cycle)
+          const freq = Math.max(7, task.frequencyDays || 7);
+          const nextDate = new Date(now.getTime() + freq * 24 * 60 * 60 * 1000);
+
+          await prisma.maintenanceTask.update({
+            where: { id: task.id },
+            data: {
+              lastDoneDate: now,
+              nextDueDate: nextDate,
+              frequencyDays: freq,
+              isCompleted: false,
+              lastValueAfter: valAfter,
+            },
+          });
+        }
 
         await prisma.diaryEntry.create({
           data: {

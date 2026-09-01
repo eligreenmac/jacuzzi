@@ -14,6 +14,26 @@ export async function GET(req: NextRequest) {
       orderBy: { nextDueDate: "asc" },
     });
 
+    // Auto-heal tasks: ensure routine water test tasks have minimum 7 days frequency
+    for (const t of tasks) {
+      const isWaterRoutine =
+        (t.title.includes("בדיקת מים") || t.title.includes("מקלון") || t.title.includes("איכות מים")) &&
+        t.category !== "CUSTOM";
+
+      if (isWaterRoutine && t.frequencyDays < 7) {
+        const nextDate = t.lastDoneDate
+          ? new Date(new Date(t.lastDoneDate).getTime() + 7 * 24 * 3600 * 1000)
+          : new Date(Date.now() + 7 * 24 * 3600 * 1000);
+
+        await prisma.maintenanceTask.update({
+          where: { id: t.id },
+          data: { frequencyDays: 7, nextDueDate: nextDate },
+        });
+        t.frequencyDays = 7;
+        t.nextDueDate = nextDate;
+      }
+    }
+
     return NextResponse.json({ tasks });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -213,7 +233,19 @@ export async function PUT(req: NextRequest) {
 
     if (markDoneAndReschedule) {
       const now = new Date();
-      const freq = frequencyDays ? parseInt(frequencyDays, 10) : existing.frequencyDays;
+      const rawFreq = frequencyDays ? parseInt(frequencyDays, 10) : existing.frequencyDays;
+      const isOneTime =
+        existing.category === "CUSTOM" ||
+        existing.title.includes("חוזרת") ||
+        existing.title.includes("מעקב") ||
+        rawFreq <= 1;
+
+      const freq = isOneTime
+        ? rawFreq
+        : (existing.title.includes("בדיק") || existing.title.includes("מקלון") || existing.category === "WEEKLY" || existing.category === "WATER_TEST")
+        ? Math.max(7, rawFreq || 7)
+        : Math.max(1, rawFreq || 7);
+
       const nextDate = new Date(now.getTime() + freq * 24 * 60 * 60 * 1000);
 
       const effectiveChemical = deductedChemicalName || chemicalUsed || null;
@@ -222,7 +254,8 @@ export async function PUT(req: NextRequest) {
       updateData = {
         lastDoneDate: now,
         nextDueDate: nextDate,
-        isCompleted: false,
+        frequencyDays: freq,
+        isCompleted: isOneTime ? true : false,
         lastValueBefore: valueBefore || null,
         lastValueAfter: valueAfter || null,
         lastAmountAdded: effectiveAmount,
