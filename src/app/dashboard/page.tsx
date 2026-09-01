@@ -120,6 +120,10 @@ export default function DashboardPage() {
   const daysSinceEnzyme = lastEnzymeDate 
     ? Math.max(0, Math.floor((Date.now() - lastEnzymeDate.getTime()) / (1000 * 60 * 60 * 24))) 
     : null;
+  const daysUntilNextEnzyme = lastEnzymeDate ? Math.max(0, 7 - (daysSinceEnzyme || 0)) : 7;
+  const nextEnzymeDate = lastEnzymeDate
+    ? new Date(lastEnzymeDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   // Calculate Last Partial Water Refill
   const partialRefillTask = tasks.find((t: any) => t.title?.includes("חלקית") || (t.title?.includes("ריענון") && t.title?.includes("מים")));
@@ -366,54 +370,52 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Card 2: תחזוקה (משימות השבוע, צנרת, דפנות, פילטר וכיסוי) */}
+          {/* Card 2: תחזוקה (מועדי ביצוע הבאים) */}
           <div className="bg-[#0a0f13] border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
               <span className="text-xs font-bold text-teal-300">תחזוקה</span>
               <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                {pendingTasks.length} משימות לשבוע (בוצעו: {completedTasks.length})
+                {pendingTasks.length} משימות פתוחות
               </span>
             </div>
 
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">משימות השבוע:</span>
+                <span className="text-slate-400">משימות פתוחות השבוע:</span>
                 <span className="font-semibold text-white">
                   {pendingTasks.length > 0
                     ? pendingTasks.map((t: any) => t.title).slice(0, 2).join(", ") + (pendingTasks.length > 2 ? ` (+${pendingTasks.length - 2})` : "")
-                    : "כל המשימות הושלמו ✓"}
+                    : "הכל הושלם ✓"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי צנרת ושטיפה:</span>
                 <span className="font-semibold text-slate-200">
-                  {daysSinceDeepClean !== null ? `לפני ${daysSinceDeepClean} ימים (הבא: ${nextDeepCleanDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextDeepClean} יום)` : "טרם עודכן"}
+                  {nextDeepCleanDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextDeepClean} יום)
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי דפנות וקו מים:</span>
                 <span className="font-semibold text-slate-200">
-                  {lastWallCleanDate ? `לפני ${daysSinceWallClean} ימים (הבא: ${nextWallCleanDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextWallClean} יום)` : "שגרה דו-שבועית (14 יום)"}
+                  {nextWallCleanDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextWallClean} יום)
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">שטיפת פילטר:</span>
                 <span className="font-semibold text-slate-200">
-                  {lastFilterWashDate ? `לפני ${daysSinceFilterWash} ימים (הבא: ${nextFilterWashDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextFilterWash} יום)` : "שגרה שבועית (7 ימים)"}
+                  {nextFilterWashDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextFilterWash} יום)
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">החלפת פילטר:</span>
                 <span className="font-semibold text-teal-300">
-                  {lastFilterReplaceDate
-                    ? `לפני ${daysSinceFilterReplace} ימים (הבא: ${nextFilterReplaceDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextFilterReplace} יום)`
-                    : "שנתי (365 יום)"}
+                  {nextFilterReplaceDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextFilterReplace} יום)
                 </span>
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
                 <span className="text-slate-400">ניקוי כיסוי:</span>
                 <span className="font-semibold text-slate-200">
-                  {lastCoverCleanDate ? `לפני ${daysSinceCoverClean} ימים (הבא: ${nextCoverCleanDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextCoverClean} יום)` : "שגרה חודשית (30 יום)"}
+                  {nextCoverCleanDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextCoverClean} יום)
                 </span>
               </div>
             </div>
@@ -442,7 +444,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">שגרת אנזימים:</span>
                 <span className="font-semibold text-slate-200">
-                  {lastEnzymeDate ? `הוספה לפני ${daysSinceEnzyme} ימים` : "שגרה שבועית"}
+                  {nextEnzymeDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextEnzyme} יום)
                 </span>
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
