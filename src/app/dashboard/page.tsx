@@ -146,6 +146,20 @@ export default function DashboardPage() {
     partialRefillDiary?.content?.match(/(\d+)%/)?.[1] ||
     "25";
   const partialLiters = Math.round(((jacuzzi?.volumeLiters || 1200) * parseInt(partialPct, 10)) / 100);
+  const daysUntilNextPartialRefill = lastPartialRefillDate ? Math.max(0, 30 - (daysSincePartialRefill || 0)) : 30;
+  const nextPartialRefillDate = lastPartialRefillDate
+    ? new Date(lastPartialRefillDate.getTime() + 30 * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  // Calculate Next Water Test
+  const waterTestTask = tasks.find((t: any) => t.title?.includes("בדיק") || t.title?.includes("מקלון"));
+  const daysSinceLastWaterTest = latestWaterLog
+    ? Math.max(0, Math.floor((Date.now() - new Date(latestWaterLog.testedAt).getTime()) / (1000 * 60 * 60 * 24)))
+    : null;
+  const daysUntilNextWaterTest = daysSinceLastWaterTest !== null ? Math.max(0, 7 - daysSinceLastWaterTest) : 7;
+  const nextWaterTestDate = latestWaterLog
+    ? new Date(new Date(latestWaterLog.testedAt).getTime() + 7 * 24 * 60 * 60 * 1000)
+    : (waterTestTask?.nextDueDate ? new Date(waterTestTask.nextDueDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
 
   // Calculate Wall & Waterline Cleaning (14 days cycle)
   const wallCleanTask = tasks.find((t: any) => t.title?.includes("דפנ") || t.title?.includes("קו מים") || t.title?.includes("דופן"));
@@ -212,6 +226,23 @@ export default function DashboardPage() {
   const nextCoverCleanDate = lastCoverCleanDate
     ? new Date(lastCoverCleanDate.getTime() + 30 * 24 * 60 * 60 * 1000)
     : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  // All custom / recurring chemical tasks
+  const recurringChemicalTasks = tasks.filter((t: any) => {
+    if (t.isCompleted) return false;
+    const titleLower = (t.title || "").toLowerCase();
+    const isCoreRoutine =
+      titleLower.includes("צנרת") ||
+      titleLower.includes("דפנ") ||
+      titleLower.includes("קו מים") ||
+      titleLower.includes("פילטר") ||
+      titleLower.includes("כיסוי") ||
+      titleLower.includes("החלפת מים") ||
+      titleLower.includes("חלקית") ||
+      titleLower.includes("מקלון") ||
+      titleLower.includes("בדיקת מים");
+    return !isCoreRoutine;
+  });
 
   // Filter urgent & upcoming tasks based on Saturday-to-Saturday weekly cycle
   const now = new Date();
@@ -380,7 +411,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-800/50">
                 <span className="text-slate-400">משימות פתוחות השבוע:</span>
                 <span className="font-semibold text-white">
                   {pendingTasks.length > 0
@@ -388,36 +419,80 @@ export default function DashboardPage() {
                     : "הכל הושלם ✓"}
                 </span>
               </div>
+
+              {/* בדיקת איכות מים */}
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">בדיקת איכות מים:</span>
+                <span className="font-semibold text-slate-200">
+                  {nextWaterTestDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextWaterTest} יום)
+                </span>
+              </div>
+
+              {/* ניקוי צנרת ושטיפה */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי צנרת ושטיפה:</span>
                 <span className="font-semibold text-slate-200">
                   {nextDeepCleanDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextDeepClean} יום)
                 </span>
               </div>
+
+              {/* ניקוי דפנות וקו מים */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי דפנות וקו מים:</span>
                 <span className="font-semibold text-slate-200">
                   {nextWallCleanDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextWallClean} יום)
                 </span>
               </div>
+
+              {/* שטיפת פילטר */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">שטיפת פילטר:</span>
                 <span className="font-semibold text-slate-200">
                   {nextFilterWashDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextFilterWash} יום)
                 </span>
               </div>
+
+              {/* החלפת פילטר */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">החלפת פילטר:</span>
                 <span className="font-semibold text-teal-300">
                   {nextFilterReplaceDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextFilterReplace} יום)
                 </span>
               </div>
-              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
+
+              {/* ניקוי כיסוי */}
+              <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי כיסוי:</span>
                 <span className="font-semibold text-slate-200">
                   {nextCoverCleanDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextCoverClean} יום)
                 </span>
               </div>
+
+              {/* החלפת מים חלקית */}
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">החלפת מים חלקית:</span>
+                <span className="font-semibold text-slate-200">
+                  {nextPartialRefillDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextPartialRefill} יום)
+                </span>
+              </div>
+
+              {/* כל משימות החומרים והשגרות המחזוריות שהוזנו */}
+              {recurringChemicalTasks.map((t: any) => {
+                const tDate = new Date(t.nextDueDate);
+                const daysRemaining = Math.max(0, Math.ceil((tDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+                let cleanTitle = t.title;
+                if (!cleanTitle.endsWith(":")) cleanTitle += ":";
+                return (
+                  <div key={t.id} className="flex items-center justify-between pt-0.5 border-t border-slate-800/40">
+                    <span className="text-slate-400 truncate max-w-[150px]" title={t.title}>
+                      {cleanTitle}
+                    </span>
+                    <span className="font-semibold text-pink-300 shrink-0">
+                      {tDate.toLocaleDateString("he-IL")} (בעוד {daysRemaining} יום)
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
