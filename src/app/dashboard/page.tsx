@@ -364,11 +364,11 @@ export default function DashboardPage() {
 
         {/* 3 Quick Metrics Cards (Unified & Minimalist, No Icons) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-          {/* Card 1: מצב ואיכות המים (Unified Full Card - Clickable for full details) */}
+          {/* Card 1: מצב ואיכות המים -> /water-tests */}
           <div
-            onClick={() => setIsWaterAgeModalOpen(true)}
+            onClick={() => router.push("/water-tests")}
             className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-cyan-500/60 p-4 rounded-2xl flex flex-col justify-between space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group"
-            title="לחץ לצפייה בניתוח המלא של גיל המים, מועד מילוי אחרון והחלפות חלקיות"
+            title="לחץ למעבר לבדיקות ואיכות המים"
           >
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
               <span className="text-xs font-bold text-cyan-300 group-hover:text-cyan-200 transition-colors">
@@ -449,10 +449,16 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Card 2: תחזוקה (מועדי ביצוע הבאים) */}
-          <div className="bg-[#0a0f13] border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3">
+          {/* Card 2: תחזוקה -> /calendar */}
+          <div
+            onClick={() => router.push("/calendar")}
+            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-teal-500/60 p-4 rounded-2xl flex flex-col justify-between space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group"
+            title="לחץ למעבר ליומן התחזוקה והשגרות"
+          >
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="text-xs font-bold text-teal-300">תחזוקה</span>
+              <span className="text-xs font-bold text-teal-300 group-hover:text-teal-200 transition-colors">
+                תחזוקה
+              </span>
               <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
                 {pendingTasks.length} משימות פתוחות
               </span>
@@ -544,27 +550,24 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Card 3: ארון חומרים ומלאי (Exact Key-Value List Format) */}
-          <div className="bg-[#0a0f13] border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3">
+          {/* Card 3: ארון חומרים ומלאי -> /inventory */}
+          <div
+            onClick={() => router.push("/inventory")}
+            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-purple-500/60 p-4 rounded-2xl flex flex-col justify-between space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group"
+            title="לחץ למעבר לארון החומרים והמלאי"
+          >
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="text-xs font-bold text-purple-300">ארון חומרים ומלאי</span>
-              <Link
-                href="/inventory"
-                className="text-[10px] text-slate-400 hover:text-purple-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 transition-colors"
-                title="לחץ למעבר לניהול ארון החומרים"
-              >
+              <span className="text-xs font-bold text-purple-300 group-hover:text-purple-200 transition-colors">
+                ארון חומרים ומלאי
+              </span>
+              <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
                 {chemicals.length} פריטים
-              </Link>
+              </span>
             </div>
 
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between pb-1 border-b border-slate-800/50">
-                <span className="text-slate-400">סך הכל חומרים:</span>
-                <span className="text-sm font-black text-white">{chemicals.length}</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">סטטוס מלאי:</span>
+                <span className="text-slate-400">סטטוס מלאי כללי:</span>
                 <span className={`font-semibold ${lowStockChemicals.length > 0 ? "text-amber-400" : "text-emerald-400"}`}>
                   {lowStockChemicals.length > 0 ? `${lowStockChemicals.length} במלאי נמוך ⚠️` : "תקין ומלא ✓"}
                 </span>
