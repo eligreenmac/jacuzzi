@@ -237,19 +237,19 @@ export default function DashboardPage() {
                   let colorClass = "text-slate-400 font-medium";
 
                   if (phRange.includes("VERY_LOW") || phRange.includes("חומצי מאוד") || (typeof phVal === "number" && phVal < 6.8)) {
-                    label = "Very Low (חומצי מאוד)";
+                    label = "Very Low";
                     colorClass = "text-rose-400 font-bold";
                   } else if (phRange.includes("LOW") || phRange.includes("נמוך") || (typeof phVal === "number" && phVal < 7.2)) {
-                    label = "Low (נמוך)";
+                    label = "Low";
                     colorClass = "text-amber-400 font-bold";
                   } else if (phRange.includes("OK") || phRange.includes("תקין") || (typeof phVal === "number" && phVal <= 7.6)) {
-                    label = "OK (תקין)";
+                    label = "OK";
                     colorClass = "text-emerald-400 font-bold";
                   } else if (phRange.includes("VERY_HIGH") || phRange.includes("בסיסי מאוד") || (typeof phVal === "number" && phVal > 8.0)) {
-                    label = "Very High (בסיסי מאוד)";
+                    label = "Very High";
                     colorClass = "text-rose-400 font-bold";
                   } else if (phRange.includes("HIGH") || phRange.includes("גבוה") || (typeof phVal === "number" && phVal <= 8.0)) {
-                    label = "High (גבוה)";
+                    label = "High";
                     colorClass = "text-amber-400 font-bold";
                   }
 
@@ -274,19 +274,19 @@ export default function DashboardPage() {
                   let colorClass = "text-slate-400 font-medium";
 
                   if (clRange.includes("VERY_LOW") || clRange.includes("ללא חיטוי") || (typeof clVal === "number" && clVal < 0.5)) {
-                    label = "Very Low (ללא חיטוי)";
+                    label = "Very Low";
                     colorClass = "text-rose-400 font-bold";
                   } else if (clRange.includes("LOW") || clRange.includes("נמוך") || (typeof clVal === "number" && clVal < 2.0)) {
-                    label = "Low (נמוך)";
+                    label = "Low";
                     colorClass = "text-amber-400 font-bold";
                   } else if (clRange.includes("OK") || clRange.includes("תקין") || (typeof clVal === "number" && clVal <= 4.0)) {
-                    label = "OK (תקין)";
+                    label = "OK";
                     colorClass = "text-emerald-400 font-bold";
                   } else if (clRange.includes("VERY_HIGH") || clRange.includes("שוק") || clRange.includes("עודף") || (typeof clVal === "number" && clVal > 8.0)) {
-                    label = "Very High (שוק / עודף)";
+                    label = "Very High";
                     colorClass = "text-rose-400 font-bold";
                   } else if (clRange.includes("HIGH") || clRange.includes("גבוה") || (typeof clVal === "number" && clVal <= 8.0)) {
-                    label = "High (גבוה)";
+                    label = "High";
                     colorClass = "text-amber-400 font-bold";
                   }
 
@@ -311,19 +311,19 @@ export default function DashboardPage() {
                   let colorClass = "text-slate-400 font-medium";
 
                   if (alkRange.includes("VERY_LOW") || alkRange.includes("נמוכה מאוד") || (typeof alkVal === "number" && alkVal < 40)) {
-                    label = "Very Low (נמוכה מאוד)";
+                    label = "Very Low";
                     colorClass = "text-rose-400 font-bold";
                   } else if (alkRange.includes("LOW") || alkRange.includes("נמוכה") || (typeof alkVal === "number" && alkVal < 80)) {
-                    label = "Low (נמוכה)";
+                    label = "Low";
                     colorClass = "text-amber-400 font-bold";
                   } else if (alkRange.includes("OK") || alkRange.includes("תקינה") || (typeof alkVal === "number" && alkVal <= 120)) {
-                    label = "OK (תקינה)";
+                    label = "OK";
                     colorClass = "text-emerald-400 font-bold";
                   } else if (alkRange.includes("VERY_HIGH") || alkRange.includes("גבוהה מאוד") || (typeof alkVal === "number" && alkVal > 180)) {
-                    label = "Very High (גבוהה מאוד)";
+                    label = "Very High";
                     colorClass = "text-rose-400 font-bold";
                   } else if (alkRange.includes("HIGH") || alkRange.includes("גבוהה") || (typeof alkVal === "number" && alkVal <= 180)) {
-                    label = "High (גבוהה)";
+                    label = "High";
                     colorClass = "text-amber-400 font-bold";
                   }
 

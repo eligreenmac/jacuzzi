@@ -208,6 +208,50 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // 🌟 Auto-sync with open water test routine tasks in calendar
+    try {
+      const now = new Date();
+      const openWaterTasks = await prisma.maintenanceTask.findMany({
+        where: {
+          userId: user.id,
+          OR: [
+            { title: { contains: "בדיקת מים" } },
+            { title: { contains: "מקלון" } },
+            { title: { contains: "בדיקה שבועית" } },
+            { category: "WATER_TEST" },
+          ],
+        },
+      });
+
+      for (const task of openWaterTasks) {
+        const freq = task.frequencyDays || 7;
+        const nextDate = new Date(now.getTime() + freq * 24 * 60 * 60 * 1000);
+        const valAfter = `pH: ${phRange || (parsedPh ? `pH ${parsedPh}` : "נבדק")}, חיטוי: ${chlorineRange || (parsedCl ? `${parsedCl} ppm` : "נבדק")}, TA: ${alkalinityRange || (parsedAlk ? `${parsedAlk} ppm` : "נבדק")}`;
+
+        await prisma.maintenanceTask.update({
+          where: { id: task.id },
+          data: {
+            lastDoneDate: now,
+            nextDueDate: nextDate,
+            isCompleted: false,
+            lastValueAfter: valAfter,
+          },
+        });
+
+        await prisma.diaryEntry.create({
+          data: {
+            userId: user.id,
+            title: `בוצע: ${task.title}`,
+            content: `בוצעה בדיקת מים דרך לשונית בדיקות מים וסונכרנה אוטומטית ליומן המשימות.\n• תוצאות: ${valAfter}\n• צלילות: ${waterClarity || "צלול"}${description ? `\n• הערות: ${description}` : ""}`,
+            valueAfter: valAfter,
+            waterQualityRating: 5,
+          },
+        });
+      }
+    } catch (syncErr) {
+      console.error("Failed to auto-sync water test with tasks:", syncErr);
+    }
+
     return NextResponse.json({ success: true, test: newTest, diagnosis });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

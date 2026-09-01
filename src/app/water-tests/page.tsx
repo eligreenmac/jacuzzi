@@ -29,29 +29,29 @@ import {
 // Standard Test Strip Range Scales (Clean & Calibrated)
 // Standard Test Strip Range Scales (5 Distinct Domains: Very Low, Low, OK, High, Very High)
 const PH_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (< 6.8 - חומצי מאוד)", defaultVal: 6.5, badge: "Very Low" },
-  { id: "LOW", label: "Low (6.8 - 7.1 - נמוך)", defaultVal: 7.0, badge: "Low" },
-  { id: "OK", label: "OK (7.2 - 7.6 - תקין)", defaultVal: 7.4, badge: "OK" },
-  { id: "HIGH", label: "High (7.7 - 8.0 - גבוה)", defaultVal: 7.8, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 8.0 - בסיסי מאוד)", defaultVal: 8.3, badge: "Very High" },
+  { id: "VERY_LOW", label: "Very Low (< 6.8)", defaultVal: 6.5, badge: "Very Low" },
+  { id: "LOW", label: "Low (6.8 - 7.1)", defaultVal: 7.0, badge: "Low" },
+  { id: "OK", label: "OK (7.2 - 7.6)", defaultVal: 7.4, badge: "OK" },
+  { id: "HIGH", label: "High (7.7 - 8.0)", defaultVal: 7.8, badge: "High" },
+  { id: "VERY_HIGH", label: "Very High (> 8.0)", defaultVal: 8.3, badge: "Very High" },
   { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
 ];
 
 const CHLORINE_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (0 - 0.5 ppm - ללא חיטוי)", defaultVal: 0.0, badge: "Very Low" },
-  { id: "LOW", label: "Low (0.5 - 1.5 ppm - נמוך)", defaultVal: 1.0, badge: "Low" },
-  { id: "OK", label: "OK (2.0 - 4.0 ppm - תקין)", defaultVal: 3.0, badge: "OK" },
-  { id: "HIGH", label: "High (5.0 - 8.0 ppm - גבוה)", defaultVal: 6.0, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 8.0 ppm - גבוה מאוד / שוק)", defaultVal: 10.0, badge: "Very High" },
+  { id: "VERY_LOW", label: "Very Low (0 - 0.5 ppm)", defaultVal: 0.0, badge: "Very Low" },
+  { id: "LOW", label: "Low (0.5 - 1.5 ppm)", defaultVal: 1.0, badge: "Low" },
+  { id: "OK", label: "OK (2.0 - 4.0 ppm)", defaultVal: 3.0, badge: "OK" },
+  { id: "HIGH", label: "High (5.0 - 8.0 ppm)", defaultVal: 6.0, badge: "High" },
+  { id: "VERY_HIGH", label: "Very High (> 8.0 ppm)", defaultVal: 10.0, badge: "Very High" },
   { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
 ];
 
 const ALKALINITY_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (< 40 ppm - נמוכה מאוד)", defaultVal: 30, badge: "Very Low" },
-  { id: "LOW", label: "Low (40 - 70 ppm - נמוכה)", defaultVal: 60, badge: "Low" },
-  { id: "OK", label: "OK (80 - 120 ppm - תקינה)", defaultVal: 100, badge: "OK" },
-  { id: "HIGH", label: "High (130 - 180 ppm - גבוהה)", defaultVal: 150, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 180 ppm - גבוהה מאוד)", defaultVal: 200, badge: "Very High" },
+  { id: "VERY_LOW", label: "Very Low (< 40 ppm)", defaultVal: 30, badge: "Very Low" },
+  { id: "LOW", label: "Low (40 - 70 ppm)", defaultVal: 60, badge: "Low" },
+  { id: "OK", label: "OK (80 - 120 ppm)", defaultVal: 100, badge: "OK" },
+  { id: "HIGH", label: "High (130 - 180 ppm)", defaultVal: 150, badge: "High" },
+  { id: "VERY_HIGH", label: "Very High (> 180 ppm)", defaultVal: 200, badge: "Very High" },
   { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
 ];
 
@@ -63,19 +63,19 @@ export function getParamDomain(
   if (rangeStr) {
     const s = rangeStr.toUpperCase();
     if (s.includes("VERY_LOW") || s.includes("חומצי מאוד") || s.includes("ללא חיטוי") || s.includes("נמוכה מאוד")) {
-      return { id: "VERY_LOW", label: type === "PH" ? "Very Low (חומצי מאוד)" : type === "CHLORINE" ? "Very Low (ללא חיטוי)" : "Very Low (נמוכה מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+      return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
     }
     if (s.includes("LOW") || s.includes("נמוך") || s.includes("נמוכה")) {
-      return { id: "LOW", label: type === "ALKALINITY" ? "Low (נמוכה)" : "Low (נמוך)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
+      return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
     }
     if (s.includes("OK") || s.includes("תקין") || s.includes("אידיאלי") || s.includes("תקינה")) {
-      return { id: "OK", label: type === "ALKALINITY" ? "OK (תקינה)" : "OK (תקין)", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK (תקין)" };
+      return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
     }
     if (s.includes("VERY_HIGH") || s.includes("בסיסי מאוד") || s.includes("שוק") || s.includes("עודף") || s.includes("גבוהה מאוד")) {
-      return { id: "VERY_HIGH", label: type === "PH" ? "Very High (בסיסי מאוד)" : type === "CHLORINE" ? "Very High (שוק / עודף)" : "Very High (גבוהה מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+      return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
     }
     if (s.includes("HIGH") || s.includes("גבוה") || s.includes("גבוהה")) {
-      return { id: "HIGH", label: type === "ALKALINITY" ? "High (גבוהה)" : "High (גבוה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+      return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
     }
   }
 
@@ -84,25 +84,25 @@ export function getParamDomain(
   }
 
   if (type === "PH") {
-    if (val < 6.8) return { id: "VERY_LOW", label: "Very Low (חומצי מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
-    if (val < 7.2) return { id: "LOW", label: "Low (נמוך)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 7.6) return { id: "OK", label: "OK (תקין)", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK (תקין)" };
-    if (val <= 8.0) return { id: "HIGH", label: "High (גבוה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
-    return { id: "VERY_HIGH", label: "Very High (בסיסי מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (val < 6.8) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+    if (val < 7.2) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
+    if (val <= 7.6) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
+    if (val <= 8.0) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
   }
   if (type === "CHLORINE") {
-    if (val < 0.5) return { id: "VERY_LOW", label: "Very Low (ללא חיטוי)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
-    if (val < 2.0) return { id: "LOW", label: "Low (נמוך)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 4.0) return { id: "OK", label: "OK (תקין)", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK (תקין)" };
-    if (val <= 8.0) return { id: "HIGH", label: "High (גבוה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
-    return { id: "VERY_HIGH", label: "Very High (שוק / עודף)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (val < 0.5) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+    if (val < 2.0) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
+    if (val <= 4.0) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
+    if (val <= 8.0) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
   }
   if (type === "ALKALINITY") {
-    if (val < 40) return { id: "VERY_LOW", label: "Very Low (נמוכה מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
-    if (val < 80) return { id: "LOW", label: "Low (נמוכה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 120) return { id: "OK", label: "OK (תקינה)", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK (תקין)" };
-    if (val <= 180) return { id: "HIGH", label: "High (גבוהה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
-    return { id: "VERY_HIGH", label: "Very High (גבוהה מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (val < 40) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+    if (val < 80) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
+    if (val <= 120) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
+    if (val <= 180) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
   }
   return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700", shortLabel: "לא נבדק" };
 }
