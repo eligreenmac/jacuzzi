@@ -275,10 +275,13 @@ export default function DashboardPage() {
     ? new Date(lastCoverCleanDate.getTime() + 30 * 24 * 60 * 60 * 1000)
     : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-  // All custom / recurring chemical tasks
+  // All custom / recurring chemical tasks (exclude purchase recommendations)
   const recurringChemicalTasks = tasks.filter((t: any) => {
     if (t.isCompleted) return false;
     const titleLower = (t.title || "").toLowerCase();
+    const isPurchase = titleLower.includes("רכש") || titleLower.includes("להזמין") || titleLower.includes("קנייה") || titleLower.includes("חוסרים");
+    if (isPurchase) return false;
+
     const isCoreRoutine =
       titleLower.includes("צנרת") ||
       titleLower.includes("דפנ") ||
@@ -307,6 +310,8 @@ export default function DashboardPage() {
 
   // Completed tasks: explicitly completed OR performed during this week
   const completedTasks = tasks.filter((t: any) => {
+    const titleLower = (t.title || "").toLowerCase();
+    if (titleLower.includes("רכש")) return false;
     if (t.isCompleted) return true;
     if (t.lastDoneDate) {
       const lastDone = new Date(t.lastDoneDate);
@@ -318,6 +323,10 @@ export default function DashboardPage() {
   // Pending tasks for this week: NOT completed AND due <= endOfWeek AND NOT performed this week
   const pendingTasks = tasks.filter((t: any) => {
     if (t.isCompleted) return false;
+    const titleLower = (t.title || "").toLowerCase();
+    const isPurchase = titleLower.includes("רכש") || titleLower.includes("להזמין") || titleLower.includes("קנייה") || titleLower.includes("חוסרים");
+    if (isPurchase) return false;
+
     const dueDate = new Date(t.nextDueDate);
     if (t.lastDoneDate) {
       const lastDone = new Date(t.lastDoneDate);

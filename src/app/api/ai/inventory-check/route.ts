@@ -36,30 +36,19 @@ export async function POST(req: NextRequest) {
     const lowStockItems = (analysis.lowStockAlerts || []).map((l: any) => l.name);
     const allRecommendedPurchases = Array.from(new Set([...missingItems, ...lowStockItems])).filter(Boolean);
 
-    // Clean previous AI purchase recommendations
+    // Clean previous purchase tasks from maintenance task list
     await prisma.maintenanceTask.deleteMany({
       where: {
         userId: user.id,
         OR: [
-          { title: { contains: "רכש מומלץ AI" } },
-          { title: { contains: "רכש מומלץ:" } },
+          { title: { contains: "רכש מומלץ" } },
+          { title: { contains: "רכש AI" } },
+          { title: { contains: "רכש" } },
         ],
       },
     });
 
     if (allRecommendedPurchases.length > 0) {
-      await prisma.maintenanceTask.create({
-        data: {
-          userId: user.id,
-          title: `רכש מומלץ AI: ${allRecommendedPurchases.join(", ")}`,
-          description: analysis.inventorySummary || "המלצות רכש שהופקו בבדיקת AI בארון החומרים",
-          category: "CUSTOM",
-          frequencyDays: 30,
-          nextDueDate: new Date(),
-          isCompleted: false,
-        },
-      });
-
       await prisma.diaryEntry.create({
         data: {
           userId: user.id,
