@@ -4,22 +4,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
-  Droplets,
-  Calendar,
   Sparkles,
-  Package,
   Settings,
   LogOut,
-  Menu,
-  X,
   LayoutDashboard,
-  FlaskConical,
 } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
 
   useEffect(() => {
@@ -52,23 +45,10 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-[#0e161c]/90 backdrop-blur-md border-b border-slate-800/80 text-slate-200 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-teal-950/60 border border-teal-800/50 flex items-center justify-center shadow-sm group-hover:border-teal-700 transition-colors">
-              <Droplets className="w-5 h-5 text-teal-300" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-base tracking-wide text-white">
-                Jacuzzi Spa Master
-              </span>
-              <span className="text-[10px] text-slate-400 -mt-0.5">תחזוקת מים ורוגע ספא</span>
-            </div>
-          </Link>
-
+        <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
           {/* Navigation Links (Visible on All Devices) */}
           {!isAuthPage && (
-            <nav className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-1">
+            <nav className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1">
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = pathname === link.href;
