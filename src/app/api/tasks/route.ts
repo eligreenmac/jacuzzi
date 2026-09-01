@@ -9,28 +9,56 @@ export async function GET(req: NextRequest) {
     const user = await getSessionUser(req);
     if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
 
+    const latestWaterLog = await prisma.waterLog.findFirst({
+      where: { userId: user.id },
+      orderBy: { testedAt: "desc" },
+    });
+
+    const now = Date.now();
+    const lastTestTime = latestWaterLog?.testedAt ? new Date(latestWaterLog.testedAt).getTime() : 0;
+    const daysSinceLastTest = lastTestTime ? (now - lastTestTime) / (1000 * 3600 * 24) : 999;
+
     const tasks = await prisma.maintenanceTask.findMany({
       where: { userId: user.id },
       orderBy: { nextDueDate: "asc" },
     });
 
-    // Auto-heal tasks: ensure routine water test tasks have minimum 7 days frequency
+    // Auto-heal tasks:
     for (const t of tasks) {
-      const isWaterRoutine =
-        (t.title.includes("בדיקת מים") || t.title.includes("מקלון") || t.title.includes("איכות מים")) &&
-        t.category !== "CUSTOM";
+      const isWaterTask =
+        t.title.includes("בדיקת מים") ||
+        t.title.includes("מקלון") ||
+        t.title.includes("איכות מים") ||
+        t.title.includes("ראשונית למים") ||
+        t.category === "WATER_TEST";
 
-      if (isWaterRoutine && t.frequencyDays < 7) {
-        const nextDate = t.lastDoneDate
-          ? new Date(new Date(t.lastDoneDate).getTime() + 7 * 24 * 3600 * 1000)
-          : new Date(Date.now() + 7 * 24 * 3600 * 1000);
+      const isOneTime =
+        t.category === "CUSTOM" ||
+        t.title.includes("ראשונית") ||
+        t.title.includes("חוזרת") ||
+        t.title.includes("מעקב") ||
+        t.frequencyDays <= 1;
 
+      // If tested recently (< 4 days ago) and there is a pending one-time water task due soon (<= 4 days), mark it done!
+      if (isWaterTask && isOneTime && daysSinceLastTest <= 4 && !t.isCompleted) {
         await prisma.maintenanceTask.update({
           where: { id: t.id },
-          data: { frequencyDays: 7, nextDueDate: nextDate },
+          data: { isCompleted: true, lastDoneDate: latestWaterLog?.testedAt || new Date() },
         });
-        t.frequencyDays = 7;
-        t.nextDueDate = nextDate;
+        t.isCompleted = true;
+      }
+
+      // If recurring water test routine task: ensure weekly cycle (7 days)
+      if (isWaterTask && !isOneTime && !t.isCompleted) {
+        const nextDate = new Date(Math.max(now + 3 * 24 * 3600 * 1000, (lastTestTime || now) + 7 * 24 * 3600 * 1000));
+        if (t.frequencyDays < 7 || (daysSinceLastTest <= 4 && new Date(t.nextDueDate).getTime() < nextDate.getTime())) {
+          await prisma.maintenanceTask.update({
+            where: { id: t.id },
+            data: { frequencyDays: 7, nextDueDate: nextDate },
+          });
+          t.frequencyDays = 7;
+          t.nextDueDate = nextDate;
+        }
       }
     }
 

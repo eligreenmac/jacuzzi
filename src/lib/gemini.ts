@@ -1433,9 +1433,10 @@ ${JSON.stringify(req.inventory, null, 2)}
 
 עקרונות אופטימיזציה מקצועיים:
 1. **מחיקת משימות לא רלוונטיות / כפולות (tasksToDelete)**:
+   - אם בוצעה בדיקת מים היום או ביומיים האחרונים (מופיעה ב-recentWaterLogs או שבוצעה בדיקה), ויש משימת בדיקת מים / מקלון פתוחה שמשובצת למחר או לימים הקרובים (פחות מ-6 ימים מבדיקת המים האחרונה, כמו "בדיקת מקלון ראשונית למים החדשים") — משימה זו מיותרת לחלוטין ויש להכניס אותה ל-tasksToDelete עם הסיבה: "בוצעה בדיקת מים עדכנית היום/לאחרונה, משימת בדיקה נוספת למחר מיותרת".
    - משימה שלא תואמת את שיטת החיטוי (למשל משימת כלור כשהג'קוזי עובד על ברום או להפך).
-   - משימות כפולות לאותו עניין.
-   - משימות שנוצרו בעבר באופן חד-פעמי וכבר אינן רלוונטיות.
+   - משימות כפולות לאותו עניין (למשל שתי משימות של בדיקת מים).
+   - משימות מעקב ישנות שנוצרו בעבר באופן חד-פעמי וכבר אינן רלוונטיות.
 2. **עדכון משימות קיימות (tasksToUpdate)**:
    - אם משימת שטיפת פילטר או שוק פגת תוקף מזמן או שבוצעה לאחרונה ביומן, עדכן את התאריך הבא והתדירות.
    - התאמת תדירויות לפי תדירות השימוש (למשל שימוש כבד דורש שטיפת פילטר כל 5 ימים במקום 7).
@@ -1546,6 +1547,26 @@ function generateRuleBasedRoutineOptimization(
         currentDueDate: new Date(task.nextDueDate).toISOString(),
         newDueDate: newDue,
         reason: "המשימה פגת תוקף מעל 30 ימים - תאריך היעד רוענן ליומיים הקרובים.",
+      });
+    }
+
+    // Check redundant water test task if test was done recently
+    const lastTest = req.recentWaterLogs && req.recentWaterLogs.length > 0 ? req.recentWaterLogs[0] : null;
+    const lastTestTime = lastTest?.testedAt ? new Date(lastTest.testedAt).getTime() : 0;
+    const daysSinceTest = lastTestTime ? (now - lastTestTime) / (1000 * 3600 * 24) : 999;
+    const isWaterTask =
+      task.title.includes("בדיק") ||
+      task.title.includes("מקלון") ||
+      task.title.includes("איכות") ||
+      task.title.includes("ראשונית למים") ||
+      task.category === "WATER_TEST";
+
+    const daysFromNow = (dueTime - now) / (1000 * 3600 * 24);
+    if (isWaterTask && daysSinceTest <= 3 && daysFromNow <= 4 && !task.isCompleted) {
+      tasksToDelete.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: "בוצעה בדיקת מים עדכנית - משימת בדיקה נוספת לימים הקרובים מיותרת.",
       });
     }
   }
