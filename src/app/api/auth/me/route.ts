@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
         },
         diaryEntries: {
           orderBy: { entryDate: "desc" },
-          take: 5,
+          take: 100,
         },
       },
     });

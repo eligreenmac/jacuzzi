@@ -126,12 +126,25 @@ export default function DashboardPage() {
     : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   // Calculate Last Partial Water Refill
-  const partialRefillTask = tasks.find((t: any) => t.title?.includes("חלקית") || (t.title?.includes("ריענון") && t.title?.includes("מים")));
+  const partialRefillTask = tasks.find((t: any) => 
+    t.lastDoneDate && (
+      t.title?.includes("חלקית") || 
+      t.title?.includes("ריענון") || 
+      (t.title?.includes("החלפת מים") && !t.title?.includes("מלא"))
+    )
+  );
   const partialRefillDiary = data?.diaryEntries?.find((d: any) => 
-    d.title?.includes("חלקית") || d.content?.includes("חלקית") || d.title?.includes("ריענון מים")
+    d.title?.includes("חלקית") || 
+    d.content?.includes("חלקית") || 
+    d.title?.includes("ריענון") || 
+    d.content?.includes("ריענון") ||
+    (d.title?.includes("החלפת מים") && !d.title?.includes("מלאה")) ||
+    (d.content?.includes("החלפת מים") && !d.content?.includes("מלאה"))
   );
   const lastPartialRefillDate = partialRefillTask?.lastDoneDate 
     ? new Date(partialRefillTask.lastDoneDate) 
+    : partialRefillDiary?.entryDate 
+    ? new Date(partialRefillDiary.entryDate) 
     : partialRefillDiary?.createdAt 
     ? new Date(partialRefillDiary.createdAt) 
     : null;
@@ -139,12 +152,9 @@ export default function DashboardPage() {
     ? Math.max(0, Math.floor((Date.now() - lastPartialRefillDate.getTime()) / (1000 * 60 * 60 * 24))) 
     : null;
 
-  const partialPct =
-    partialRefillTask?.title?.match(/(\d+)%/)?.[1] ||
-    partialRefillTask?.description?.match(/(\d+)%/)?.[1] ||
-    partialRefillDiary?.title?.match(/(\d+)%/)?.[1] ||
-    partialRefillDiary?.content?.match(/(\d+)%/)?.[1] ||
-    "25";
+  const textToSearchForPct = `${partialRefillTask?.title || ""} ${partialRefillTask?.description || ""} ${partialRefillDiary?.title || ""} ${partialRefillDiary?.content || ""}`;
+  const matchPct = textToSearchForPct.match(/(\d+)%/);
+  const partialPct = matchPct ? matchPct[1] : "30";
   const partialLiters = Math.round(((jacuzzi?.volumeLiters || 1200) * parseInt(partialPct, 10)) / 100);
   const daysUntilNextPartialRefill = lastPartialRefillDate ? Math.max(0, 30 - (daysSincePartialRefill || 0)) : 30;
   const nextPartialRefillDate = lastPartialRefillDate
