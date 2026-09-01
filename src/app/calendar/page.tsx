@@ -823,6 +823,333 @@ export default function CalendarPage() {
     return isSameDay(d, todayDate) || d < todayDate;
   }).length;
 
+  const renderDayDetailsContent = (targetDay: Date) => {
+    const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(targetDay);
+    const total = dayTasks.length + doneTasks.length + dayEntries.length + dayWaterLogs.length;
+
+    return (
+      <div className="bg-slate-900/95 border border-cyan-800/60 rounded-2xl md:rounded-3xl p-4 sm:p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-right w-full">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-black text-sm">
+              {targetDay.getDate()}
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-white">
+                אירועים וטיפולים לתאריך: {targetDay.toLocaleDateString("he-IL")}
+              </h3>
+              <p className="text-[10px] sm:text-xs text-slate-400">פרטי משימות, פעולות שבוצעו ורשומות יומן</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedDay(targetDay);
+                setIsTaskModalOpen(true);
+              }}
+              className="px-2.5 py-1 bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white rounded-xl text-[11px] font-semibold border border-cyan-500/40 transition-colors"
+            >
+              + משימה
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedDay(targetDay);
+                setIsNoteModalOpen(true);
+              }}
+              className="px-2.5 py-1 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white rounded-xl text-[11px] font-semibold border border-purple-500/40 transition-colors"
+            >
+              + הערה
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedDay(null);
+              }}
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+              title="סגור פירוט"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {total === 0 ? (
+          <div className="text-center py-6 text-slate-400 text-xs">
+            אין טיפולים או משימות מתועדות בתאריך זה.
+          </div>
+        ) : (
+          <div className="space-y-4 sm:space-y-5">
+            {/* Pending Tasks */}
+            {dayTasks.length > 0 && (
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>משימות מתוזמנות לביצוע:</span>
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {dayTasks.map((task) => {
+                    const isFuture = isTaskFuture(task);
+                    return (
+                      <div
+                        key={task.id}
+                        className={`border rounded-2xl p-3 sm:p-3.5 space-y-2.5 flex flex-col justify-between transition-all ${
+                          isFuture
+                            ? "bg-slate-950/70 border-slate-800/80"
+                            : "bg-slate-950 border-cyan-800/60 shadow-lg"
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                                {task.category === "WEEKLY" ? "שבועי" : task.category === "MONTHLY" ? "חודשי" : task.category === "QUARTERLY" ? "רבעוני" : "תקופתי"}
+                              </span>
+                              {isFuture && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800/60 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  <span>מתוזמן ל-{new Date(task.nextDueDate).toLocaleDateString("he-IL")}</span>
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditTaskModal(task);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-slate-900 rounded-lg transition-colors"
+                                title="ערוך משימה"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteTask(task.id);
+                                }}
+                                className="px-2 py-1 text-rose-400 hover:text-white bg-rose-950/50 hover:bg-rose-900 rounded-lg border border-rose-900/60 transition-colors flex items-center gap-1 text-xs font-bold shrink-0"
+                                title="מחק משימה"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>מחק</span>
+                              </button>
+                            </div>
+                          </div>
+                          <h5 className="font-bold text-white text-xs sm:text-sm pt-0.5">{task.title}</h5>
+                          {task.description && <p className="text-[11px] text-slate-400">{task.description}</p>}
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-800/80">
+                          {isFuture ? (
+                            <div className="text-[10px] text-slate-400 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 flex items-center justify-center gap-1 font-medium">
+                              <Lock className="w-3 h-3 text-slate-500" />
+                              <span>ייפתח לביצוע במועד ({new Date(task.nextDueDate).toLocaleDateString("he-IL")})</span>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCompletionModal(task);
+                              }}
+                              className="w-full py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>סמן ביצוע</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Completed Tasks */}
+            {doneTasks.length > 0 && (
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>טיפולים שבוצעו ותועדו:</span>
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {doneTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="bg-slate-950/80 border border-emerald-900/60 rounded-2xl p-3 sm:p-3.5 space-y-2 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-emerald-300 text-xs sm:text-sm flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{task.title}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleResetTask(task);
+                            }}
+                            className="p-1 text-amber-400 hover:text-white hover:bg-amber-950/60 rounded-lg transition-colors flex items-center gap-1 border border-amber-800/40"
+                            title="אפס אירוע"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span className="text-[9px] font-bold">אפס אירוע</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditTaskModal(task);
+                            }}
+                            className="text-slate-400 hover:text-cyan-300 p-1 hover:bg-slate-900 rounded-lg transition-colors"
+                            title="ערוך"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTask(task.id);
+                            }}
+                            className="text-slate-400 hover:text-rose-400 p-1 hover:bg-slate-900 rounded-lg transition-colors"
+                            title="מחק"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {task.lastChemicalUsed && (
+                        <div className="text-cyan-300 font-semibold bg-cyan-950/40 p-1.5 rounded-xl border border-cyan-900/50 text-[11px]">
+                          <span className="text-slate-400">חומר שהוסף: </span>
+                          {task.lastChemicalUsed} ({task.lastAmountAdded || ""})
+                        </div>
+                      )}
+
+                      {task.lastValueAfter && (
+                        <div className="text-emerald-300 font-semibold text-[11px]">
+                          <span className="text-slate-500">תוצאות שנמדדו: </span>
+                          {task.lastValueAfter}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Water Tests */}
+            {dayWaterLogs.length > 0 && (
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                  <FlaskConical className="w-3.5 h-3.5" />
+                  <span>בדיקות איכות מים שבוצעו ותועדו:</span>
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {dayWaterLogs.map((w: any) => {
+                    const phStr = w.phRange || (w.ph !== null ? `pH ${w.ph}` : null);
+                    const clStr = w.chlorineRange || (w.freeChlorine !== null ? `${w.freeChlorine} ppm` : null);
+                    const alkStr = w.alkalinityRange || (w.alkalinity !== null ? `${w.alkalinity} ppm` : null);
+                    return (
+                      <div key={w.id} className="bg-slate-950/90 border border-cyan-900/60 rounded-2xl p-3 sm:p-3.5 space-y-2 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center border border-cyan-800">
+                              <FlaskConical className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="font-bold text-white text-xs">בדיקת איכות מים (מקלון)</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">
+                            שעה {new Date(w.testedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5 text-center text-[10px] pt-1 border-t border-slate-800">
+                          <div className="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
+                            <div className="text-slate-400">חומציות</div>
+                            <div className="font-bold text-cyan-300">{phStr || "—"}</div>
+                          </div>
+                          <div className="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
+                            <div className="text-slate-400">חיטוי</div>
+                            <div className="font-bold text-cyan-300">{clStr || "—"}</div>
+                          </div>
+                          <div className="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
+                            <div className="text-slate-400">בסיסיות</div>
+                            <div className="font-bold text-cyan-300">{alkStr || "—"}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Diary Notes */}
+            {dayEntries.length > 0 && (
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>רשומות יומן תחזוקה:</span>
+                </h4>
+
+                <div className="space-y-2">
+                  {dayEntries.map((e) => (
+                    <div key={e.id} className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3 sm:p-3.5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h5 className="font-bold text-white text-xs sm:text-sm">{e.title}</h5>
+                        <button
+                          type="button"
+                          onClick={(evt) => {
+                            evt.stopPropagation();
+                            handleDeleteDiaryEntry(e.id);
+                          }}
+                          className="text-slate-500 hover:text-rose-400 p-1"
+                          title="מחק רשומה"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-300 whitespace-pre-wrap">{e.content}</p>
+                      {e.imageUrl && (
+                        <div className="pt-1">
+                          <img
+                            src={e.imageUrl}
+                            alt="תמונה מצורפת לרשומה"
+                            onClick={(evt) => {
+                              evt.stopPropagation();
+                              setPreviewEnlargeImage(e.imageUrl);
+                            }}
+                            className="max-h-48 max-w-full rounded-xl object-contain border border-slate-800 hover:border-purple-500 cursor-pointer transition-all shadow-md hover:scale-[1.02]"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header & Controls */}
@@ -996,7 +1323,7 @@ export default function CalendarPage() {
         </div>
       ) : viewMode === "WEEK" ? (
         /* WEEKLY 7-DAY COMPACT & RESPONSIVE VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-2 sm:gap-3 items-stretch">
+        <div className="flex flex-col md:grid md:grid-cols-7 gap-2 sm:gap-3 items-stretch">
           {weekDays.map((dayDate, idx) => {
             const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(dayDate);
             const isToday = isSameDay(dayDate, new Date());
@@ -1006,168 +1333,176 @@ export default function CalendarPage() {
             const hasAnyEvents = pendingDayTasks.length > 0 || doneTasks.length > 0 || dayWaterLogs.length > 0 || dayEntries.length > 0;
 
             return (
-              <div
-                key={idx}
-                onClick={() => setSelectedDay(dayDate)}
-                className={`p-2.5 sm:p-3.5 rounded-2xl md:rounded-3xl border flex flex-col justify-between transition-all min-h-0 md:min-h-[400px] shadow-md cursor-pointer ${
-                  isSelected
-                    ? "bg-cyan-950/30 border-cyan-400 ring-1 ring-cyan-400 shadow-cyan-950/30"
-                    : isToday
-                    ? "bg-slate-900/95 border-cyan-500/80 shadow-cyan-950/30"
-                    : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
-                }`}
-              >
-                {/* Day Header */}
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5 sm:pb-2">
-                    <div className="flex items-center gap-2 md:block">
-                      <span className="text-xs font-bold text-slate-300">יום {dayName}</span>
-                      <span className="text-xs sm:text-sm font-black text-white">
-                        {dayDate.toLocaleDateString("he-IL", { day: "numeric", month: "numeric" })}
-                      </span>
-                    </div>
-                    {isToday ? (
-                      <span className="text-[10px] font-black bg-cyan-500 text-slate-950 px-2 py-0.5 rounded-full shadow">
-                        היום
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedDay(dayDate);
-                          setIsTaskModalOpen(true);
-                        }}
-                        className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-cyan-300 hover:bg-slate-700 transition-all text-xs"
-                        title="הוסף משימה ליום זה"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Day Events List */}
-                  <div className="space-y-1.5 sm:space-y-2">
-                    {/* Pending Tasks */}
-                    {pendingDayTasks.map((t: any) => {
-                      const isFuture = isTaskFuture(t);
-                      return (
-                        <div
-                          key={t.id}
-                          className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-slate-950/90 border border-slate-800 hover:border-cyan-700 transition-all space-y-1 sm:space-y-1.5 text-xs shadow-sm"
-                        >
-                          <div className="flex items-start justify-between gap-1">
-                            <span className="font-bold text-white leading-tight text-[11px] sm:text-xs">
-                              {t.title}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteTask(t.id);
-                              }}
-                              className="p-1 text-rose-400/90 hover:text-white bg-rose-950/40 hover:bg-rose-900 rounded-lg border border-rose-900/60 transition-colors shrink-0 flex items-center justify-center min-w-[26px] min-h-[26px]"
-                              title="מחק משימה"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {/* Complete / Lock Button */}
-                          {isFuture ? (
-                            <div className="text-[9px] sm:text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 sm:py-1 rounded-lg border border-slate-800 flex items-center justify-center gap-1">
-                              <Lock className="w-2.5 h-2.5" />
-                              <span>נעול עד המועד</span>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openCompletionModal(t);
-                              }}
-                              className="w-full py-1 sm:py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg sm:rounded-xl text-[10px] font-bold shadow flex items-center justify-center gap-1 transition-all hover:scale-[1.02]"
-                            >
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>סמן ביצוע</span>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {/* Completed Tasks - Clickable to Reset / Undo */}
-                    {doneTasks.map((t: any) => (
-                      <div
-                        key={`done-${t.id}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleResetTask(t);
-                        }}
-                        className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/60 hover:border-emerald-600 text-[10px] text-emerald-300 flex items-center justify-between gap-1 font-semibold transition-all cursor-pointer group shadow-sm"
-                        title="לחץ כאן כדי לבטל את סימון הביצוע ולהחזיר למצב לא בוצע"
-                      >
-                        <div className="flex items-center gap-1.5 truncate">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-amber-400" />
-                          <span className="truncate group-hover:text-amber-200">{t.title}</span>
-                        </div>
+              <div key={idx} className="flex flex-col space-y-2">
+                <div
+                  onClick={() => setSelectedDay(isSelected ? null : dayDate)}
+                  className={`p-2.5 sm:p-3.5 rounded-2xl md:rounded-3xl border flex flex-col justify-between transition-all min-h-0 md:min-h-[400px] shadow-md cursor-pointer ${
+                    isSelected
+                      ? "bg-cyan-950/30 border-cyan-400 ring-1 ring-cyan-400 shadow-cyan-950/30"
+                      : isToday
+                      ? "bg-slate-900/95 border-cyan-500/80 shadow-cyan-950/30"
+                      : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+                  }`}
+                >
+                  {/* Day Header */}
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5 sm:pb-2">
+                      <div className="flex items-center gap-2 md:block">
+                        <span className="text-xs font-bold text-slate-300">יום {dayName}</span>
+                        <span className="text-xs sm:text-sm font-black text-white">
+                          {dayDate.toLocaleDateString("he-IL", { day: "numeric", month: "numeric" })}
+                        </span>
+                      </div>
+                      {isToday ? (
+                        <span className="text-[10px] font-black bg-cyan-500 text-slate-950 px-2 py-0.5 rounded-full shadow">
+                          היום
+                        </span>
+                      ) : (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setSelectedDay(dayDate);
+                            setIsTaskModalOpen(true);
+                          }}
+                          className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-cyan-300 hover:bg-slate-700 transition-all text-xs"
+                          title="הוסף משימה ליום זה"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Day Events List */}
+                    <div className="space-y-1.5 sm:space-y-2">
+                      {/* Pending Tasks */}
+                      {pendingDayTasks.map((t: any) => {
+                        const isFuture = isTaskFuture(t);
+                        return (
+                          <div
+                            key={t.id}
+                            className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-slate-950/90 border border-slate-800 hover:border-cyan-700 transition-all space-y-1 sm:space-y-1.5 text-xs shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-1">
+                              <span className="font-bold text-white leading-tight text-[11px] sm:text-xs">
+                                {t.title}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteTask(t.id);
+                                }}
+                                className="p-1 text-rose-400/90 hover:text-white bg-rose-950/40 hover:bg-rose-900 rounded-lg border border-rose-900/60 transition-colors shrink-0 flex items-center justify-center min-w-[26px] min-h-[26px]"
+                                title="מחק משימה"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Complete / Lock Button */}
+                            {isFuture ? (
+                              <div className="text-[9px] sm:text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 sm:py-1 rounded-lg border border-slate-800 flex items-center justify-center gap-1">
+                                <Lock className="w-2.5 h-2.5" />
+                                <span>נעול עד המועד</span>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openCompletionModal(t);
+                                }}
+                                className="w-full py-1 sm:py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg sm:rounded-xl text-[10px] font-bold shadow flex items-center justify-center gap-1 transition-all hover:scale-[1.02]"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>סמן ביצוע</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Completed Tasks */}
+                      {doneTasks.map((t: any) => (
+                        <div
+                          key={`done-${t.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleResetTask(t);
                           }}
-                          className="text-[8px] bg-emerald-900/80 group-hover:bg-rose-950 group-hover:text-rose-300 group-hover:border-rose-800 text-emerald-200 px-1.5 py-0.5 rounded border border-emerald-700 shrink-0 transition-colors"
-                          title="לחץ לביטול ביצוע"
+                          className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/60 hover:border-emerald-600 text-[10px] text-emerald-300 flex items-center justify-between gap-1 font-semibold transition-all cursor-pointer group shadow-sm"
+                          title="לחץ כאן כדי לבטל את סימון הביצוע ולהחזיר למצב לא בוצע"
                         >
-                          <span className="group-hover:hidden">בוצע ✓</span>
-                          <span className="hidden group-hover:inline">בטל ✕</span>
-                        </button>
-                      </div>
-                    ))}
-
-                    {/* Water Tests */}
-                    {dayWaterLogs.map((w: any) => (
-                      <div
-                        key={w.id}
-                        className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-cyan-950/30 border border-cyan-900/50 text-[10px] text-cyan-300 space-y-0.5"
-                      >
-                        <div className="flex items-center gap-1 font-bold">
-                          <FlaskConical className="w-3 h-3 text-cyan-400 shrink-0" />
-                          <span>בדיקת מים</span>
+                          <div className="flex items-center gap-1.5 truncate">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-amber-400" />
+                            <span className="truncate group-hover:text-amber-200">{t.title}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleResetTask(t);
+                            }}
+                            className="text-[8px] bg-emerald-900/80 group-hover:bg-rose-950 group-hover:text-rose-300 group-hover:border-rose-800 text-emerald-200 px-1.5 py-0.5 rounded border border-emerald-700 shrink-0 transition-colors"
+                            title="לחץ לביטול ביצוע"
+                          >
+                            <span className="group-hover:hidden">בוצע ✓</span>
+                            <span className="hidden group-hover:inline">בטל ✕</span>
+                          </button>
                         </div>
-                        <div className="text-[9px] text-slate-300 flex items-center gap-1.5 flex-wrap">
-                          {w.ph && <span>pH: {w.ph}</span>}
-                          {w.freeChlorine && <span>חיטוי: {w.freeChlorine}</span>}
-                          {w.alkalinity && <span>TA: {w.alkalinity}</span>}
+                      ))}
+
+                      {/* Water Tests */}
+                      {dayWaterLogs.map((w: any) => (
+                        <div
+                          key={w.id}
+                          className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-cyan-950/30 border border-cyan-900/50 text-[10px] text-cyan-300 space-y-0.5"
+                        >
+                          <div className="flex items-center gap-1 font-bold">
+                            <FlaskConical className="w-3 h-3 text-cyan-400 shrink-0" />
+                            <span>בדיקת מים</span>
+                          </div>
+                          <div className="text-[9px] text-slate-300 flex items-center gap-1.5 flex-wrap">
+                            {w.ph && <span>pH: {w.ph}</span>}
+                            {w.freeChlorine && <span>חיטוי: {w.freeChlorine}</span>}
+                            {w.alkalinity && <span>TA: {w.alkalinity}</span>}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
 
-                    {/* Diary Notes */}
-                    {dayEntries.map((e: any) => (
-                      <div
-                        key={e.id}
-                        className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-purple-950/25 border border-purple-900/50 text-[10px] text-purple-300 flex items-center gap-1.5 truncate"
-                        title={e.title}
-                      >
-                        <BookOpen className="w-3 h-3 text-purple-400 shrink-0" />
-                        <span className="truncate">{e.title}</span>
-                      </div>
-                    ))}
+                      {/* Diary Notes */}
+                      {dayEntries.map((e: any) => (
+                        <div
+                          key={e.id}
+                          className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-purple-950/25 border border-purple-900/50 text-[10px] text-purple-300 flex items-center gap-1.5 truncate"
+                          title={e.title}
+                        >
+                          <BookOpen className="w-3 h-3 text-purple-400 shrink-0" />
+                          <span className="truncate">{e.title}</span>
+                        </div>
+                      ))}
 
-                    {!hasAnyEvents && (
-                      <div className="text-center py-2 md:py-8 text-slate-500 text-[10px] sm:text-[11px] bg-slate-950/30 md:bg-transparent border border-dashed border-slate-800/60 rounded-xl sm:rounded-2xl">
-                        <span>אין משימות ליום זה</span>
-                      </div>
-                    )}
+                      {!hasAnyEvents && (
+                        <div className="text-center py-2 md:py-8 text-slate-500 text-[10px] sm:text-[11px] bg-slate-950/30 md:bg-transparent border border-dashed border-slate-800/60 rounded-xl sm:rounded-2xl">
+                          <span>אין משימות ליום זה</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Day Footer Status */}
+                  <div className="pt-1.5 md:pt-2 border-t border-slate-850 text-[9px] sm:text-[10px] text-slate-400 text-center font-medium mt-1.5">
+                    {pendingDayTasks.length > 0 ? `${pendingDayTasks.length} משימות להשלמה` : "✓ יום פנוי ומאוזן"}
                   </div>
                 </div>
 
-                {/* Day Footer Status */}
-                <div className="pt-1.5 md:pt-2 border-t border-slate-850 text-[9px] sm:text-[10px] text-slate-400 text-center font-medium mt-1.5">
-                  {pendingDayTasks.length > 0 ? `${pendingDayTasks.length} משימות להשלמה` : "✓ יום פנוי ומאוזן"}
-                </div>
+                {/* 🌟 Mobile-first Inline Expansion Underneath This Specific Day */}
+                {isSelected && (
+                  <div className="md:hidden">
+                    {renderDayDetailsContent(dayDate)}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1192,7 +1527,7 @@ export default function CalendarPage() {
               return (
                 <div
                   key={idx}
-                  onClick={() => setSelectedDay(cell.date)}
+                  onClick={() => setSelectedDay(isSelected ? null : cell.date)}
                   className={`min-h-[90px] sm:min-h-[110px] p-2 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                     isSelected
                       ? "bg-cyan-950/40 border-cyan-400 ring-1 ring-cyan-400 shadow-lg"
@@ -1282,290 +1617,16 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Selected Day Details Drawer */}
-      {selectedDay && (
-        <div className="bg-slate-900/90 border border-cyan-800/50 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-black">
-                {selectedDay.getDate()}
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">
-                  אירועים וטיפולים לתאריך: {selectedDay.toLocaleDateString("he-IL")}
-                </h2>
-                <p className="text-xs text-slate-400">פרטי משימות, פעולות שבוצעו ורשומות יומן</p>
-              </div>
-            </div>
+      {/* Selected Day Details (On Desktop for Week view, and under Monthly grid for Month view) */}
+      {selectedDay && viewMode === "WEEK" && (
+        <div className="hidden md:block">
+          {renderDayDetailsContent(selectedDay)}
+        </div>
+      )}
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsTaskModalOpen(true)}
-                className="px-3 py-1.5 bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white rounded-xl text-xs font-semibold border border-cyan-500/40"
-              >
-                + הוסף משימה לתאריך זה
-              </button>
-              <button
-                onClick={() => setIsNoteModalOpen(true)}
-                className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white rounded-xl text-xs font-semibold border border-purple-500/40"
-              >
-                + הוסף הערה ביומן
-              </button>
-              <button onClick={() => setSelectedDay(null)} className="p-1.5 text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {(() => {
-            const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(selectedDay);
-            const total = dayTasks.length + doneTasks.length + dayEntries.length + dayWaterLogs.length;
-
-            if (total === 0) {
-              return (
-                <div className="text-center py-8 text-slate-400 text-xs">
-                  אין טיפולים או משימות מתועדות בתאריך זה.
-                </div>
-              );
-            }
-
-            return (
-              <div className="space-y-6">
-                {dayTasks.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
-                      <Clock className="w-4 h-4" />
-                      <span>משימות מתוזמנות לביצוע:</span>
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {dayTasks.map((task) => {
-                        const isFuture = isTaskFuture(task);
-                        return (
-                          <div
-                            key={task.id}
-                            className={`border rounded-2xl p-4 space-y-3 flex flex-col justify-between transition-all ${
-                              isFuture
-                                ? "bg-slate-950/70 border-slate-800/80"
-                                : "bg-slate-950 border-cyan-800/60 shadow-lg"
-                            }`}
-                          >
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
-                                    {task.category === "WEEKLY" ? "שבועי" : task.category === "MONTHLY" ? "חודשי" : task.category === "QUARTERLY" ? "רבעוני" : "תקופתי"}
-                                  </span>
-                                  {isFuture && (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800/60 flex items-center gap-1">
-                                      <Clock className="w-3 h-3" />
-                                      <span>מתוזמן לעתיד ({new Date(task.nextDueDate).toLocaleDateString("he-IL")})</span>
-                                    </span>
-                                  )}
-                                </div>
-
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => openEditTaskModal(task)}
-                                    className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-slate-900 rounded-lg transition-colors"
-                                    title="ערוך משימה"
-                                  >
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteTask(task.id);
-                                    }}
-                                    className="px-2.5 py-1.5 text-rose-400 hover:text-white bg-rose-950/50 hover:bg-rose-900 rounded-xl border border-rose-900/60 transition-colors flex items-center gap-1 text-xs font-bold shrink-0 min-h-[32px]"
-                                    title="מחק משימה"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                    <span>מחק</span>
-                                  </button>
-                                </div>
-                              </div>
-                              <h4 className="font-bold text-white text-sm pt-1">{task.title}</h4>
-                              {task.description && <p className="text-xs text-slate-400">{task.description}</p>}
-                            </div>
-
-                            {/* Button: Disabled if future, enabled starting from planned date */}
-                            <div className="pt-2 border-t border-slate-800/80">
-                              {isFuture ? (
-                                <div className="text-[10px] text-slate-400 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 flex items-center justify-center gap-1 font-medium">
-                                  <Lock className="w-3 h-3 text-slate-500" />
-                                  <span>ייפתח לביצוע במועד ({new Date(task.nextDueDate).toLocaleDateString("he-IL")})</span>
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => openCompletionModal(task)}
-                                  className="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
-                                >
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  <span>סמן ביצוע</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Completed Tasks */}
-                {doneTasks.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>טיפולים שבוצעו ותועדו:</span>
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {doneTasks.map((task) => (
-                        <div
-                          key={task.id}
-                          className="bg-slate-950/80 border border-emerald-900/60 rounded-2xl p-4 space-y-2.5 text-xs"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="font-bold text-emerald-300 text-sm flex items-center gap-1.5">
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>{task.title}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleResetTask(task)}
-                                className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-950/60 rounded-lg transition-colors flex items-center gap-1 border border-amber-800/40"
-                                title="אפס אירוע (החזר למצב טרם בוצע והחזר חומרים לארון)"
-                              >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-bold">אפס אירוע</span>
-                              </button>
-                              <button
-                                onClick={() => openEditTaskModal(task)}
-                                className="text-slate-400 hover:text-cyan-300 p-1.5 hover:bg-slate-900 rounded-lg transition-colors"
-                                title="ערוך פרטי ביצוע"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTask(task.id)}
-                                className="text-slate-400 hover:text-rose-400 p-1.5 hover:bg-slate-900 rounded-lg transition-colors"
-                                title="מחק טיפול והחזר מלאי"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {task.lastChemicalUsed && (
-                            <div className="text-cyan-300 font-semibold bg-cyan-950/40 p-2 rounded-xl border border-cyan-900/50">
-                              <span className="text-slate-400">חומר שהוסף: </span>
-                              {task.lastChemicalUsed} ({task.lastAmountAdded || ""})
-                            </div>
-                          )}
-
-                          {task.lastValueAfter && (
-                            <div className="text-emerald-300 font-semibold">
-                              <span className="text-slate-500">תוצאות שנמדדו: </span>
-                              {task.lastValueAfter}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Water Tests performed on this date */}
-                {dayWaterLogs.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
-                      <FlaskConical className="w-4 h-4" />
-                      <span>בדיקות איכות מים שבוצעו ותועדו:</span>
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {dayWaterLogs.map((w: any) => {
-                        const phStr = w.phRange || (w.ph !== null ? `pH ${w.ph}` : null);
-                        const clStr = w.chlorineRange || (w.freeChlorine !== null ? `${w.freeChlorine} ppm` : null);
-                        const alkStr = w.alkalinityRange || (w.alkalinity !== null ? `${w.alkalinity} ppm` : null);
-                        return (
-                          <div key={w.id} className="bg-slate-950/90 border border-cyan-900/60 rounded-2xl p-4 space-y-2 shadow-sm">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center border border-cyan-800">
-                                  <FlaskConical className="w-3.5 h-3.5" />
-                                </div>
-                                <span className="font-bold text-white text-xs">בדיקת איכות מים (מקלון)</span>
-                              </div>
-                              <span className="text-[10px] text-slate-400">
-                                שעה {new Date(w.testedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 text-center text-[10px] pt-1 border-t border-slate-800">
-                              <div className="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
-                                <div className="text-slate-400">חומציות</div>
-                                <div className="font-bold text-cyan-300">{phStr || "—"}</div>
-                              </div>
-                              <div className="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
-                                <div className="text-slate-400">חיטוי</div>
-                                <div className="font-bold text-cyan-300">{clStr || "—"}</div>
-                              </div>
-                              <div className="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
-                                <div className="text-slate-400">בסיסיות</div>
-                                <div className="font-bold text-cyan-300">{alkStr || "—"}</div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {dayEntries.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
-                      <BookOpen className="w-4 h-4" />
-                      <span>רשומות יומן תחזוקה:</span>
-                    </h3>
-
-                    <div className="space-y-2">
-                      {dayEntries.map((e) => (
-                        <div key={e.id} className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-bold text-white text-sm">{e.title}</h4>
-                            <button
-                              onClick={() => handleDeleteDiaryEntry(e.id)}
-                              className="text-slate-500 hover:text-rose-400 p-1"
-                              title="מחק רשומה"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <p className="text-xs text-slate-300 whitespace-pre-wrap">{e.content}</p>
-                          {e.imageUrl && (
-                            <div className="pt-1">
-                              <img
-                                src={e.imageUrl}
-                                alt="תמונה מצורפת לרשומה"
-                                onClick={() => setPreviewEnlargeImage(e.imageUrl)}
-                                className="max-h-48 max-w-full rounded-xl object-contain border border-slate-800 hover:border-purple-500 cursor-pointer transition-all shadow-md hover:scale-[1.02]"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+      {selectedDay && viewMode === "MONTH" && (
+        <div>
+          {renderDayDetailsContent(selectedDay)}
         </div>
       )}
 
