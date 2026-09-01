@@ -126,21 +126,34 @@ export default function DashboardPage() {
     : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   // Calculate Last Partial Water Refill
+  const isPartialRefillText = (text: string) => {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    const isFull = lower.includes("100%") || lower.includes("מלאה") || lower.includes("ריקון מלא") || lower.includes("שטיפת צנרת");
+    if (isFull) return false;
+
+    return (
+      lower.includes("חלקית") ||
+      lower.includes("ריענון") ||
+      lower.includes("חצי מים") ||
+      lower.includes("החלפת חצי") ||
+      lower.includes("מים טריים") ||
+      lower.includes("מים חדשים") ||
+      (lower.includes("החלפ") && lower.includes("מים")) ||
+      (lower.includes("מילוי") && lower.includes("מים") && !lower.includes("מלא")) ||
+      lower.includes("50%") ||
+      lower.includes("30%") ||
+      lower.includes("25%") ||
+      lower.includes("20%")
+    );
+  };
+
   const partialRefillTask = tasks.find((t: any) => 
-    t.lastDoneDate && (
-      t.title?.includes("חלקית") || 
-      t.title?.includes("ריענון") || 
-      (t.title?.includes("החלפת מים") && !t.title?.includes("מלא"))
-    )
+    t.lastDoneDate && (isPartialRefillText(t.title) || isPartialRefillText(t.description))
   );
 
   const partialRefillDiaries = (data?.diaryEntries || []).filter((d: any) => 
-    d.title?.includes("חלקית") || 
-    d.content?.includes("חלקית") || 
-    d.title?.includes("ריענון") || 
-    d.content?.includes("ריענון") ||
-    (d.title?.includes("החלפת מים") && !d.title?.includes("מלאה")) ||
-    (d.content?.includes("החלפת מים") && !d.content?.includes("מלאה"))
+    isPartialRefillText(d.title) || isPartialRefillText(d.content)
   );
 
   partialRefillDiaries.sort((a: any, b: any) => new Date(b.entryDate || b.createdAt).getTime() - new Date(a.entryDate || a.createdAt).getTime());
