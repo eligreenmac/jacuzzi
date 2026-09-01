@@ -335,31 +335,14 @@ export default function DashboardPage() {
       {/* 🌟 Unified Master Board: הג'קוזי שלי ובדיקות מים */}
       <div className="relative overflow-hidden rounded-3xl bg-[#0f171e] border border-slate-800/80 p-6 sm:p-8 shadow-xl space-y-6">
         {/* Header Area */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-slate-300 bg-[#0a0f13] px-3 py-1 rounded-full border border-slate-800">
-                נפח: {jacuzzi?.volumeLiters || 1200} ליטר
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2.5">
-              <span>{jacuzzi?.name || "הג'קוזי שלי"}</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-400">
-              שלום {data.name}! לוח בקרה מרכזי לניטור מצב הג'קוזי, איכות המים ותוכנית התחזוקה.
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2.5">
+            <span>{jacuzzi?.name || "הג'קוזי שלי"}</span>
+          </h1>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/water-tests"
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-bold text-xs shadow flex items-center gap-2 transition-all hover:scale-105"
-            >
-              <FlaskConical className="w-4 h-4 text-teal-300" />
-              <span>בדיקות מים מלאות</span>
-              <ArrowLeft className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+          <span className="text-xs font-semibold text-slate-300 bg-[#0a0f13] px-3 py-1.5 rounded-full border border-slate-800">
+            נפח: {jacuzzi?.volumeLiters || 1200} ליטר
+          </span>
         </div>
 
         {/* 3 Quick Metrics Cards (Unified & Minimalist, No Icons) */}
