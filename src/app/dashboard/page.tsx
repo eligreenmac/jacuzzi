@@ -362,8 +362,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 3 Quick Metrics Cards (Unified & Minimalist, No Icons) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        {/* 2 Quick Metrics Cards (Unified & Minimalist, No Icons) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {/* Card 1: מצב ואיכות המים (Unified Full Card - Clickable for full details) */}
           <div
             onClick={() => setIsWaterAgeModalOpen(true)}
@@ -543,184 +543,79 @@ export default function DashboardPage() {
               })}
             </div>
           </div>
+        </div>
 
-          {/* Card 3: ארון חומרים ומלאי */}
-          <div className="bg-[#0a0f13] border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="text-xs font-bold text-purple-300">ארון חומרים ומלאי</span>
-              <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+        {/* Full Chemical Inventory Cabinet Section */}
+        <div className="bg-[#0a0f13] border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-purple-400" />
+              <span className="text-xs sm:text-sm font-bold text-white">ארון חומרים ומלאי</span>
+              <span className="text-[10px] text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800/60 font-semibold">
                 {chemicals.length} פריטים
               </span>
             </div>
-
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">סך הכל חומרים:</span>
-                <span className="text-sm font-black text-white">{chemicals.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">סטטוס מלאי:</span>
-                <span className={`font-semibold ${lowStockChemicals.length > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-                  {lowStockChemicals.length > 0 ? `${lowStockChemicals.length} במלאי נמוך` : "תקין ומלא ✓"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">שגרת אנזימים:</span>
-                <span className="font-semibold text-slate-200">
-                  {nextEnzymeDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextEnzyme} יום)
-                </span>
-              </div>
-              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
-                <span className="text-slate-400">רכש מומלץ:</span>
-                <span className="font-semibold text-slate-300 truncate max-w-[140px]">
-                  {lowStockChemicals.length > 0 ? lowStockChemicals.map((c: any) => c.name).slice(0, 1).join(", ") : "אין חוסרים ✓"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Integrated Water Test Section inside Master Board */}
-        <div className="bg-[#0a0f13] border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <FlaskConical className="w-4 h-4 text-teal-300" />
-              <span className="text-xs sm:text-sm font-bold text-white">איכות מים ואבחון אחרון</span>
+              {lowStockChemicals.length > 0 ? (
+                <span className="text-[11px] font-bold text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-800/60 flex items-center gap-1">
+                  <span>{lowStockChemicals.length} במלאי נמוך</span>
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-800/60">
+                  המלאי תקין ומלא ✓
+                </span>
+              )}
+              <Link
+                href="/inventory"
+                className="text-[11px] font-semibold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 px-3 py-1 rounded-xl border border-slate-800 transition-all flex items-center gap-1"
+              >
+                <span>נהל ארון חומרים</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+              </Link>
             </div>
-            {latestWaterLog ? (
-              <span className="text-[11px] font-semibold text-slate-300 bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-800">
-                נבדק בתאריך: {new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")}
-              </span>
-            ) : (
-              <span className="text-[11px] text-slate-500">טרם תועדה בדיקת מים</span>
-            )}
           </div>
 
-          {latestWaterLog ? (
-            <div className="space-y-3">
-              {/* 4 Mini Parameter Metrics: Verbal domain is PROMINENT (Top/Big), numerical value is SUBTITLE (Bottom/Small) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {/* 1. pH */}
-                {(() => {
-                  const domain = getParamDomain("PH", latestWaterLog.ph, latestWaterLog.phRange);
-                  const isOk = domain.id === "OK";
-                  const isAbnormal = domain.id === "VERY_LOW" || domain.id === "VERY_HIGH";
-                  const colorClass = isOk
-                    ? "text-emerald-400 font-bold"
-                    : isAbnormal
-                    ? "text-rose-400 font-bold"
-                    : domain.id === "UNKNOWN"
-                    ? "text-slate-400 font-medium"
-                    : "text-amber-400 font-bold";
-
-                  return (
-                    <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">חומציות (pH)</div>
-                      <div className={`text-sm sm:text-base ${colorClass}`}>
-                        {domain.label}
+          {/* Chemical Items Grid */}
+          {chemicals.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+              {chemicals.map((chem: any) => {
+                const isLow = chem.minThreshold && chem.quantity <= chem.minThreshold;
+                const unitLabel = chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit === "TABLETS" ? "טבליות" : chem.unit;
+                return (
+                  <div
+                    key={chem.id}
+                    className={`p-3 rounded-2xl border transition-all flex flex-col justify-between space-y-2 ${
+                      isLow
+                        ? "bg-amber-950/20 border-amber-900/60 hover:border-amber-700"
+                        : "bg-slate-900/80 border-slate-800 hover:border-purple-800/60"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-1">
+                        <span className="text-xs font-bold text-white truncate" title={chem.name}>
+                          {chem.name}
+                        </span>
                       </div>
-                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
-                        {typeof latestWaterLog.ph === "number" ? `pH ${latestWaterLog.ph}` : "—"}
+                      <div className="text-lg font-black text-purple-300 mt-1">
+                        {chem.quantity} <span className="text-[10px] font-medium text-slate-400">{unitLabel}</span>
                       </div>
                     </div>
-                  );
-                })()}
 
-                {/* 2. Chlorine / Sanitization */}
-                {(() => {
-                  const domain = getParamDomain("CHLORINE", latestWaterLog.freeChlorine, latestWaterLog.chlorineRange);
-                  const isOk = domain.id === "OK";
-                  const isAbnormal = domain.id === "VERY_LOW" || domain.id === "VERY_HIGH";
-                  const colorClass = isOk
-                    ? "text-emerald-400 font-bold"
-                    : isAbnormal
-                    ? "text-rose-400 font-bold"
-                    : domain.id === "UNKNOWN"
-                    ? "text-slate-400 font-medium"
-                    : "text-amber-400 font-bold";
-
-                  return (
-                    <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">{sanitizerLabel}</div>
-                      <div className={`text-sm sm:text-base ${colorClass}`}>
-                        {domain.label}
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
-                        {typeof latestWaterLog.freeChlorine === "number" ? `${latestWaterLog.freeChlorine} ppm` : "—"}
-                      </div>
+                    <div className="flex items-center justify-between text-[9px] pt-1 border-t border-slate-800/60">
+                      <span className={isLow ? "text-amber-400 font-bold" : "text-emerald-400 font-semibold"}>
+                        {isLow ? "מלאי נמוך ⚠️" : "תקין ✓"}
+                      </span>
+                      {chem.minThreshold && (
+                        <span className="text-slate-500">סף: {chem.minThreshold}</span>
+                      )}
                     </div>
-                  );
-                })()}
-
-                {/* 3. Alkalinity */}
-                {(() => {
-                  const domain = getParamDomain("ALKALINITY", latestWaterLog.alkalinity, latestWaterLog.alkalinityRange);
-                  const isOk = domain.id === "OK";
-                  const isAbnormal = domain.id === "VERY_LOW" || domain.id === "VERY_HIGH";
-                  const colorClass = isOk
-                    ? "text-emerald-400 font-bold"
-                    : isAbnormal
-                    ? "text-rose-400 font-bold"
-                    : domain.id === "UNKNOWN"
-                    ? "text-slate-400 font-medium"
-                    : "text-amber-400 font-bold";
-
-                  return (
-                    <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">בסיסיות (TA)</div>
-                      <div className={`text-sm sm:text-base ${colorClass}`}>
-                        {domain.label}
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
-                        {typeof latestWaterLog.alkalinity === "number" ? `${latestWaterLog.alkalinity} ppm` : "—"}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* 4. Clarity */}
-                {(() => {
-                  const clarityRaw = latestWaterLog.waterClarity || latestWaterLog.clarity || "CLEAR";
-                  const isClear = clarityRaw === "CLEAR";
-                  const clarityLabel =
-                    clarityRaw === "CLEAR"
-                      ? "צלול"
-                      : clarityRaw === "FOAMY"
-                      ? "מקציף"
-                      : clarityRaw === "GREEN"
-                      ? "ירוק / אצות"
-                      : "עכור";
-
-                  return (
-                    <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">צלילות המים</div>
-                      <div className={`text-sm sm:text-base font-bold ${isClear ? "text-emerald-400" : "text-amber-400"}`}>
-                        {clarityLabel}
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
-                        {isClear ? "תקין" : "דורש טיפול"}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {latestWaterLog.notes && (
-                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
-                  <span className="font-bold text-cyan-300">אבחון מים:</span>
-                  <span className="truncate">{latestWaterLog.notes}</span>
-                </div>
-              )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 text-xs text-slate-400">
-              <p>טרם בוצעה בדיקת מקלון במערכת. בצע בדיקה ראשונה לקבלת אבחון כימי מלא ומינונים מומלצים.</p>
-              <Link
-                href="/water-tests"
-                className="text-xs bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 text-center"
-              >
-                + בצע בדיקת מים ראשונה
-              </Link>
+            <div className="text-center py-6 text-xs text-slate-500 bg-slate-950/60 rounded-2xl border border-slate-800/60">
+              ארון החומרים ריק כרגע. הוסף חומרים כדי לנהל מעקב צריכה ומלאי חכם.
             </div>
           )}
         </div>
