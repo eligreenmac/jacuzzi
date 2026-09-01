@@ -1284,7 +1284,7 @@ function generateRuleBasedProactiveMaintenance(
     }
 
     for (const task of req.currentTasks) {
-      if (task.title.includes("פילטר") || task.title.includes("מסנן")) {
+      if ((task.title.includes("פילטר") || task.title.includes("מסנן")) && !task.title.includes("השריה") && !task.title.includes("עמוק") && !task.title.includes("החלפ")) {
         const newDue = new Date(actionTime + 7 * 24 * 3600 * 1000);
         scheduleShifts.push({
           taskId: task.id,
@@ -1292,7 +1292,7 @@ function generateRuleBasedProactiveMaintenance(
           currentDueDate: new Date(task.nextDueDate).toISOString(),
           newDueDate: newDue.toISOString(),
           shiftDays: 7,
-          reason: "הפילטר נשטף היום באופן יזום - המשימה נדחתה ב-7 ימים ממועד השטיפה.",
+          reason: "הפילטר נשטף היום באופן יזום - משימת השטיפה הבאה נדחתה ב-7 ימים ממועד הפעולה.",
         });
       }
     }
@@ -1300,6 +1300,10 @@ function generateRuleBasedProactiveMaintenance(
 
   // Analyze shock
   if (isShock) {
+    if (!isWaterChange && !isFilterWash) {
+      understanding = "טיפול שוק מחמצן ללא כלור (MPS Shock)";
+      chemicalImpact = "החומר המחמצן מפרק חומרים אורגניים וכלוראמינים ומחזיר את צלילות המים. מועד השוק הבא נדחה ב-7 ימים.";
+    }
     for (const task of req.currentTasks) {
       if (task.title.includes("שוק")) {
         const newDue = new Date(actionTime + 7 * 24 * 3600 * 1000);
@@ -1309,7 +1313,156 @@ function generateRuleBasedProactiveMaintenance(
           currentDueDate: new Date(task.nextDueDate).toISOString(),
           newDueDate: newDue.toISOString(),
           shiftDays: 7,
-          reason: "בוצע טיפול שוק היום - משימת השוק הבאה נדחתה ב-7 ימים.",
+          reason: "בוצע טיפול שוק מחמצן היום - משימת השוק הבאה נדחתה ב-7 ימים.",
+        });
+      }
+    }
+  }
+
+  // Analyze Enzymes (אנזימים)
+  const isEnzymes = text.includes("אנזים") || text.includes("אנזימים");
+  if (isEnzymes) {
+    if (!isWaterChange && !isFilterWash && !isShock) {
+      understanding = "הוספת מנת אנזימים לפירוק שומנים אורגניים";
+      chemicalImpact = "האנזימים מפרקים שומני גוף וקרמים ושומרים על קו המים והפילטר. מועד תוספת האנזימים הבאה נדחה ב-7 ימים.";
+    }
+    for (const task of req.currentTasks) {
+      if (task.title.includes("אנזים") || task.title.includes("אנזימים")) {
+        const newDue = new Date(actionTime + 7 * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays: 7,
+          reason: "הוספו אנזימים היום - משימת האנזימים הבאה נדחתה ב-7 ימים ממועד הפעולה.",
+        });
+      }
+    }
+  }
+
+  // Analyze Waterline & Wall Clean (ניקוי קו מים ודפנות)
+  const isWallClean = text.includes("דפנ") || text.includes("קו מים") || text.includes("דופן") || text.includes("ספוגית") || text.includes("מיקרופייבר");
+  if (isWallClean) {
+    if (!isWaterChange && !isFilterWash && !isShock && !isEnzymes) {
+      understanding = "ניקוי קו מים ודפנות הג'קוזי";
+      chemicalImpact = "הדפנות וקו המים נקיים מטבעת שומנים ואבנית. מועד הניקוי הבא נדחה ב-14 ימים.";
+    }
+    for (const task of req.currentTasks) {
+      if (task.title.includes("דפנ") || task.title.includes("קו מים") || task.title.includes("דופן")) {
+        const newDue = new Date(actionTime + 14 * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays: 14,
+          reason: "קו המים והדפנות נוקו היום - משימת הניקוי הבאה נדחתה ב-14 ימים.",
+        });
+      }
+    }
+  }
+
+  // Analyze Deep Filter Soak (ניקוי פילטר עמוק בהשריה)
+  const isFilterDeepClean = text.includes("השרי") || text.includes("השריה") || text.includes("עמוק") || text.includes("נוזל פילטרים");
+  if (isFilterDeepClean) {
+    understanding = "ניקוי פילטר עמוק בהשריה חודשית";
+    chemicalImpact = "הפילטר עבר השריה להמסת שומנים עמוקים ואבנית. מועד ההשריה הבא נדחה ב-30 ימים.";
+    for (const task of req.currentTasks) {
+      if (task.title.includes("השריה") || (task.title.includes("פילטר") && (task.title.includes("עמוק") || task.frequencyDays >= 20))) {
+        const newDue = new Date(actionTime + 30 * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays: 30,
+          reason: "בוצעה השרית פילטר עמוקה היום - משימת הניקוי העמוק הבאה נדחתה ב-30 ימים.",
+        });
+      }
+    }
+  }
+
+  // Analyze Cover Care (טיפוח כיסוי)
+  const isCoverCare = text.includes("כיסוי") || text.includes("uv") || text.includes("אטימות");
+  if (isCoverCare) {
+    if (!isWaterChange && !isFilterWash && !isShock && !isEnzymes) {
+      understanding = "ניקוי, ייבוש וטיפוח כיסוי תרמי (הגנת UV)";
+      chemicalImpact = "הכיסוי נוקה ונמרח בספריי מגן UV למניעת סדקים ואידוי. מועד הטיפוח הבא נדחה ב-30 ימים.";
+    }
+    for (const task of req.currentTasks) {
+      if (task.title.includes("כיסוי")) {
+        const newDue = new Date(actionTime + 30 * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays: 30,
+          reason: "הכיסוי התרמי טופח היום - משימת טיפוח הכיסוי הבאה נדחתה ב-30 ימים.",
+        });
+      }
+    }
+  }
+
+  // Analyze Pipe Flush (שטיפת צנרת)
+  const isPipeFlush = text.includes("צנרת") || text.includes("flush") || text.includes("ביופילם") || text.includes("biofilm");
+  if (isPipeFlush) {
+    understanding = "שטיפת צנרת (Biofilm Flush), ריקון ומילוי מים חדשים";
+    chemicalImpact = "הצנרת הפנימית עברה שטיפה עמוקה להמסת ביופילם, והג'קוזי מולא במים חדשים לחלוטין. גיל המים אופס ל-0 ימים ומשימת הניקוי הרבעונית נדחתה ב-90 ימים.";
+    updateJacuzziRefill = true;
+    refillPercentage = 100;
+
+    for (const task of req.currentTasks) {
+      if (task.title.includes("צנרת") || task.title.includes("Flush") || task.category === "QUARTERLY") {
+        const newDue = new Date(actionTime + 90 * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays: 90,
+          reason: "שטיפת צנרת וריקון מלא בוצעו היום - המשימה הרבעונית הבאה נקבעה לעוד 90 ימים.",
+        });
+      }
+    }
+  }
+
+  // Analyze Filter Replacement (החלפת פילטר חדש - שנתי)
+  const isFilterReplace = text.includes("החלפת פילטר") || text.includes("פילטר חדש") || text.includes("החלפת מסנן");
+  if (isFilterReplace) {
+    understanding = "החלפת פילטר חדש בג'קוזי (שנתי)";
+    chemicalImpact = "הותקן פילטר חדש לחלוטין. ספירת חיי הפילטר אופסה ל-365 ימים.";
+    for (const task of req.currentTasks) {
+      if (task.title.includes("החלפת פילטר") || task.title.includes("פילטר חדש") || task.category === "ANNUAL") {
+        const newDue = new Date(actionTime + 365 * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays: 365,
+          reason: "הותקן פילטר חדש היום - מועד ההחלפה השנתי הבא נקבע לעוד 365 ימים.",
+        });
+      }
+    }
+  }
+
+  // Analyze Water Test (בדיקת מקלון שבועית)
+  const isWaterTest = text.includes("בדיקת מים") || text.includes("מקלון") || text.includes("בדיקה שבועית");
+  if (isWaterTest && !isWaterChange) {
+    understanding = "בדיקת איכות מים וחיטוי (מקלון)";
+    chemicalImpact = "בוצעה בדיקת מקלון ידנית. מועד בדיקת המים הבאה נדחה ב-7 ימים ממועד הפעולה.";
+    for (const task of req.currentTasks) {
+      if (task.title.includes("בדיקת מים") || task.title.includes("מקלון")) {
+        const newDue = new Date(actionTime + 7 * 24 * 3600 * 1000);
+        scheduleShifts.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          currentDueDate: new Date(task.nextDueDate).toISOString(),
+          newDueDate: newDue.toISOString(),
+          shiftDays: 7,
+          reason: "בוצעה בדיקת מים היום - מועד הבדיקה הבאה נדחה ב-7 ימים.",
         });
       }
     }

@@ -2187,25 +2187,134 @@ export default function CalendarPage() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs leading-relaxed focus:border-amber-500"
                 />
 
-                {/* Quick suggestion chips */}
-                <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                  <span className="text-[10px] text-slate-400">הצעות מהירות:</span>
-                  {[
-                    "החלפתי 30% ממי הג'קוזי במים נקיים",
-                    "החלפתי חצי מים (50%) ושטפתי פילטר",
-                    "ריקון ומילוי מים מלא (100%)",
-                    "שטיפת פילטר יסודית במים",
-                    "טיפול שוק מחמצן ללא כלור",
-                  ].map((chip, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setProactiveText(chip)}
-                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[10px] transition-all border border-slate-700"
-                    >
-                      {chip}
-                    </button>
-                  ))}
+                {/* Categorized routine presets */}
+                <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-cyan-300">בחר מתוך שגרות התחזוקה:</span>
+                    {proactiveText && (
+                      <button
+                        type="button"
+                        onClick={() => setProactiveText("")}
+                        className="text-[10px] text-slate-400 hover:text-rose-400 underline"
+                      >
+                        נקה בחירה
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    {/* Weekly Routines */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold block">שגרות שבועיות:</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {[
+                          { label: "בדיקת איכות מים (מקלון)", text: "בדיקת איכות מים וחיטוי שבועית במקלון" },
+                          { label: "תוספת אנזימים שבועית", text: "תוספת אנזימים שבועית לפירוק שומנים" },
+                          { label: "שטיפת פילטר שבועית", text: "שטיפת פילטר שבועית יסודית בזרם מים" },
+                          { label: "שוק חיטוי מחמצן", text: "טיפול שוק מחמצן שבועי (Non-Chlorine Shock)" },
+                          { label: "ניקוי קו מים ודפנות", text: "ניקוי קו מים ודפנות הג'קוזי במטלית" },
+                        ].map((routine, idx) => {
+                          const isSelected = proactiveText.includes(routine.text);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                if (!proactiveText.trim()) {
+                                  setProactiveText(routine.text);
+                                } else if (!isSelected) {
+                                  setProactiveText(prev => `${prev} + ${routine.text}`);
+                                } else {
+                                  setProactiveText(prev => prev.replace(routine.text, "").replace(/\+\s*\+/, "+").trim().replace(/^\+|\+$/, "").trim());
+                                }
+                              }}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all border ${
+                                isSelected
+                                  ? "bg-cyan-950 border-cyan-500 text-cyan-300 font-bold shadow-sm"
+                                  : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700"
+                              }`}
+                            >
+                              {isSelected ? "✓ " : ""}{routine.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Monthly Routines */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold block">שגרות חודשיות:</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {[
+                          { label: "החלפת מים חלקית (25%)", text: "החלפת מים חלקית של 25% ממי הג'קוזי" },
+                          { label: "החלפת מים חלקית (30%)", text: "החלפת מים חלקית של 30% ממי הג'קוזי" },
+                          { label: "החלפת מים (50%)", text: "החלפת חצי מים (50%) במים טריים" },
+                          { label: "ניקוי פילטר בהשריה", text: "ניקוי פילטר עמוק בהשריה חודשית בחומר ייעודי" },
+                          { label: "טיפוח כיסוי תרמי (UV)", text: "בדיקת אטימות וטיפוח כיסוי תרמי בספריי הגנת UV" },
+                        ].map((routine, idx) => {
+                          const isSelected = proactiveText.includes(routine.text);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                if (!proactiveText.trim()) {
+                                  setProactiveText(routine.text);
+                                } else if (!isSelected) {
+                                  setProactiveText(prev => `${prev} + ${routine.text}`);
+                                } else {
+                                  setProactiveText(prev => prev.replace(routine.text, "").replace(/\+\s*\+/, "+").trim().replace(/^\+|\+$/, "").trim());
+                                }
+                              }}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all border ${
+                                isSelected
+                                  ? "bg-cyan-950 border-cyan-500 text-cyan-300 font-bold shadow-sm"
+                                  : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700"
+                              }`}
+                            >
+                              {isSelected ? "✓ " : ""}{routine.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Periodic & Annual Routines */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold block">שגרות תקופתיות ושנתיות:</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {[
+                          { label: "שטיפת צנרת וריקון מלא (100%)", text: "שטיפת צנרת (Biofilm Flush), ריקון ומילוי מים חדשים (100%)" },
+                          { label: "ריקון ומילוי מים מלא (100%)", text: "ריקון ומילוי מים מלא (100%) ללא שטיפת צנרת" },
+                          { label: "החלפת פילטר חדש (שנתי)", text: "החלפת פילטר חדש בג'קוזי (שנתי)" },
+                        ].map((routine, idx) => {
+                          const isSelected = proactiveText.includes(routine.text);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                if (!proactiveText.trim()) {
+                                  setProactiveText(routine.text);
+                                } else if (!isSelected) {
+                                  setProactiveText(prev => `${prev} + ${routine.text}`);
+                                } else {
+                                  setProactiveText(prev => prev.replace(routine.text, "").replace(/\+\s*\+/, "+").trim().replace(/^\+|\+$/, "").trim());
+                                }
+                              }}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all border ${
+                                isSelected
+                                  ? "bg-cyan-950 border-cyan-500 text-cyan-300 font-bold shadow-sm"
+                                  : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700"
+                              }`}
+                            >
+                              {isSelected ? "✓ " : ""}{routine.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
