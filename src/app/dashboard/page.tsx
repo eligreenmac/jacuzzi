@@ -15,6 +15,10 @@ import {
   Check,
   Waves,
   Sparkles,
+  X,
+  Info,
+  History,
+  CalendarDays,
 } from "lucide-react";
 import { getParamDomain } from "@/app/water-tests/page";
 
@@ -22,6 +26,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isWaterAgeModalOpen, setIsWaterAgeModalOpen] = useState(false);
 
   const loadDashboard = async () => {
     try {
@@ -193,11 +198,18 @@ export default function DashboardPage() {
 
         {/* 4 Quick Metrics Cards (Unified & Clean) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Card 1: גיל המים + החלפת מים חלקית */}
-          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1.5 flex flex-col justify-between">
+          {/* Card 1: גיל המים + החלפת מים חלקית (Clickable with expanding modal) */}
+          <div
+            onClick={() => setIsWaterAgeModalOpen(true)}
+            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-cyan-500/60 p-3.5 rounded-2xl space-y-1.5 flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.02] shadow-sm hover:shadow-cyan-950/30 group"
+            title="לחץ לצפייה בניתוח המלא של גיל המים, מועד מילוי אחרון והחלפות חלקיות"
+          >
             <div>
-              <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-                <span>גיל המים</span>
+              <div className="text-[11px] text-slate-400 group-hover:text-cyan-300 font-medium flex items-center justify-between transition-colors">
+                <span className="flex items-center gap-1.5">
+                  <span>גיל המים</span>
+                  <span className="text-[9px] text-cyan-400 opacity-80 group-hover:opacity-100 transition-opacity">🔍 לחץ לפירוט</span>
+                </span>
                 {lastPartialRefillDate && (
                   <span className="text-[9px] font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-800/60 px-1.5 py-0.5 rounded">
                     משוקלל
@@ -629,6 +641,170 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* 🌟 Animated Expanding Water Age & Refill Modal */}
+      {isWaterAgeModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setIsWaterAgeModalOpen(false)}
+        >
+          <div
+            className="bg-slate-900 border border-cyan-700/60 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl shadow-cyan-950/50 animate-in zoom-in-95 duration-200 text-right overflow-hidden relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-950/80 border border-cyan-700/60 text-cyan-400 flex items-center justify-center shadow-inner">
+                  <Waves className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    ניתוח גיל המים והחלפות מים
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    מעקב מדויק אחר מילוי מים מלא, ריענונים חלקיים ומועדי ריקון
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsWaterAgeModalOpen(false)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+                title="סגור חלון"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Quick Status Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-center">
+              <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-2xl">
+                <div className="text-[11px] text-slate-400">גיל המים הנוכחי</div>
+                <div className="text-lg font-black text-cyan-300">{daysSinceRefill} ימים</div>
+                <div className="text-[9px] text-slate-500">{lastPartialRefillDate ? "משוקלל לאחר ריענון" : "מילוי מלא"}</div>
+              </div>
+
+              <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-2xl">
+                <div className="text-[11px] text-slate-400">ריקון מלא הבא</div>
+                <div className="text-lg font-black text-amber-300">בעוד {daysUntilNextRefill} יום</div>
+                <div className="text-[9px] text-slate-500">{nextRefillDate.toLocaleDateString("he-IL")}</div>
+              </div>
+
+              <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-2xl col-span-2 sm:col-span-1">
+                <div className="text-[11px] text-slate-400">נפח מים כולל</div>
+                <div className="text-lg font-black text-white">{jacuzzi?.volumeLiters || 1200} ליטר</div>
+                <div className="text-[9px] text-slate-500">{jacuzzi?.name || "ג'קוזי"}</div>
+              </div>
+            </div>
+
+            {/* Detailed Cards Section */}
+            <div className="space-y-3">
+              {/* Card 1: מילוי מים מלא לאחרונה */}
+              <div className="bg-slate-950/90 border border-slate-800/90 p-4 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Droplets className="w-4 h-4 text-cyan-400" />
+                    <span className="font-bold text-white text-xs sm:text-sm">מילוי מים מלא (100%)</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60">
+                    {daysSinceRefill} ימים במערכת
+                  </span>
+                </div>
+                <div className="text-xs text-slate-300 space-y-1">
+                  <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                    <span>תאריך מילוי מלא אחרון:</span>
+                    <span className="font-semibold text-white">
+                      {refillDate ? refillDate.toLocaleDateString("he-IL") : "תאריך הקמה ראשוני"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                    <span>כמות מים שמולאה:</span>
+                    <span className="font-semibold text-white">{jacuzzi?.volumeLiters || 1200} ליטר (100%)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: החלפת מים חלקית (ריענון תקופתי) */}
+              <div className="bg-slate-950/90 border border-teal-900/40 p-4 rounded-2xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Waves className="w-4 h-4 text-teal-400" />
+                    <span className="font-bold text-white text-xs sm:text-sm">החלפת מים חלקית (ריענון TDS)</span>
+                  </div>
+                  {lastPartialRefillDate ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/60">
+                      בוצע בהצלחה ✓
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
+                      טרם תועד
+                    </span>
+                  )}
+                </div>
+
+                {lastPartialRefillDate ? (
+                  <div className="space-y-2 text-xs text-slate-300">
+                    <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                      <span>תאריך החלפה חלקית אחרונה:</span>
+                      <span className="font-semibold text-white">
+                        {lastPartialRefillDate.toLocaleDateString("he-IL")} (לפני {daysSincePartialRefill} ימים)
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                      <span>כמות שהוחלפה:</span>
+                      <span className="font-semibold text-teal-300">
+                        כ-25% (~{Math.round((jacuzzi?.volumeLiters || 1200) * 0.25)} ליטר מים טריים)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 leading-relaxed">
+                      💡 <strong>השפעה על גיל המים:</strong> החלפת המים החלקית דיללה את ריכוז המלחים והמוצקים המומסים (TDS), שקללה את גיל המים והעניקה ימי שימוש נקיים נוספים עד למועד הריקון המלא הבא.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 text-xs text-slate-300">
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      טרם תועדה החלפת מים חלקית לג׳קוזי זה.
+                    </p>
+                    <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-300 space-y-1">
+                      <div className="font-bold text-cyan-300 flex items-center gap-1">
+                        <Info className="w-3.5 h-3.5" />
+                        <span>למה מומלץ להחליף מים חלקית?</span>
+                      </div>
+                      <p className="text-slate-400 leading-relaxed">
+                        החלפה חודשית של 20%-30% (~{Math.round((jacuzzi?.volumeLiters || 1200) * 0.25)} ליטר) מרעננת את המים, משקללת את גיל המים ומאפשרת לדחות את הריקון המלא בבטחה.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Card 3: הנחיית מחזור ריקון מלא */}
+              <div className="p-3 rounded-2xl bg-cyan-950/20 border border-cyan-800/40 text-[11px] text-slate-300 space-y-1">
+                <div className="font-bold text-cyan-300 flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  <span>מחזור ריקון מלא מומלץ: כל 90 ימים</span>
+                </div>
+                <p className="text-slate-400">
+                  מועד הריקון המלא הבא מתוכנן לתאריך <strong>{nextRefillDate.toLocaleDateString("he-IL")}</strong> (בעוד {daysUntilNextRefill} יום).
+                </p>
+              </div>
+            </div>
+
+            {/* Footer Action */}
+            <div className="pt-2 border-t border-slate-800 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setIsWaterAgeModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md transition-all hover:scale-105"
+              >
+                הבנתי, תודה
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
