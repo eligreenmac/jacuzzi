@@ -418,9 +418,9 @@ export default function CalendarPage() {
   };
 
   const getEventsForDay = (date: Date) => {
-    const dayTasks = tasks.filter((t) => isSameDay(new Date(t.nextDueDate), date));
+    const dayTasks = tasks.filter((t) => !t.isCompleted && isSameDay(new Date(t.nextDueDate), date));
     const doneTasks = tasks.filter(
-      (t) => t.lastDoneDate && isSameDay(new Date(t.lastDoneDate), date)
+      (t) => t.isCompleted && t.lastDoneDate && isSameDay(new Date(t.lastDoneDate), date)
     );
     const dayEntries = entries.filter((e) => isSameDay(new Date(e.entryDate), date));
     const dayWaterLogs = waterLogs.filter((w) => isSameDay(new Date(w.testedAt), date));

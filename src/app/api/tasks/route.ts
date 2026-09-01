@@ -39,8 +39,20 @@ export async function GET(req: NextRequest) {
         t.title.includes("מעקב") ||
         t.frequencyDays <= 1;
 
-      // If tested recently (< 4 days ago) and there is a pending one-time water task due soon (<= 4 days), mark it done!
-      if (isWaterTask && isOneTime && daysSinceLastTest <= 4 && !t.isCompleted) {
+      const taskDueTime = new Date(t.nextDueDate).getTime();
+      const isFutureTask = taskDueTime > now;
+
+      // 🌟 If a future task was erroneously marked as completed, restore it as active!
+      if (isFutureTask && t.isCompleted) {
+        await prisma.maintenanceTask.update({
+          where: { id: t.id },
+          data: { isCompleted: false },
+        });
+        t.isCompleted = false;
+      }
+
+      // If a past one-time task was tested on or after its due time, mark it done
+      if (isWaterTask && isOneTime && !isFutureTask && !t.isCompleted && lastTestTime >= taskDueTime - 3600 * 1000) {
         await prisma.maintenanceTask.update({
           where: { id: t.id },
           data: { isCompleted: true, lastDoneDate: latestWaterLog?.testedAt || new Date() },
