@@ -2181,17 +2181,15 @@ export default function CalendarPage() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    {/* Weekly Routines */}
+                  <div className="space-y-3">
+                    {/* 1. Water Chemistry & Balance */}
                     <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold block">שגרות שבועיות:</span>
+                      <span className="text-[10px] text-cyan-400 font-bold block">🧪 איזון וכימיית המים:</span>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {[
                           { label: "בדיקת איכות מים (מקלון)", text: "בדיקת איכות מים וחיטוי שבועית במקלון" },
                           { label: "תוספת אנזימים שבועית", text: "תוספת אנזימים שבועית לפירוק שומנים" },
-                          { label: "שטיפת פילטר שבועית", text: "שטיפת פילטר שבועית יסודית בזרם מים" },
-                          { label: "שוק חיטוי מחמצן", text: "טיפול שוק מחמצן שבועי (Non-Chlorine Shock)" },
-                          { label: "ניקוי קו מים ודפנות", text: "ניקוי קו מים ודפנות הג'קוזי במטלית" },
+                          { label: "שוק חיטוי מחמצן (MPS)", text: "טיפול שוק מחמצן שבועי (Non-Chlorine Shock)" },
                         ].map((routine, idx) => {
                           const isSelected = proactiveText.includes(routine.text);
                           return (
@@ -2207,7 +2205,7 @@ export default function CalendarPage() {
                                   setProactiveText(prev => prev.replace(routine.text, "").replace(/\+\s*\+/, "+").trim().replace(/^\+|\+$/, "").trim());
                                 }
                               }}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all border ${
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all border ${
                                 isSelected
                                   ? "bg-cyan-950 border-cyan-500 text-cyan-300 font-bold shadow-sm"
                                   : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700"
@@ -2220,51 +2218,13 @@ export default function CalendarPage() {
                       </div>
                     </div>
 
-                    {/* Monthly Routines */}
+                    {/* 2. Filters & Filtration */}
                     <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold block">שגרות חודשיות:</span>
+                      <span className="text-[10px] text-teal-400 font-bold block">🧼 פילטרים וסינון:</span>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {[
-                          { label: "החלפת מים חלקית (25%)", text: "החלפת מים חלקית של 25% ממי הג'קוזי" },
-                          { label: "החלפת מים חלקית (30%)", text: "החלפת מים חלקית של 30% ממי הג'קוזי" },
-                          { label: "החלפת מים (50%)", text: "החלפת חצי מים (50%) במים טריים" },
+                          { label: "שטיפת פילטר בזרם מים", text: "שטיפת פילטר שבועית יסודית בזרם מים" },
                           { label: "ניקוי פילטר בהשריה", text: "ניקוי פילטר עמוק בהשריה חודשית בחומר ייעודי" },
-                          { label: "טיפוח כיסוי תרמי (UV)", text: "בדיקת אטימות וטיפוח כיסוי תרמי בספריי הגנת UV" },
-                        ].map((routine, idx) => {
-                          const isSelected = proactiveText.includes(routine.text);
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => {
-                                if (!proactiveText.trim()) {
-                                  setProactiveText(routine.text);
-                                } else if (!isSelected) {
-                                  setProactiveText(prev => `${prev} + ${routine.text}`);
-                                } else {
-                                  setProactiveText(prev => prev.replace(routine.text, "").replace(/\+\s*\+/, "+").trim().replace(/^\+|\+$/, "").trim());
-                                }
-                              }}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all border ${
-                                isSelected
-                                  ? "bg-cyan-950 border-cyan-500 text-cyan-300 font-bold shadow-sm"
-                                  : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700"
-                              }`}
-                            >
-                              {isSelected ? "✓ " : ""}{routine.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Periodic & Annual Routines */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold block">שגרות תקופתיות ושנתיות:</span>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {[
-                          { label: "שטיפת צנרת וריקון מלא (100%)", text: "שטיפת צנרת (Biofilm Flush), ריקון ומילוי מים חדשים (100%)" },
-                          { label: "ריקון ומילוי מים מלא (100%)", text: "ריקון ומילוי מים מלא (100%) ללא שטיפת צנרת" },
                           { label: "החלפת פילטר חדש (שנתי)", text: "החלפת פילטר חדש בג'קוזי (שנתי)" },
                         ].map((routine, idx) => {
                           const isSelected = proactiveText.includes(routine.text);
@@ -2281,9 +2241,82 @@ export default function CalendarPage() {
                                   setProactiveText(prev => prev.replace(routine.text, "").replace(/\+\s*\+/, "+").trim().replace(/^\+|\+$/, "").trim());
                                 }
                               }}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all border ${
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all border ${
                                 isSelected
-                                  ? "bg-cyan-950 border-cyan-500 text-cyan-300 font-bold shadow-sm"
+                                  ? "bg-teal-950 border-teal-500 text-teal-300 font-bold shadow-sm"
+                                  : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700"
+                              }`}
+                            >
+                              {isSelected ? "✓ " : ""}{routine.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 3. Jacuzzi Body & Cover Care */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-purple-400 font-bold block">🧽 ניקיון, דפנות וכיסוי:</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {[
+                          { label: "ניקוי קו מים ודפנות", text: "ניקוי קו מים ודפנות הג'קוזי במטלית" },
+                          { label: "טיפוח כיסוי תרמי (הגנת UV)", text: "בדיקת אטימות וטיפוח כיסוי תרמי בספריי הגנת UV" },
+                        ].map((routine, idx) => {
+                          const isSelected = proactiveText.includes(routine.text);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                if (!proactiveText.trim()) {
+                                  setProactiveText(routine.text);
+                                } else if (!isSelected) {
+                                  setProactiveText(prev => `${prev} + ${routine.text}`);
+                                } else {
+                                  setProactiveText(prev => prev.replace(routine.text, "").replace(/\+\s*\+/, "+").trim().replace(/^\+|\+$/, "").trim());
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all border ${
+                                isSelected
+                                  ? "bg-purple-950 border-purple-500 text-purple-300 font-bold shadow-sm"
+                                  : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700"
+                              }`}
+                            >
+                              {isSelected ? "✓ " : ""}{routine.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 4. Water Refill & Pipe Flushing */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-amber-400 font-bold block">💧 החלפת מים וצנרת:</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {[
+                          { label: "החלפת מים חלקית (25%)", text: "החלפת מים חלקית של 25% ממי הג'קוזי" },
+                          { label: "החלפת מים חלקית (30%)", text: "החלפת מים חלקית של 30% ממי הג'קוזי" },
+                          { label: "החלפת מים (50%)", text: "החלפת חצי מים (50%) במים טריים" },
+                          { label: "שטיפת צנרת וריקון מלא (100%)", text: "שטיפת צנרת (Biofilm Flush), ריקון ומילוי מים חדשים (100%)" },
+                          { label: "ריקון ומילוי מים מלא (100%)", text: "ריקון ומילוי מים מלא (100%) ללא שטיפת צנרת" },
+                        ].map((routine, idx) => {
+                          const isSelected = proactiveText.includes(routine.text);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                if (!proactiveText.trim()) {
+                                  setProactiveText(routine.text);
+                                } else if (!isSelected) {
+                                  setProactiveText(prev => `${prev} + ${routine.text}`);
+                                } else {
+                                  setProactiveText(prev => prev.replace(routine.text, "").replace(/\+\s*\+/, "+").trim().replace(/^\+|\+$/, "").trim());
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all border ${
+                                isSelected
+                                  ? "bg-amber-950 border-amber-500 text-amber-300 font-bold shadow-sm"
                                   : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700"
                               }`}
                             >
