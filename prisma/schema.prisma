@@ -121,6 +121,7 @@ model DiaryEntry {
   entryDate          DateTime @default(now())
   title              String
   content            String
+  imageUrl           String?
   chemicalsAdded     String?  // JSON or text
   valueBefore        String?
   valueAfter         String?

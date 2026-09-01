@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     const {
       title,
       content,
+      imageUrl,
       entryDate,
       chemicalsAdded,
       valueBefore,
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         title: finalTitle,
         content,
+        imageUrl: imageUrl || null,
         entryDate: entryDate ? new Date(entryDate) : new Date(),
         chemicalsAdded: finalChemicalString || null,
         valueBefore: valueBefore || null,

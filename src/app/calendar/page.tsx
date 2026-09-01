@@ -28,6 +28,8 @@ import {
   Zap,
   Droplets,
   Lock,
+  Camera,
+  ImageIcon,
 } from "lucide-react";
 
 // Standard Test Strip Range Scales (5 Distinct Domains: Very Low, Low, OK, High, Very High)
@@ -130,6 +132,8 @@ export default function CalendarPage() {
     content: "",
     waterQualityRating: "5",
   });
+  const [noteImage, setNoteImage] = useState<string>("");
+  const [previewEnlargeImage, setPreviewEnlargeImage] = useState<string | null>(null);
 
   // Email reminder state
   const [emailSending, setEmailSending] = useState(false);
@@ -722,6 +726,16 @@ export default function CalendarPage() {
     }
   };
 
+  const handleNoteImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setNoteImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteForm.content.trim()) return;
@@ -735,11 +749,13 @@ export default function CalendarPage() {
         body: JSON.stringify({
           title,
           content,
+          imageUrl: noteImage || null,
           waterQualityRating: 5,
           entryDate: targetDate.toISOString(),
         }),
       });
       setNoteForm({ title: "", content: "", waterQualityRating: "5" });
+      setNoteImage("");
       setIsNoteModalOpen(false);
       loadData();
     } catch (err) {
@@ -1519,7 +1535,7 @@ export default function CalendarPage() {
 
                     <div className="space-y-2">
                       {dayEntries.map((e) => (
-                        <div key={e.id} className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-1">
+                        <div key={e.id} className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-2">
                           <div className="flex items-center justify-between">
                             <h4 className="font-bold text-white text-sm">{e.title}</h4>
                             <button
@@ -1531,6 +1547,16 @@ export default function CalendarPage() {
                             </button>
                           </div>
                           <p className="text-xs text-slate-300 whitespace-pre-wrap">{e.content}</p>
+                          {e.imageUrl && (
+                            <div className="pt-1">
+                              <img
+                                src={e.imageUrl}
+                                alt="תמונה מצורפת לרשומה"
+                                onClick={() => setPreviewEnlargeImage(e.imageUrl)}
+                                className="max-h-48 max-w-full rounded-xl object-contain border border-slate-800 hover:border-purple-500 cursor-pointer transition-all shadow-md hover:scale-[1.02]"
+                              />
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -2124,8 +2150,17 @@ export default function CalendarPage() {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-lg font-bold text-white">רישום הערה ביומן</h2>
-              <button onClick={() => setIsNoteModalOpen(false)} className="text-slate-400 hover:text-white">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-purple-400" />
+                <span>רישום הערה ביומן</span>
+              </h2>
+              <button
+                onClick={() => {
+                  setIsNoteModalOpen(false);
+                  setNoteImage("");
+                }}
+                className="text-slate-400 hover:text-white"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2144,17 +2179,63 @@ export default function CalendarPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              {/* Attach Image (Camera or Saved Files) */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  צירוף תמונה / צילום (אופציונלי):
+                </label>
+
+                {noteImage ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-purple-500/40 bg-slate-950 p-2.5 flex items-center gap-3">
+                    <img
+                      src={noteImage}
+                      alt="תמונה מצורפת"
+                      className="w-16 h-16 object-cover rounded-xl border border-slate-800 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>תמונה צורפה בהצלחה</span>
+                      </span>
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5">התמונה תישמר עם ההערה ביומן</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNoteImage("")}
+                      className="p-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-400 hover:text-white border border-rose-800 transition-colors shrink-0"
+                      title="הסר תמונה"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 p-3.5 rounded-2xl border border-dashed border-slate-700 hover:border-purple-500/80 bg-slate-950/60 hover:bg-purple-950/20 text-slate-300 hover:text-purple-300 cursor-pointer transition-all text-xs font-medium">
+                    <Camera className="w-4 h-4 text-purple-400" />
+                    <span>צלם במצלמה או בחר תמונה שמורה</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleNoteImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsNoteModalOpen(false)}
-                  className="px-4 py-2 text-xs text-slate-400"
+                  onClick={() => {
+                    setIsNoteModalOpen(false);
+                    setNoteImage("");
+                  }}
+                  className="px-4 py-2 text-xs text-slate-400 hover:text-white"
                 >
                   ביטול
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-white rounded-xl text-xs font-bold"
+                  className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/30 transition-all"
                 >
                   שמור ביומן
                 </button>
@@ -2857,6 +2938,28 @@ export default function CalendarPage() {
                 <span>{isApplyingOptimization ? "מעדכן שגרה ולוח שנה..." : "✓ אשר והחל אופטימיזציית שגרה בלוח השנה"}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarge Image Preview Modal */}
+      {previewEnlargeImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer animate-in fade-in duration-150"
+          onClick={() => setPreviewEnlargeImage(null)}
+        >
+          <div className="relative max-w-3xl max-h-[85vh] w-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewEnlargeImage(null)}
+              className="absolute -top-12 right-0 text-white p-2 rounded-full bg-slate-800 hover:bg-slate-700"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={previewEnlargeImage}
+              alt="תמונה מוגדלת"
+              className="max-h-[80vh] w-auto rounded-2xl border border-slate-700 object-contain shadow-2xl"
+            />
           </div>
         </div>
       )}
