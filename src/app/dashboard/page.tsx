@@ -78,12 +78,17 @@ export default function DashboardPage() {
   const refillDate = jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : new Date();
   const daysSinceRefill = Math.max(0, Math.floor((Date.now() - refillDate.getTime()) / (1000 * 60 * 60 * 24)));
   const daysUntilNextRefill = Math.max(0, 90 - daysSinceRefill);
+  const nextRefillDate = new Date(refillDate.getTime() + 90 * 24 * 60 * 60 * 1000);
 
   // Calculate days since last deep clean / pipe flush
   const deepCleanDate = jacuzzi?.lastDeepCleanDate ? new Date(jacuzzi.lastDeepCleanDate) : null;
   const daysSinceDeepClean = deepCleanDate
     ? Math.max(0, Math.floor((Date.now() - deepCleanDate.getTime()) / (1000 * 60 * 60 * 24)))
     : null;
+  const daysUntilNextDeepClean = deepCleanDate ? Math.max(0, 90 - (daysSinceDeepClean || 0)) : 90;
+  const nextDeepCleanDate = deepCleanDate
+    ? new Date(deepCleanDate.getTime() + 90 * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
   // Filter urgent & upcoming tasks based on Saturday-to-Saturday weekly cycle
   const now = new Date();
@@ -174,7 +179,7 @@ export default function DashboardPage() {
             </div>
             <div className="text-xl font-black text-cyan-300">{daysSinceRefill} ימים</div>
             <div className="text-[10px] text-slate-400 truncate">
-              החלפה בעוד {daysUntilNextRefill} יום ({refillDate.toLocaleDateString("he-IL")})
+              החלפה בעוד {daysUntilNextRefill} יום ({nextRefillDate.toLocaleDateString("he-IL")})
             </div>
           </div>
 
@@ -188,7 +193,7 @@ export default function DashboardPage() {
               {daysSinceDeepClean !== null ? `${daysSinceDeepClean} ימים` : "טרם עודכן"}
             </div>
             <div className="text-[10px] text-slate-400 truncate">
-              תאריך: {deepCleanDate ? deepCleanDate.toLocaleDateString("he-IL") : "טרם בוצע"}
+              ניקוי הבא בעוד {daysUntilNextDeepClean} יום ({nextDeepCleanDate.toLocaleDateString("he-IL")})
             </div>
           </div>
 
