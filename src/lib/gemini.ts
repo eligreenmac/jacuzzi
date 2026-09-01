@@ -1578,6 +1578,32 @@ function generateRuleBasedRoutineOptimization(
   const hasDrainRefill = req.currentTasks.some((t) => t.title.includes("החלפת מים") || t.title.includes("ריקון"));
   const hasShock = req.currentTasks.some((t) => t.title.includes("שוק") || t.title.includes("חיטוי"));
   const hasWaterlineClean = req.currentTasks.some((t) => t.title.includes("דופן") || t.title.includes("דפנות") || t.title.includes("קו מים"));
+  const hasEnzymes = req.currentTasks.some((t) => t.title.includes("אנזים") || t.title.includes("אנזימים"));
+  const hasPartialRefill = req.currentTasks.some((t) => t.title.includes("חלקית") || (t.title.includes("ריענון") && t.title.includes("מים")));
+
+  if (!hasWaterTest) {
+    tasksToCreate.push({
+      title: "בדיקת איכות מים שבועית (מקלון)",
+      description: "בדיקת pH, רמת חיטוי ובסיסיות TA באמצעות מקלון בדיקה.",
+      category: "WEEKLY",
+      frequencyDays: 7,
+      nextDueDate: new Date(now + 2 * 24 * 3600 * 1000).toISOString(),
+      priority: "HIGH",
+      reason: "בדיקת מים שבועית היא עמוד השדרה של בריאות הג'קוזי.",
+    });
+  }
+
+  if (!hasEnzymes) {
+    tasksToCreate.push({
+      title: "תוספת אנזימים שבועית (פירוק שומנים אורגניים)",
+      description: "הוספת מנת אנזימים (30-50 מ\"ל) לפירוק שומני גוף וקרמים, מניעת טבעת שומן על הדופן ושמירה על הפילטר.",
+      category: "WEEKLY",
+      frequencyDays: 7,
+      nextDueDate: new Date(now + 3 * 24 * 3600 * 1000).toISOString(),
+      priority: "MEDIUM",
+      reason: "תוספת אנזימים שבועית מונעת הצטברות שומנים על הדפנות ובפילטר ומקלה על החיטוי.",
+    });
+  }
 
   if (!hasFilterWash) {
     tasksToCreate.push({
@@ -1591,15 +1617,15 @@ function generateRuleBasedRoutineOptimization(
     });
   }
 
-  if (!hasWaterTest) {
+  if (!hasShock) {
     tasksToCreate.push({
-      title: "בדיקת איכות מים שבועית (מקלון)",
-      description: "בדיקת pH, רמת חיטוי ובסיסיות TA באמצעות מקלון בדיקה.",
+      title: "שוק מחמצן תקופתי (MPS)",
+      description: "הוספת שוק מחמצן ללא כלור לפירוק תרכובות אורגניות, שמנים וכלוראמינים.",
       category: "WEEKLY",
       frequencyDays: 7,
-      nextDueDate: new Date(now + 2 * 24 * 3600 * 1000).toISOString(),
-      priority: "HIGH",
-      reason: "בדיקת מים שבועית היא עמוד השדרה של בריאות הג'קוזי.",
+      nextDueDate: new Date(now + 5 * 24 * 3600 * 1000).toISOString(),
+      priority: "MEDIUM",
+      reason: "שוק שבועי שומר על מתח הפנים ומונע ריחות חריפים והקצפה.",
     });
   }
 
@@ -1615,6 +1641,18 @@ function generateRuleBasedRoutineOptimization(
     });
   }
 
+  if (!hasPartialRefill && req.waterAgeDays >= 20) {
+    tasksToCreate.push({
+      title: "החלפת מים חלקית ומחזורית (ריענון 20%-30%)",
+      description: "ריקון ומילוי של כ-20%-30% מנפח המים לדילול מוצקים מומסים (TDS), שמירה על מים צעירים ורעננים והארכת חיי המים.",
+      category: "MONTHLY",
+      frequencyDays: 30,
+      nextDueDate: new Date(now + 10 * 24 * 3600 * 1000).toISOString(),
+      priority: "MEDIUM",
+      reason: "החלפת מים חלקית מרעננת את המים, מדללת עומס מלחים ודוחה את הריקון המלא.",
+    });
+  }
+
   if (!hasDrainRefill) {
     const daysUntilQuarterly = Math.max(7, 90 - req.waterAgeDays);
     tasksToCreate.push({
@@ -1625,18 +1663,6 @@ function generateRuleBasedRoutineOptimization(
       nextDueDate: new Date(now + daysUntilQuarterly * 24 * 3600 * 1000).toISOString(),
       priority: "MEDIUM",
       reason: `גיל המים הנוכחי הוא ${req.waterAgeDays} ימים. מומלץ לחדש מים כל 90 ימים למניעת עומס מוצקים מומסים (TDS).`,
-    });
-  }
-
-  if (!hasShock) {
-    tasksToCreate.push({
-      title: "שוק מחמצן תקופתי (MPS)",
-      description: "הוספת שוק מחמצן ללא כלור לפירוק תרכובות אורגניות, שמנים וכלוראמינים.",
-      category: "WEEKLY",
-      frequencyDays: 7,
-      nextDueDate: new Date(now + 5 * 24 * 3600 * 1000).toISOString(),
-      priority: "MEDIUM",
-      reason: "שוק שבועי שומר על מתח הפנים ומונע ריחות חריפים והקצפה.",
     });
   }
 

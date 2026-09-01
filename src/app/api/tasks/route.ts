@@ -325,6 +325,24 @@ export async function PUT(req: NextRequest) {
           },
         });
       }
+
+      // If this was a partial water refill task, update jacuzzi.lastRefillDate with weighted water age
+      if (
+        existing.title.includes("חלקית") ||
+        (existing.title.includes("ריענון") && existing.title.includes("מים"))
+      ) {
+        if (jacuzzi?.lastRefillDate) {
+          const oldRefill = new Date(jacuzzi.lastRefillDate).getTime();
+          const currentWaterAgeDays = Math.max(0, Math.floor((now.getTime() - oldRefill) / (1000 * 60 * 60 * 24)));
+          // Weighted age after ~25% refill: age * 0.75
+          const newAgeDays = Math.round(currentWaterAgeDays * 0.75);
+          const newRefillDate = new Date(now.getTime() - newAgeDays * 24 * 60 * 60 * 1000);
+          await prisma.jacuzzi.updateMany({
+            where: { userId: user.id },
+            data: { lastRefillDate: newRefillDate },
+          });
+        }
+      }
     } else {
       // General task editing
       if (isCompleted !== undefined) updateData.isCompleted = isCompleted;

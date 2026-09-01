@@ -49,6 +49,7 @@ const ICON_MAP: Record<string, any> = {
   Sparkles: Sparkles,
   Shield: Shield,
   RotateCcw: RotateCcw,
+  Waves: Waves,
 };
 
 export default function RoutinesSettingsPage() {

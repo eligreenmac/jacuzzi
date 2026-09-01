@@ -13,6 +13,8 @@ import {
   FlaskConical,
   CheckCircle2,
   Check,
+  Waves,
+  Sparkles,
 } from "lucide-react";
 import { getParamDomain } from "@/app/water-tests/page";
 
@@ -90,6 +92,34 @@ export default function DashboardPage() {
   const nextDeepCleanDate = deepCleanDate
     ? new Date(deepCleanDate.getTime() + 90 * 24 * 60 * 60 * 1000)
     : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+
+  // Calculate Last Enzyme Addition
+  const enzymeTask = tasks.find((t: any) => t.title?.includes("אנזים") || t.title?.includes("אנזימים"));
+  const enzymeDiary = data?.diaryEntries?.find((d: any) => 
+    d.title?.includes("אנזים") || d.content?.includes("אנזים") || d.chemicalsAdded?.includes("אנזים")
+  );
+  const lastEnzymeDate = enzymeTask?.lastDoneDate 
+    ? new Date(enzymeTask.lastDoneDate) 
+    : enzymeDiary?.createdAt 
+    ? new Date(enzymeDiary.createdAt) 
+    : null;
+  const daysSinceEnzyme = lastEnzymeDate 
+    ? Math.max(0, Math.floor((Date.now() - lastEnzymeDate.getTime()) / (1000 * 60 * 60 * 24))) 
+    : null;
+
+  // Calculate Last Partial Water Refill
+  const partialRefillTask = tasks.find((t: any) => t.title?.includes("חלקית") || (t.title?.includes("ריענון") && t.title?.includes("מים")));
+  const partialRefillDiary = data?.diaryEntries?.find((d: any) => 
+    d.title?.includes("חלקית") || d.content?.includes("חלקית") || d.title?.includes("ריענון מים")
+  );
+  const lastPartialRefillDate = partialRefillTask?.lastDoneDate 
+    ? new Date(partialRefillTask.lastDoneDate) 
+    : partialRefillDiary?.createdAt 
+    ? new Date(partialRefillDiary.createdAt) 
+    : null;
+  const daysSincePartialRefill = lastPartialRefillDate 
+    ? Math.max(0, Math.floor((Date.now() - lastPartialRefillDate.getTime()) / (1000 * 60 * 60 * 24))) 
+    : null;
 
   // Filter urgent & upcoming tasks based on Saturday-to-Saturday weekly cycle
   const now = new Date();
@@ -207,6 +237,47 @@ export default function DashboardPage() {
             <div className="text-[10px] text-slate-400 truncate">
               {lowStockChemicals.length > 0 ? `⚠️ ${lowStockChemicals.length} במלאי נמוך` : "מלאי תקין ✓"}
             </div>
+          </div>
+        </div>
+
+        {/* Secondary Maintenance Status Strip: תוספת אנזימים אחרונה & החלפת מים חלקית */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-[#0a0f13]/80 border border-slate-800/60 p-3 rounded-2xl flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-teal-950/60 border border-teal-800/40 flex items-center justify-center shrink-0">
+                <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+              </div>
+              <div>
+                <span className="font-semibold text-slate-300 block text-[11px]">הוספת אנזימים אחרונה</span>
+                <span className="text-[10px] text-slate-400">
+                  {lastEnzymeDate ? `לפני ${daysSinceEnzyme} ימים (${lastEnzymeDate.toLocaleDateString("he-IL")})` : "טרם תועדה הוספה (שגרה מומלצת שבועית)"}
+                </span>
+              </div>
+            </div>
+            {lastEnzymeDate && daysSinceEnzyme !== null && daysSinceEnzyme <= 7 && (
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shrink-0 font-medium">
+                פעיל ✓
+              </span>
+            )}
+          </div>
+
+          <div className="bg-[#0a0f13]/80 border border-slate-800/60 p-3 rounded-2xl flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center shrink-0">
+                <Waves className="w-3.5 h-3.5 text-cyan-300" />
+              </div>
+              <div>
+                <span className="font-semibold text-slate-300 block text-[11px]">החלפת מים חלקית אחרונה</span>
+                <span className="text-[10px] text-slate-400">
+                  {lastPartialRefillDate ? `לפני ${daysSincePartialRefill} ימים (${lastPartialRefillDate.toLocaleDateString("he-IL")})` : "טרם תועדה החלפה חלקית (ריענון 20%-30%)"}
+                </span>
+              </div>
+            </div>
+            {lastPartialRefillDate && daysSincePartialRefill !== null && daysSincePartialRefill <= 30 && (
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 shrink-0 font-medium">
+                רענן ✓
+              </span>
+            )}
           </div>
         </div>
 

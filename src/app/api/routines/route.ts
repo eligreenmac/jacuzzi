@@ -16,6 +16,18 @@ export const DEFAULT_ROUTINES_CONFIG = [
     explanation: "בדיקת המקלון השבועית היא עמוד השדרה של בריאות הג'קוזי. היא מאפשרת גילוי מוקדם של סטיות בחומציות או ברמת החיטוי לפני שמתפתחים עכירות, אצות או גירויים בעור.",
   },
   {
+    key: "ENZYMES",
+    title: "תוספת אנזימים שבועית (פירוק שומנים אורגניים)",
+    description: "הוספת מנת אנזימים (30-50 מ\"ל) לפירוק שומני גוף, שמנים וקרמים, מניעת טבעת שומן על הדופן ושמירה על הפילטר.",
+    category: "WEEKLY",
+    defaultFrequencyDays: 7,
+    minDays: 2,
+    maxDays: 30,
+    priority: "MEDIUM",
+    icon: "FlaskConical",
+    explanation: "אנזימים טבעיים מפרקים שומנים, שמני גוף ותחליבים במים. הוספה שבועית מונעת את טבעת השומן על קו המים, מונעת סתימת שומנים בפילטר ומקלה משמעותית על חומר החיטוי.",
+  },
+  {
     key: "FILTER_WASH",
     title: "שטיפת פילטר שבועית בזרם מים",
     description: "הוצאת מסנן הג'קוזי ושטיפה יסודית בלחץ מים להסרת לכלוך ושומנים שהצטברו.",
@@ -40,6 +52,18 @@ export const DEFAULT_ROUTINES_CONFIG = [
     explanation: "מכת שוק מחמצנת (MPS) מפרקת תרכובות שומניות, כלוראמינים (כלור קשור) וחומרים אורגניים שחומר החיטוי הרגיל לא מצליח לפרק, ומונעת ריח חריף והקצפה.",
   },
   {
+    key: "WATERLINE_CLEAN",
+    title: "ניקוי קו מים ודפנות הג'קוזי",
+    description: "ניגוב קו המים והדפנות במטלית מיקרופייבר לחה או ספוגית ייעודית (ללא חומרי ניקוי ביתיים מקציפים) להסרת שומנים וטבעת לכלוך (Scum Line).",
+    category: "WEEKLY",
+    defaultFrequencyDays: 14,
+    minDays: 3,
+    maxDays: 60,
+    priority: "MEDIUM",
+    icon: "Sparkles",
+    explanation: "על קו המים מצטברים שומני גוף, קרמים ואבנית. ניגוב קבוע במטלית מיקרופייבר או ספוגית לחה מונע שקיעת שומנים, שומר על ציפוי האקריליק ומסיר את טבעת הלכלוך ללא שימוש בסבונים מקציפים.",
+  },
+  {
     key: "FILTER_DEEP_CLEAN",
     title: "ניקוי פילטר עמוק בהשריה חודשית",
     description: "השרית הפילטר בדלי עם נוזל ניקוי פילטרים ייעודי למשך 12-24 שעות להמסת שומני גוף עמוקים ואבנית.",
@@ -52,6 +76,18 @@ export const DEFAULT_ROUTINES_CONFIG = [
     explanation: "מים בלבד לא ממיסים שומנים ואבנית שנספגו בעומק סיבי הפילטר. השריה חודשית ממיסה את השומנים לחלוטין ומחזירה לפילטר את כושר הסינון המקורי שלו.",
   },
   {
+    key: "PARTIAL_REFILL",
+    title: "החלפת מים חלקית ומחזורית (ריענון 20%-30%)",
+    description: "ריקון ומילוי של כ-20%-30% מנפח המים לדילול מוצקים מומסים (TDS), שמירה על מים צעירים ורעננים והארכת הזמן עד לריקון המלא.",
+    category: "MONTHLY",
+    defaultFrequencyDays: 30,
+    minDays: 14,
+    maxDays: 90,
+    priority: "MEDIUM",
+    icon: "Waves",
+    explanation: "בכל שימוש והוספת כימיקלים מצטברים במים מלחים ומוצקים מומסים (TDS). החלפה חלקית חודשית של 20%-30% מרעננת את המים, משקללת את גיל המים ומאפשרת לדחות את מועד הריקון המלא.",
+  },
+  {
     key: "COVER_CARE",
     title: "בדיקת אטימות וטיפוח כיסוי תרמי",
     description: "ניקוי וייבוש הכיסוי התרמי ומריחת ספריי הגנה מקרני UV למניעת סדקים וריחות.",
@@ -62,18 +98,6 @@ export const DEFAULT_ROUTINES_CONFIG = [
     priority: "LOW",
     icon: "Shield",
     explanation: "הכיסוי התרמי שומר על החום ומונע אידוי מים וכימיקלים. טיפוח עם ספריי UV מונע יובש וסדקים ושומר על אטימות ובידוד מקסימלי.",
-  },
-  {
-    key: "WATERLINE_CLEAN",
-    title: "ניקוי קו מים ודפנות הג'קוזי",
-    description: "ניגוב קו המים והדפנות במטלית מיקרופייבר לחה או ספוגית ייעודית (ללא חומרי ניקוי ביתיים מקציפים) להסרת שומנים וטבעת לכלוך (Scum Line).",
-    category: "WEEKLY",
-    defaultFrequencyDays: 14,
-    minDays: 3,
-    maxDays: 60,
-    priority: "MEDIUM",
-    icon: "Sparkles",
-    explanation: "על קו המים מצטברים שומני גוף, קרמים ואבנית. ניגוב קבוע במטלית מיקרופייבר או ספוגית לחה מונע שקיעת שומנים, שומר על ציפוי האקריליק ומסיר את טבעת הלכלוך ללא שימוש בסבונים מקציפים.",
   },
   {
     key: "DRAIN_AND_REFILL",
@@ -104,11 +128,13 @@ export async function GET(req: NextRequest) {
     const routines = DEFAULT_ROUTINES_CONFIG.map((def) => {
       const match = tasks.find((t) => {
         if (def.key === "WATER_TEST") return t.title.includes("בדיקת מים") || t.title.includes("מקלון") || t.title.includes("איכות מים");
+        if (def.key === "ENZYMES") return t.title.includes("אנזים") || t.title.includes("אנזימים");
         if (def.key === "FILTER_WASH") return t.title.includes("שטיפת פילטר") || (t.title.includes("פילטר") && t.frequencyDays < 20);
         if (def.key === "SHOCK") return t.title.includes("שוק");
-        if (def.key === "FILTER_DEEP_CLEAN") return t.title.includes("השריה") || (t.title.includes("פילטר") && t.frequencyDays >= 20);
-        if (def.key === "COVER_CARE") return t.title.includes("כיסוי");
         if (def.key === "WATERLINE_CLEAN") return t.title.includes("דופן") || t.title.includes("דפנות") || t.title.includes("קו מים");
+        if (def.key === "FILTER_DEEP_CLEAN") return t.title.includes("השריה") || (t.title.includes("פילטר") && t.frequencyDays >= 20);
+        if (def.key === "PARTIAL_REFILL") return t.title.includes("חלקית") || (t.title.includes("ריענון") && t.title.includes("מים"));
+        if (def.key === "COVER_CARE") return t.title.includes("כיסוי");
         if (def.key === "DRAIN_AND_REFILL") return t.title.includes("צנרת") || t.title.includes("ריקון") || t.title.includes("החלפת מים");
         return false;
       });
