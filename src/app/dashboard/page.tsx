@@ -152,9 +152,18 @@ export default function DashboardPage() {
     ? Math.max(0, Math.floor((Date.now() - lastPartialRefillDate.getTime()) / (1000 * 60 * 60 * 24))) 
     : null;
 
-  const textToSearchForPct = `${partialRefillTask?.title || ""} ${partialRefillTask?.description || ""} ${partialRefillDiary?.title || ""} ${partialRefillDiary?.content || ""}`;
-  const matchPct = textToSearchForPct.match(/(\d+)%/);
-  const partialPct = matchPct ? matchPct[1] : "30";
+  let partialPct = "30";
+  const diaryText = `${partialRefillDiary?.title || ""} ${partialRefillDiary?.content || ""}`;
+  const diaryMatch = diaryText.match(/(\d+)%/);
+  if (diaryMatch) {
+    partialPct = diaryMatch[1];
+  } else {
+    const taskText = `${partialRefillTask?.description || ""} ${partialRefillTask?.title || ""}`;
+    const taskMatch = taskText.match(/(\d+)%/);
+    if (taskMatch) {
+      partialPct = taskMatch[1];
+    }
+  }
   const partialLiters = Math.round(((jacuzzi?.volumeLiters || 1200) * parseInt(partialPct, 10)) / 100);
   const daysUntilNextPartialRefill = lastPartialRefillDate ? Math.max(0, 30 - (daysSincePartialRefill || 0)) : 30;
   const nextPartialRefillDate = lastPartialRefillDate

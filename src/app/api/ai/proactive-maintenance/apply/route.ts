@@ -190,16 +190,18 @@ export async function POST(req: NextRequest) {
         data: { lastDoneDate: actionDateObj },
       });
     }
+    const isActualWaterChange = updateJacuzziRefill || textLower.includes("החלפת מים") || textLower.includes("החלפתי מים") || textLower.includes("מים חדשים") || textLower.includes("מילאתי מים") || textLower.includes("מילוי מים") || textLower.includes("ריקון") || textLower.includes("ריענון מים");
+    const refillPct = (isActualWaterChange && body.refillPercentage !== undefined) ? body.refillPercentage : (updateJacuzziRefill ? 100 : 0);
+
     if (textLower.includes("חלקית") || textLower.includes("ריענון") || (textLower.includes("החלפ") && textLower.includes("מים") && !textLower.includes("מלאה") && !updateJacuzziRefill)) {
       await prisma.maintenanceTask.updateMany({
         where: { userId: user.id, OR: [{ title: { contains: "חלקית" } }, { title: { contains: "ריענון" } }, { title: { contains: "החלפת מים" } }] },
-        data: { lastDoneDate: actionDateObj },
+        data: { 
+          lastDoneDate: actionDateObj,
+          description: refillPct > 0 ? `החלפת ${refillPct}% מים וריענון (כל 30 ימים)` : undefined,
+        },
       });
     }
-
-    // 5. Update Jacuzzi water age (ONLY if an actual water change or full drain occurred)
-    const isActualWaterChange = updateJacuzziRefill || textLower.includes("החלפת מים") || textLower.includes("החלפתי מים") || textLower.includes("מים חדשים") || textLower.includes("מילאתי מים") || textLower.includes("מילוי מים") || textLower.includes("ריקון") || textLower.includes("ריענון מים");
-    const refillPct = (isActualWaterChange && body.refillPercentage !== undefined) ? body.refillPercentage : (updateJacuzziRefill ? 100 : 0);
     let updatedWaterAgeMessage = "";
 
     const jacuzzi = await prisma.jacuzzi.findUnique({
