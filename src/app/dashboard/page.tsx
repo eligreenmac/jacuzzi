@@ -252,9 +252,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 4 Quick Metrics Cards (Minimalist & Clean, No Icons) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Card 1: מצב המים (Clickable for full details) */}
+        {/* 3 Quick Metrics Cards (Unified & Minimalist, No Icons) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          {/* Card 1: מצב ואיכות המים (Unified Card - Clickable for full details) */}
           <div
             onClick={() => setIsWaterAgeModalOpen(true)}
             className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-cyan-500/60 p-4 rounded-2xl flex flex-col justify-between space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group"
@@ -262,7 +262,7 @@ export default function DashboardPage() {
           >
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
               <span className="text-xs font-bold text-cyan-300 group-hover:text-cyan-200 transition-colors">
-                מצב המים
+                מצב ואיכות המים
               </span>
               {lastPartialRefillDate ? (
                 <span className="text-[10px] text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/60 font-semibold">
@@ -292,6 +292,14 @@ export default function DashboardPage() {
                   {lastPartialRefillDate
                     ? `${lastPartialRefillDate.toLocaleDateString("he-IL")} (${partialPct}% / ${partialLiters} ליטר)`
                     : "טרם בוצעה"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">בדיקה אחרונה:</span>
+                <span className="font-semibold text-teal-300">
+                  {latestWaterLog
+                    ? `${latestWaterLog.phRange || (latestWaterLog.ph ? `pH ${latestWaterLog.ph}` : "")} | ${latestWaterLog.chlorineRange || (latestWaterLog.freeChlorine ? `${latestWaterLog.freeChlorine}ppm` : "נבדק")}`
+                    : "אין בדיקות"}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
@@ -340,44 +348,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Card 3: איכות מים ובדיקה אחרונה */}
-          <div className="bg-[#0a0f13] border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="text-xs font-bold text-blue-300">איכות מים ובדיקה אחרונה</span>
-              <span className="text-[10px] text-slate-400">
-                {latestWaterLog ? new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL") : "אין בדיקות"}
-              </span>
-            </div>
-
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">חומציות (pH):</span>
-                <span className="font-bold text-white">
-                  {latestWaterLog?.phRange || (latestWaterLog?.ph !== null ? `pH ${latestWaterLog?.ph}` : "—")}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">{sanitizerLabel}:</span>
-                <span className="font-bold text-white">
-                  {latestWaterLog?.chlorineRange || (latestWaterLog?.freeChlorine !== null ? `${latestWaterLog?.freeChlorine} ppm` : "—")}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">בסיסיות (TA):</span>
-                <span className="font-bold text-white">
-                  {latestWaterLog?.alkalinityRange || (latestWaterLog?.alkalinity !== null ? `${latestWaterLog?.alkalinity} ppm` : "—")}
-                </span>
-              </div>
-              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
-                <span className="text-slate-400">צלילות המים:</span>
-                <span className="font-semibold text-blue-300">
-                  {latestWaterLog?.waterClarity === "CLEAR" ? "צלול ונקי" : latestWaterLog?.waterClarity === "SLIGHTLY_CLOUDY" ? "עכירות קלה" : "צלול"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: משימות, אנזימים ומלאי */}
+          {/* Card 3: משימות, אנזימים ומלאי */}
           <div className="bg-[#0a0f13] border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
               <span className="text-xs font-bold text-purple-300">משימות, אנזימים ומלאי</span>
