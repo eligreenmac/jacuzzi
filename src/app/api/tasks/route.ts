@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkChemicalOverdoseSafety } from "@/lib/jacuzzi-calc";
 import { checkAndCreateLowStockTask } from "@/lib/inventory-guard";
+import { reconcileWaterTasks } from "@/lib/water-tasks-reconciler";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,6 +14,11 @@ export async function GET(req: NextRequest) {
       where: { userId: user.id },
       orderBy: { testedAt: "desc" },
     });
+
+    // Auto-reconcile tasks if there is a recent water log
+    if (latestWaterLog) {
+      await reconcileWaterTasks(user.id, latestWaterLog);
+    }
 
     const now = Date.now();
     const lastTestTime = latestWaterLog?.testedAt ? new Date(latestWaterLog.testedAt).getTime() : 0;

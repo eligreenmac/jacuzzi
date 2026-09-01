@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { analyzeWaterWithGemini } from "@/lib/gemini";
+import { reconcileWaterTasks } from "@/lib/water-tasks-reconciler";
 
 export async function GET(req: NextRequest) {
   try {
@@ -263,6 +264,9 @@ export async function POST(req: NextRequest) {
           },
         });
       }
+
+      // 🌟 Auto-scan and auto-close previous tasks whose parameters balanced out
+      await reconcileWaterTasks(user.id, newTest);
     } catch (syncErr) {
       console.error("Failed to auto-sync water test with tasks:", syncErr);
     }
@@ -438,6 +442,9 @@ export async function PUT(req: NextRequest) {
         aiRecommendations: JSON.stringify(diagnosis),
       },
     });
+
+    // 🌟 Auto-scan and auto-close previous tasks whose parameters balanced out
+    await reconcileWaterTasks(user.id, updated);
 
     return NextResponse.json({ success: true, test: updated, diagnosis });
   } catch (error: any) {
