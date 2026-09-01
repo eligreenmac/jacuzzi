@@ -475,11 +475,25 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    // Delete corresponding diary entries with matching title
+    // 🌟 Delete corresponding diary entries with matching title or matching chemicals
+    const diaryOrConditions: any[] = [
+      { title: { contains: existing.title } },
+      { content: { contains: existing.title } },
+      { title: `בוצע: ${existing.title}` },
+    ];
+
+    for (const chem of userChems) {
+      if (fullTaskText.includes(chem.name)) {
+        diaryOrConditions.push({ title: { contains: chem.name } });
+        diaryOrConditions.push({ content: { contains: chem.name } });
+        diaryOrConditions.push({ chemicalsAdded: { contains: chem.name } });
+      }
+    }
+
     await prisma.diaryEntry.deleteMany({
       where: {
         userId: user.id,
-        title: `בוצע: ${existing.title}`,
+        OR: diaryOrConditions,
       },
     });
 

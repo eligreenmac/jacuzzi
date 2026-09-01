@@ -146,6 +146,30 @@ export async function DELETE(req: NextRequest) {
         }
       }
 
+      // 🌟 Delete corresponding recurring maintenance tasks
+      const taskOrConditions: any[] = [];
+      const cleanTitle = (entry.title || "").replace("בוצע: ", "").replace("פעולת אחזקה יזומה: ", "").trim();
+      if (cleanTitle.length > 2) {
+        taskOrConditions.push({ title: { contains: cleanTitle } });
+        taskOrConditions.push({ description: { contains: cleanTitle } });
+      }
+
+      for (const chem of userChems) {
+        if (fullText.includes(chem.name)) {
+          taskOrConditions.push({ title: { contains: chem.name } });
+          taskOrConditions.push({ description: { contains: chem.name } });
+        }
+      }
+
+      if (taskOrConditions.length > 0) {
+        await prisma.maintenanceTask.deleteMany({
+          where: {
+            userId: user.id,
+            OR: taskOrConditions,
+          },
+        });
+      }
+
       await prisma.diaryEntry.delete({
         where: { id: entry.id },
       });
