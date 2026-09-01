@@ -19,6 +19,38 @@ export async function GET(req: NextRequest) {
   }
 }
 
+function resolveNumericValue(
+  val: number | null,
+  rangeStr?: string | null,
+  type: "PH" | "CL" | "ALK" = "PH"
+): number | "UNKNOWN" {
+  if (typeof val === "number" && !isNaN(val)) return val;
+  if (!rangeStr) return "UNKNOWN";
+  const s = rangeStr.toUpperCase();
+  if (type === "PH") {
+    if (s.includes("VERY_LOW") || s.includes("חומצי מאוד")) return 6.5;
+    if (s.includes("LOW") || s.includes("נמוך")) return 7.0;
+    if (s.includes("OK") || s.includes("תקין")) return 7.4;
+    if (s.includes("VERY_HIGH") || s.includes("בסיסי מאוד")) return 8.3;
+    if (s.includes("HIGH") || s.includes("גבוה")) return 7.8;
+  }
+  if (type === "CL") {
+    if (s.includes("VERY_LOW") || s.includes("ללא חיטוי")) return 0.0;
+    if (s.includes("LOW") || s.includes("נמוך")) return 1.0;
+    if (s.includes("OK") || s.includes("תקין")) return 3.0;
+    if (s.includes("VERY_HIGH") || s.includes("שוק") || s.includes("עודף")) return 10.0;
+    if (s.includes("HIGH") || s.includes("גבוה")) return 6.0;
+  }
+  if (type === "ALK") {
+    if (s.includes("VERY_LOW") || s.includes("נמוכה מאוד")) return 30;
+    if (s.includes("LOW") || s.includes("נמוכה")) return 60;
+    if (s.includes("OK") || s.includes("תקינה")) return 100;
+    if (s.includes("VERY_HIGH") || s.includes("גבוהה מאוד")) return 200;
+    if (s.includes("HIGH") || s.includes("גבוהה")) return 150;
+  }
+  return "UNKNOWN";
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser(req);
@@ -47,6 +79,10 @@ export async function POST(req: NextRequest) {
       alkalinity === "UNKNOWN" || alkalinity === "" || alkalinity === undefined || alkalinity === null
         ? null
         : parseFloat(alkalinity);
+
+    const effectivePh = resolveNumericValue(parsedPh, phRange, "PH");
+    const effectiveCl = resolveNumericValue(parsedCl, chlorineRange, "CL");
+    const effectiveAlk = resolveNumericValue(parsedAlk, alkalinityRange, "ALK");
 
     const jacuzzi = await prisma.jacuzzi.findUnique({
       where: { userId: user.id },
@@ -141,9 +177,9 @@ export async function POST(req: NextRequest) {
       sanitizationType: jacuzzi?.sanitizationType || "CHLORINE",
       waterClarity: waterClarity || "CLEAR",
       description,
-      ph: parsedPh !== null ? parsedPh : "UNKNOWN",
-      freeChlorine: parsedCl !== null ? parsedCl : "UNKNOWN",
-      alkalinity: parsedAlk !== null ? parsedAlk : "UNKNOWN",
+      ph: effectivePh,
+      freeChlorine: effectiveCl,
+      alkalinity: effectiveAlk,
       inventory: inventory.map((i) => ({
         name: i.name,
         category: i.category,
@@ -304,15 +340,19 @@ export async function PUT(req: NextRequest) {
       }
     }
 
+    const effectivePh = resolveNumericValue(parsedPh, phRange !== undefined ? phRange : existing.phRange, "PH");
+    const effectiveCl = resolveNumericValue(parsedCl, chlorineRange !== undefined ? chlorineRange : existing.chlorineRange, "CL");
+    const effectiveAlk = resolveNumericValue(parsedAlk, alkalinityRange !== undefined ? alkalinityRange : existing.alkalinityRange, "ALK");
+
     // Auto-generate rich AI diagnosis & chemical inventory matching
     const diagnosis = await analyzeWaterWithGemini({
       volumeLiters: jacuzzi?.volumeLiters || 1200,
       sanitizationType: jacuzzi?.sanitizationType || "CHLORINE",
       waterClarity: (waterClarity || existing.waterClarity || "CLEAR") as string,
       description: description !== undefined ? description : existing.description || undefined,
-      ph: parsedPh !== null ? parsedPh : "UNKNOWN",
-      freeChlorine: parsedCl !== null ? parsedCl : "UNKNOWN",
-      alkalinity: parsedAlk !== null ? parsedAlk : "UNKNOWN",
+      ph: effectivePh,
+      freeChlorine: effectiveCl,
+      alkalinity: effectiveAlk,
       inventory: inventory.map((i) => ({
         name: i.name,
         category: i.category,

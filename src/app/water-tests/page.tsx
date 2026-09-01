@@ -608,14 +608,63 @@ export default function WaterTestsPage() {
                       } catch (e) {}
                     }
 
-                    const isWaterNormal =
+                    const phIsOk = phDomain.id === "OK";
+                    const clIsOk = clDomain.id === "OK";
+                    const alkIsOk = alkDomain.id === "OK" || alkDomain.id === "UNKNOWN";
+                    const clarityIsOk = test.waterClarity === "CLEAR" || !test.waterClarity;
+
+                    const allParamsAreOk = phIsOk && clIsOk && alkIsOk && clarityIsOk;
+
+                    // Strict check: Water is normal ONLY if ALL parameters are OK
+                    const isWaterNormal = allParamsAreOk && (
                       (recs?.rootCauseAnalysis && (recs.rootCauseAnalysis.includes("תקינים") || recs.rootCauseAnalysis.includes("מאוזנים"))) ||
                       (test.aiDiagnosis && (test.aiDiagnosis.includes("תקינים") || test.aiDiagnosis.includes("מאוזנים"))) ||
-                      (phDomain.id === "OK" && clDomain.id === "OK" && (alkDomain.id === "OK" || alkDomain.id === "UNKNOWN") && (test.waterClarity === "CLEAR" || !test.waterClarity));
+                      (phDomain.id === "OK" && clDomain.id === "OK")
+                    );
 
-                    const actionableSteps = (recs?.stepByStepPlan || []).filter(
+                    let actionableSteps = (recs?.stepByStepPlan || []).filter(
                       (s: any) => s.chemical && s.chemical !== "ללא חומר" && s.chemical !== "תחזוקה רגילה"
                     );
+
+                    // Fallback steps if saved test had empty steps despite abnormal parameters
+                    if (actionableSteps.length === 0 && !allParamsAreOk) {
+                      if (alkDomain.id === "VERY_LOW" || alkDomain.id === "LOW") {
+                        actionableSteps = [
+                          {
+                            stepNumber: 1,
+                            stepType: "ROOT_CAUSE",
+                            title: "טיפול שורש: העלאת וייצוב בסיסיות המים (Total Alkalinity)",
+                            chemical: "מעלה בסיסיות (Alkalinity Increaser / סודיום ביקרבונט)",
+                            amount: "כ-45 גרם",
+                            instructions: "הוסף מעלה בסיסיות מומס בדלי מים עם ג'טים פועלים. הבסיסיות (TA) שומרת על יציבות ה-pH ומונעת קורוזיה ותנודות חריפות.",
+                            safetyWarning: "איזון הבסיסיות הוא צעד ראשון והכרחי לפני כיוונון ה-pH.",
+                            inInventory: false,
+                            searchKeywords: "מעלה בסיסיות לג'קוזי Alkalinity Increaser סודיום ביקרבונט",
+                          },
+                        ];
+                      }
+                    }
+
+                    const displayDiagnosis =
+                      !allParamsAreOk && test.aiDiagnosis && test.aiDiagnosis.includes("תקינים")
+                        ? `נמצאו מדדים הדורשים טיפול: ${[
+                            phDomain.id !== "OK" && `חומציות ${phDomain.label}`,
+                            clDomain.id !== "OK" && `חיטוי ${clDomain.label}`,
+                            !alkIsOk && `בסיסיות TA ${alkDomain.label}`,
+                            !clarityIsOk && `צלילות ${clarityInfo.label}`,
+                          ].filter(Boolean).join(", ")}.`
+                        : test.aiDiagnosis;
+
+                    const displayRootCause =
+                      !allParamsAreOk && (!recs?.rootCauseAnalysis || recs.rootCauseAnalysis.includes("תקינים"))
+                        ? (alkDomain.id === "VERY_LOW" || alkDomain.id === "LOW"
+                            ? "שורש הבעיה: רמת בסיסיות (Total Alkalinity) נמוכה פוגעת ב'כרית האוויר' של המים וגורמת לתנודות חריפות ב-pH (pH Bounce), קורוזיה של רכיבי מתכת ואי נוחות במים. יש להעלות את הבסיסיות לטווח היעד של 80-120 ppm לפני כל כיוונון של ה-pH."
+                            : phDomain.id !== "OK"
+                            ? "שורש הבעיה: רמת החומציות (pH) אינה מאוזנת ודורשת תיקון."
+                            : clDomain.id !== "OK"
+                            ? "שורש הבעיה: רמת חומר החיטוי אינה בטווח היעד הנדרש (2.0-4.0 ppm)."
+                            : "שורש הבעיה: נדרש טיפול נקודתי לאיזון המים.")
+                        : recs?.rootCauseAnalysis;
 
                     return (
                       <div className="space-y-3 pt-3 border-t border-slate-800/80 text-xs">
@@ -636,25 +685,25 @@ export default function WaterTestsPage() {
                           </div>
                         ) : (
                           <>
-                            {test.aiDiagnosis && (
+                            {displayDiagnosis && (
                               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 flex items-start gap-2.5">
                                 <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                                 <div className="space-y-1">
                                   <span className="font-bold text-cyan-300">אבחון ומצב המים: </span>
-                                  <span>{test.aiDiagnosis}</span>
+                                  <span>{displayDiagnosis}</span>
                                 </div>
                               </div>
                             )}
 
                             {/* Root Cause Analysis */}
-                            {recs?.rootCauseAnalysis && (
+                            {displayRootCause && (
                               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
                                 <div className="flex items-center gap-2 font-bold text-slate-200 text-xs">
                                   <Info className="w-4 h-4 text-cyan-400" />
                                   <span>ניתוח שורש הבעיה:</span>
                                 </div>
                                 <div className="text-[11px] leading-relaxed text-slate-300 pr-6">
-                                  {recs.rootCauseAnalysis}
+                                  {displayRootCause}
                                 </div>
                               </div>
                             )}
