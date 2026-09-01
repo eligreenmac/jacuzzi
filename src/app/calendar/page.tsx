@@ -724,16 +724,22 @@ export default function CalendarPage() {
 
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!noteForm.content.trim()) return;
     try {
       const targetDate = selectedDay || new Date();
+      const content = noteForm.content.trim();
+      const title = content.length > 35 ? content.slice(0, 35) + "..." : content;
       await fetch("/api/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...noteForm,
+          title,
+          content,
+          waterQualityRating: 5,
           entryDate: targetDate.toISOString(),
         }),
       });
+      setNoteForm({ title: "", content: "", waterQualityRating: "5" });
       setIsNoteModalOpen(false);
       loadData();
     } catch (err) {
@@ -2125,42 +2131,16 @@ export default function CalendarPage() {
             </div>
 
             <form onSubmit={handleCreateNote} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">כותרת הרשומה</label>
-                <input
-                  type="text"
-                  required
-                  value={noteForm.title}
-                  onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
-                  placeholder="למשל: אירוח בסופש, שטיפת פילטר, החלפת מים..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">דירוג איכות המים (1-5)</label>
-                <select
-                  value={noteForm.waterQualityRating}
-                  onChange={(e) => setNoteForm({ ...noteForm, waterQualityRating: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                >
-                  <option value="5">⭐⭐⭐⭐⭐ מושלם וצלול כקריסטל</option>
-                  <option value="4">⭐⭐⭐⭐ טוב מאוד</option>
-                  <option value="3">⭐⭐⭐ סביר אך מעט עכור</option>
-                  <option value="2">⭐⭐ דורש טיפול</option>
-                  <option value="1">⭐ ירוד / קצף ועכירות</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">תוכן ההערה</label>
                 <textarea
                   required
+                  autoFocus
                   value={noteForm.content}
                   onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
-                  rows={3}
-                  placeholder="פרט הערות כלליות, מצב מים, תקלות או אירועים..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
+                  rows={4}
+                  placeholder="כתוב כאן את ההערה ליומן..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:border-purple-500 transition-colors"
                 />
               </div>
 

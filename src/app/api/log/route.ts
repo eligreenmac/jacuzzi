@@ -48,8 +48,10 @@ export async function POST(req: NextRequest) {
       deductAmount,
     } = await req.json();
 
-    if (!title || !content) {
-      return NextResponse.json({ error: "כותרת ותוכן הם שדות חובה" }, { status: 400 });
+    const finalTitle = (title || content?.slice(0, 40) || "הערה ביומן").trim();
+
+    if (!content) {
+      return NextResponse.json({ error: "תוכן ההערה הוא שדה חובה" }, { status: 400 });
     }
 
     let finalChemicalString = chemicalsAdded || "";
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
     const entry = await prisma.diaryEntry.create({
       data: {
         userId: user.id,
-        title,
+        title: finalTitle,
         content,
         entryDate: entryDate ? new Date(entryDate) : new Date(),
         chemicalsAdded: finalChemicalString || null,
