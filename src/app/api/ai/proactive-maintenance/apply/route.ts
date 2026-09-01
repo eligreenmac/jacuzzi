@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     const actionDateObj = actionDate ? new Date(actionDate) : new Date();
+    const textLower = (freeText || "").toLowerCase();
 
     // 0. Deduct used chemicals from chemical cabinet inventory and schedule recurring tasks if requested
     const chemicalsUsed = body.chemicalsUsed || [];
@@ -128,9 +129,22 @@ export async function POST(req: NextRequest) {
       createdTasks.push(task);
     }
 
-    // 3. Create Diary Entry
-    const diaryTitle = suggestedDiaryTitle || `פעולת אחזקה יזומה: ${freeText.substring(0, 40)}...`;
-    const diaryContent = suggestedDiaryContent || freeText;
+    // 3. Determine Water Change & Create Diary Entry
+    const isActualWaterChange = updateJacuzziRefill || textLower.includes("החלפת מים") || textLower.includes("החלפתי מים") || textLower.includes("מים חדשים") || textLower.includes("מילאתי מים") || textLower.includes("מילוי מים") || textLower.includes("ריקון") || textLower.includes("ריענון מים");
+    let calculatedRefillPct = (isActualWaterChange && body.refillPercentage !== undefined) ? body.refillPercentage : (updateJacuzziRefill ? 100 : 0);
+    if (calculatedRefillPct === 0 && isActualWaterChange) {
+      if (textLower.includes("50") || textLower.includes("חצי")) calculatedRefillPct = 50;
+      else if (textLower.includes("25") || textLower.includes("רבע")) calculatedRefillPct = 25;
+      else if (textLower.includes("30") || textLower.includes("שליש")) calculatedRefillPct = 30;
+    }
+
+    let diaryTitle = suggestedDiaryTitle || `פעולת אחזקה יזומה: ${freeText.substring(0, 40)}...`;
+    let diaryContent = suggestedDiaryContent || freeText;
+    if (calculatedRefillPct > 0) {
+      diaryTitle = `החלפת מים חלקית (${calculatedRefillPct}%)`;
+      diaryContent = `בוצעה החלפת ${calculatedRefillPct}% ממי הג'קוזי במים טריים. ${diaryContent}`;
+    }
+
     const diaryEntry = await prisma.diaryEntry.create({
       data: {
         userId: user.id,
@@ -143,7 +157,6 @@ export async function POST(req: NextRequest) {
     });
 
     // 4. Update lastDoneDate on executed task categories for accurate future scheduling
-    const textLower = (freeText || "").toLowerCase();
     if (textLower.includes("דפנ") || textLower.includes("קו מים") || textLower.includes("דופן")) {
       await prisma.maintenanceTask.updateMany({
         where: { userId: user.id, OR: [{ title: { contains: "דפנ" } }, { title: { contains: "קו מים" } }, { title: { contains: "דופן" } }] },
@@ -190,8 +203,8 @@ export async function POST(req: NextRequest) {
         data: { lastDoneDate: actionDateObj },
       });
     }
-    const isActualWaterChange = updateJacuzziRefill || textLower.includes("החלפת מים") || textLower.includes("החלפתי מים") || textLower.includes("מים חדשים") || textLower.includes("מילאתי מים") || textLower.includes("מילוי מים") || textLower.includes("ריקון") || textLower.includes("ריענון מים");
-    const refillPct = (isActualWaterChange && body.refillPercentage !== undefined) ? body.refillPercentage : (updateJacuzziRefill ? 100 : 0);
+
+    const refillPct = calculatedRefillPct;
 
     if (textLower.includes("חלקית") || textLower.includes("ריענון") || (textLower.includes("החלפ") && textLower.includes("מים") && !textLower.includes("מלאה") && !updateJacuzziRefill)) {
       await prisma.maintenanceTask.updateMany({

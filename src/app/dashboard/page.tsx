@@ -133,7 +133,8 @@ export default function DashboardPage() {
       (t.title?.includes("החלפת מים") && !t.title?.includes("מלא"))
     )
   );
-  const partialRefillDiary = data?.diaryEntries?.find((d: any) => 
+
+  const partialRefillDiaries = (data?.diaryEntries || []).filter((d: any) => 
     d.title?.includes("חלקית") || 
     d.content?.includes("חלקית") || 
     d.title?.includes("ריענון") || 
@@ -141,27 +142,42 @@ export default function DashboardPage() {
     (d.title?.includes("החלפת מים") && !d.title?.includes("מלאה")) ||
     (d.content?.includes("החלפת מים") && !d.content?.includes("מלאה"))
   );
-  const lastPartialRefillDate = partialRefillTask?.lastDoneDate 
+
+  partialRefillDiaries.sort((a: any, b: any) => new Date(b.entryDate || b.createdAt).getTime() - new Date(a.entryDate || a.createdAt).getTime());
+  const latestPartialDiary = partialRefillDiaries[0] || null;
+
+  const lastPartialRefillDate = latestPartialDiary?.entryDate 
+    ? new Date(latestPartialDiary.entryDate) 
+    : latestPartialDiary?.createdAt 
+    ? new Date(latestPartialDiary.createdAt) 
+    : partialRefillTask?.lastDoneDate 
     ? new Date(partialRefillTask.lastDoneDate) 
-    : partialRefillDiary?.entryDate 
-    ? new Date(partialRefillDiary.entryDate) 
-    : partialRefillDiary?.createdAt 
-    ? new Date(partialRefillDiary.createdAt) 
     : null;
+
   const daysSincePartialRefill = lastPartialRefillDate 
     ? Math.max(0, Math.floor((Date.now() - lastPartialRefillDate.getTime()) / (1000 * 60 * 60 * 24))) 
     : null;
 
   let partialPct = "30";
-  const diaryText = `${partialRefillDiary?.title || ""} ${partialRefillDiary?.content || ""}`;
-  const diaryMatch = diaryText.match(/(\d+)%/);
-  if (diaryMatch) {
-    partialPct = diaryMatch[1];
-  } else {
-    const taskText = `${partialRefillTask?.description || ""} ${partialRefillTask?.title || ""}`;
-    const taskMatch = taskText.match(/(\d+)%/);
-    if (taskMatch) {
-      partialPct = taskMatch[1];
+  if (latestPartialDiary) {
+    const fullDiaryText = `${latestPartialDiary.title || ""} ${latestPartialDiary.content || ""}`;
+    const match = fullDiaryText.match(/(\d+)%/);
+    if (match) {
+      partialPct = match[1];
+    } else if (fullDiaryText.includes("חצי") || fullDiaryText.includes("50")) {
+      partialPct = "50";
+    } else if (fullDiaryText.includes("רבע") || fullDiaryText.includes("25")) {
+      partialPct = "25";
+    } else if (fullDiaryText.includes("שליש") || fullDiaryText.includes("33")) {
+      partialPct = "33";
+    }
+  } else if (partialRefillTask) {
+    const fullTaskText = `${partialRefillTask.description || ""} ${partialRefillTask.title || ""}`;
+    const match = fullTaskText.match(/(\d+)%/);
+    if (match) {
+      partialPct = match[1];
+    } else if (fullTaskText.includes("חצי") || fullTaskText.includes("50")) {
+      partialPct = "50";
     }
   }
   const partialLiters = Math.round(((jacuzzi?.volumeLiters || 1200) * parseInt(partialPct, 10)) / 100);
