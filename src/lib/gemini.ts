@@ -1185,25 +1185,6 @@ function generateRuleBasedProactiveMaintenance(
           priority: "MEDIUM",
         });
       }
-
-      // Add startup cycle tasks for new water
-      const day1Due = new Date(actionTime + 24 * 3600 * 1000);
-      const day2Due = new Date(actionTime + 48 * 3600 * 1000);
-      newTasksToCreate.push({
-        title: "בדיקת מקלון ראשונית ואיזון מים טריים (TA & pH)",
-        description: "בדיקת מקלון מקיפה למים החדשים לאחר 24 שעות חימום וסירקולציה. יש לאזן קודם בסיסיות (TA) ל-80-120 ואז pH ל-7.2-7.6.",
-        hoursAhead: 24,
-        dueDate: day1Due.toISOString(),
-        priority: "HIGH",
-      });
-
-      newTasksToCreate.push({
-        title: "בדיקת חיטוי מייצבת ראשונה",
-        description: "בדיקת רמת החיטוי (כלור / ברום) לאחר האיזון הראשוני של המים החדשים.",
-        hoursAhead: 48,
-        dueDate: day2Due.toISOString(),
-        priority: "HIGH",
-      });
     } else {
       // Partial change
       const newEffectiveAgeDays = Math.round(currentAgeDays * (1 - refillPercentage / 100));
@@ -1239,16 +1220,6 @@ function generateRuleBasedProactiveMaintenance(
           priority: "MEDIUM",
         });
       }
-
-      // Add baseline test task
-      const baselineDueDate = new Date(actionTime + 16 * 3600 * 1000);
-      newTasksToCreate.push({
-        title: "בדיקת מקלון ראשונית למים החדשים",
-        description: "בדיקת pH, בסיסיות (TA) וחיטוי לאחר סירקולציה של המים שהוחלפו",
-        hoursAhead: 16,
-        dueDate: baselineDueDate.toISOString(),
-        priority: "HIGH",
-      });
     }
 
     // Shift upcoming sanitizer tasks (bromine / chlorine / daily sanitizer)

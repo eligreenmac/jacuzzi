@@ -18,6 +18,17 @@ export async function GET(req: NextRequest) {
     const lastTestTime = latestWaterLog?.testedAt ? new Date(latestWaterLog.testedAt).getTime() : 0;
     const daysSinceLastTest = lastTestTime ? (now - lastTestTime) / (1000 * 3600 * 24) : 999;
 
+    // 🌟 Clean up any legacy initial test tasks
+    await prisma.maintenanceTask.deleteMany({
+      where: {
+        userId: user.id,
+        OR: [
+          { title: { contains: "ראשונית" } },
+          { title: { contains: "בדיקת מקלון ראשונית" } },
+        ],
+      },
+    });
+
     const tasks = await prisma.maintenanceTask.findMany({
       where: { userId: user.id },
       orderBy: { nextDueDate: "asc" },
