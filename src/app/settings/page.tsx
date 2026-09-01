@@ -22,7 +22,6 @@ export default function SettingsPage() {
     model: "",
     volumeLiters: "1200",
     sanitizationType: "CHLORINE",
-    location: "OUTDOOR",
     usageFrequency: "MEDIUM",
     lastRefillDate: "",
     lastDeepCleanDate: "",
@@ -51,7 +50,6 @@ export default function SettingsPage() {
           model: j?.model || "",
           volumeLiters: j?.volumeLiters?.toString() || "1200",
           sanitizationType: j?.sanitizationType || "CHLORINE",
-          location: j?.location || "OUTDOOR",
           usageFrequency: j?.usageFrequency || "MEDIUM",
           lastRefillDate: j?.lastRefillDate ? new Date(j.lastRefillDate).toISOString().split("T")[0] : "",
           lastDeepCleanDate: j?.lastDeepCleanDate ? new Date(j.lastDeepCleanDate).toISOString().split("T")[0] : "",
@@ -97,15 +95,6 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleSetRefillToday = () => {
-    const today = new Date().toISOString().split("T")[0];
-    setFormData((prev) => ({
-      ...prev,
-      lastRefillDate: today,
-      lastDeepCleanDate: today,
-    }));
   };
 
   const handleTestEmail = async () => {
@@ -206,7 +195,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-300">שיטת חיטוי עיקרית</label>
               <select
@@ -218,19 +207,6 @@ export default function SettingsPage() {
                 <option value="BROMINE">טבליות ברום (Bromine)</option>
                 <option value="SALT">מערכת מלח (Salt System)</option>
                 <option value="ACTIVE_OXYGEN">חמצן פעיל (Active Oxygen)</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">מיקום הג'קוזי</label>
-              <select
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white text-xs"
-              >
-                <option value="OUTDOOR">חצר / גינה פתוחה</option>
-                <option value="ROOF">גג / מרפסת</option>
-                <option value="INDOOR">פנים הבית / חלל סגור</option>
               </select>
             </div>
 
@@ -250,19 +226,10 @@ export default function SettingsPage() {
 
           {/* Refill Dates */}
           <div className="pt-4 border-t border-slate-800/80 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-cyan-400" />
-                <span>מעקב החלפת מים וניקוי צנרת</span>
-              </h3>
-              <button
-                type="button"
-                onClick={handleSetRefillToday}
-                className="text-xs bg-cyan-950 text-cyan-300 hover:bg-cyan-900 border border-cyan-800 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                ✨ מילאתי מים חדשים היום!
-              </button>
-            </div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-cyan-400" />
+              <span>מעקב החלפת מים וניקוי צנרת</span>
+            </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -393,17 +360,6 @@ export default function SettingsPage() {
                   )}
                 </div>
               )}
-            </div>
-
-            <div className="bg-slate-950/60 border border-slate-850 p-4 rounded-2xl space-y-1.5 text-xs text-slate-400">
-              <div className="flex items-center gap-1.5 font-bold text-slate-300">
-                <Info className="w-4 h-4 text-cyan-400" />
-                <span>שליחת מיילים לתיבת הדואר שלך:</span>
-              </div>
-              <p>
-                המערכת שולחת כעת מיילים מעוצבים עם כפתור תצוגה חיה מידית.
-                לשליחה ישירה לתיבת ה-Gmail שלך, הזן את כתובת המייל וסיסמת האפליקציה שלך ב-<code>.env</code>.
-              </p>
             </div>
           </div>
         </div>

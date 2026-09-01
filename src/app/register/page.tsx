@@ -14,7 +14,6 @@ export default function RegisterPage() {
     jacuzziName: "הג'קוזי שלי",
     volumeLiters: "1200",
     sanitizationType: "CHLORINE",
-    location: "OUTDOOR",
     usageFrequency: "MEDIUM",
   });
   const [error, setError] = useState("");
@@ -185,7 +184,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">שיטת חיטוי עיקרית</label>
                 <select
@@ -197,19 +196,6 @@ export default function RegisterPage() {
                   <option value="BROMINE">טבליות ברום (Bromine)</option>
                   <option value="SALT">מערכת מלח (Salt System)</option>
                   <option value="ACTIVE_OXYGEN">חמצן פעיל (Active Oxygen)</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">מיקום הג'קוזי</label>
-                <select
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                >
-                  <option value="OUTDOOR">חצר / גינה פתוחה</option>
-                  <option value="ROOF">גג / מרפסת</option>
-                  <option value="INDOOR">חלל סגור / בית</option>
                 </select>
               </div>
 
