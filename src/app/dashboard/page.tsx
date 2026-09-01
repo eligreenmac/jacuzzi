@@ -173,9 +173,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: גיל המים */}
           <div className="bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-              <span>גיל המים</span>
-              <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+            <div className="text-[11px] text-slate-400 font-medium">
+              גיל המים
             </div>
             <div className="text-xl font-black text-cyan-300">{daysSinceRefill} ימים</div>
             <div className="text-[10px] text-slate-400 truncate">
@@ -185,9 +184,8 @@ export default function DashboardPage() {
 
           {/* Card 2: תאריך ניקוי צנרת */}
           <div className="bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-              <span>ניקוי צנרת ושטיפה</span>
-              <RefreshCw className="w-3.5 h-3.5 text-teal-400" />
+            <div className="text-[11px] text-slate-400 font-medium">
+              ניקוי צנרת ושטיפה
             </div>
             <div className="text-xl font-black text-teal-300">
               {daysSinceDeepClean !== null ? `${daysSinceDeepClean} ימים` : "טרם עודכן"}
@@ -199,9 +197,8 @@ export default function DashboardPage() {
 
           {/* Card 3: משימות פתוחות */}
           <div className="bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-              <span>משימות פתוחות</span>
-              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+            <div className="text-[11px] text-slate-400 font-medium">
+              משימות פתוחות
             </div>
             <div className="text-xl font-black text-amber-300">{pendingTasks.length}</div>
             <div className="text-[10px] text-slate-400 truncate">
@@ -211,9 +208,8 @@ export default function DashboardPage() {
 
           {/* Card 4: ארון חומרים */}
           <div className="bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-              <span>ארון חומרים</span>
-              <Package className="w-3.5 h-3.5 text-sky-400" />
+            <div className="text-[11px] text-slate-400 font-medium">
+              ארון חומרים
             </div>
             <div className="text-xl font-black text-sky-300">{chemicals.length} פריטים</div>
             <div className="text-[10px] text-slate-400 truncate">
