@@ -338,19 +338,19 @@ export default function DashboardPage() {
     d.title?.includes("בדיקת חומרים") || d.title?.includes("חומרים חסרים") || d.content?.includes("מומלצים לרכש")
   );
 
-  let recommendedPurchaseText = "אין חוסרים ✓";
+  let recommendedPurchaseItems: string[] = [];
   if (aiPurchaseTask) {
     const raw = aiPurchaseTask.title.replace(/רכש מומלץ AI:\s*/g, "").replace(/רכש מומלץ:\s*/g, "").replace(/רכש AI:\s*/g, "").trim();
     if (raw && !raw.includes("אין חוסרים")) {
-      recommendedPurchaseText = raw;
+      recommendedPurchaseItems = raw.split(",").map((s: string) => s.trim()).filter(Boolean);
     }
   } else if (aiPurchaseDiary) {
     const match = aiPurchaseDiary.content?.match(/מומלצים לרכש:\s*([^.\n]+)/);
     if (match && match[1] && !match[1].includes("אין חוסרים")) {
-      recommendedPurchaseText = match[1].trim();
+      recommendedPurchaseItems = match[1].split(",").map((s: string) => s.trim()).filter(Boolean);
     }
   } else if (lowStockChemicals.length > 0) {
-    recommendedPurchaseText = lowStockChemicals.map((c: any) => c.name).join(", ");
+    recommendedPurchaseItems = lowStockChemicals.map((c: any) => c.name);
   }
 
   return (
@@ -594,16 +594,24 @@ export default function DashboardPage() {
                 );
               })}
 
-              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
-                <span className="text-slate-400">רכש מומלץ:</span>
-                <span
-                  className={`font-semibold truncate max-w-[150px] ${
-                    recommendedPurchaseText !== "אין חוסרים ✓" ? "text-amber-400 font-bold" : "text-emerald-400"
-                  }`}
-                  title={recommendedPurchaseText}
-                >
-                  {recommendedPurchaseText}
-                </span>
+              <div className="pt-1.5 border-t border-slate-800/60 space-y-1">
+                <div className="flex items-center justify-between pb-0.5">
+                  <span className="text-slate-400 font-bold text-[11px]">רכש מומלץ:</span>
+                  {recommendedPurchaseItems.length === 0 && (
+                    <span className="font-semibold text-emerald-400 text-xs">אין חוסרים ✓</span>
+                  )}
+                </div>
+
+                {recommendedPurchaseItems.map((item: string, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between text-xs py-0.5">
+                    <span className="text-slate-300 truncate max-w-[170px]" title={item}>
+                      • {item}
+                    </span>
+                    <span className="font-bold text-amber-400 text-[11px] shrink-0">
+                      להזמין
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
