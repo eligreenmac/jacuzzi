@@ -143,7 +143,7 @@ export default function DashboardPage() {
     "25";
   const partialLiters = Math.round(((jacuzzi?.volumeLiters || 1200) * parseInt(partialPct, 10)) / 100);
 
-  // Calculate Wall & Waterline Cleaning
+  // Calculate Wall & Waterline Cleaning (14 days cycle)
   const wallCleanTask = tasks.find((t: any) => t.title?.includes("דפנ") || t.title?.includes("קו מים") || t.title?.includes("דופן"));
   const wallCleanDiary = data?.diaryEntries?.find((d: any) => d.title?.includes("דפנ") || d.content?.includes("דפנ") || d.title?.includes("דופן"));
   const lastWallCleanDate = wallCleanTask?.lastDoneDate
@@ -154,8 +154,12 @@ export default function DashboardPage() {
   const daysSinceWallClean = lastWallCleanDate
     ? Math.max(0, Math.floor((Date.now() - lastWallCleanDate.getTime()) / (1000 * 60 * 60 * 24)))
     : null;
+  const daysUntilNextWallClean = lastWallCleanDate ? Math.max(0, 14 - (daysSinceWallClean || 0)) : 14;
+  const nextWallCleanDate = lastWallCleanDate
+    ? new Date(lastWallCleanDate.getTime() + 14 * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-  // Calculate Filter Wash
+  // Calculate Filter Wash (7 days cycle)
   const filterWashTask = tasks.find((t: any) => (t.title?.includes("שטיפת פילטר") || t.title?.includes("ניקוי פילטר") || t.title?.includes("שטיפת מסנן")) && !t.title?.includes("חדש") && !t.title?.includes("החלפ"));
   const filterWashDiary = data?.diaryEntries?.find((d: any) => (d.title?.includes("שטיפת פילטר") || d.content?.includes("שטיפת פילטר")) && !d.title?.includes("חדש"));
   const lastFilterWashDate = filterWashTask?.lastDoneDate
@@ -166,8 +170,12 @@ export default function DashboardPage() {
   const daysSinceFilterWash = lastFilterWashDate
     ? Math.max(0, Math.floor((Date.now() - lastFilterWashDate.getTime()) / (1000 * 60 * 60 * 24)))
     : null;
+  const daysUntilNextFilterWash = lastFilterWashDate ? Math.max(0, 7 - (daysSinceFilterWash || 0)) : 7;
+  const nextFilterWashDate = lastFilterWashDate
+    ? new Date(lastFilterWashDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  // Calculate New Filter Replacement (annual)
+  // Calculate New Filter Replacement (annual 365 days cycle)
   const filterReplaceTask = tasks.find((t: any) => t.title?.includes("החלפת פילטר") || t.title?.includes("פילטר חדש") || t.title?.includes("החלפת מסנן"));
   const filterReplaceDiary = data?.diaryEntries?.find((d: any) => d.title?.includes("החלפת פילטר") || d.content?.includes("החלפת פילטר") || d.title?.includes("פילטר חדש"));
   const lastFilterReplaceDate = jacuzzi?.lastFilterReplaceDate
@@ -185,7 +193,7 @@ export default function DashboardPage() {
     ? new Date(lastFilterReplaceDate.getTime() + 365 * 24 * 60 * 60 * 1000)
     : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 
-  // Calculate Cover Cleaning / Maintenance (ניקוי וטיפוח כיסוי)
+  // Calculate Cover Cleaning / Maintenance (30 days cycle)
   const coverCleanTask = tasks.find((t: any) => t.title?.includes("כיסוי"));
   const coverCleanDiary = data?.diaryEntries?.find((d: any) => d.title?.includes("כיסוי") || d.content?.includes("כיסוי"));
   const lastCoverCleanDate = coverCleanTask?.lastDoneDate
@@ -196,6 +204,10 @@ export default function DashboardPage() {
   const daysSinceCoverClean = lastCoverCleanDate
     ? Math.max(0, Math.floor((Date.now() - lastCoverCleanDate.getTime()) / (1000 * 60 * 60 * 24)))
     : null;
+  const daysUntilNextCoverClean = lastCoverCleanDate ? Math.max(0, 30 - (daysSinceCoverClean || 0)) : 30;
+  const nextCoverCleanDate = lastCoverCleanDate
+    ? new Date(lastCoverCleanDate.getTime() + 30 * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   // Filter urgent & upcoming tasks based on Saturday-to-Saturday weekly cycle
   const now = new Date();
@@ -375,33 +387,33 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי צנרת ושטיפה:</span>
                 <span className="font-semibold text-slate-200">
-                  {daysSinceDeepClean !== null ? `לפני ${daysSinceDeepClean} ימים (הבא: בעוד ${daysUntilNextDeepClean} יום)` : "טרם עודכן"}
+                  {daysSinceDeepClean !== null ? `לפני ${daysSinceDeepClean} ימים (הבא: ${nextDeepCleanDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextDeepClean} יום)` : "טרם עודכן"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי דפנות וקו מים:</span>
                 <span className="font-semibold text-slate-200">
-                  {lastWallCleanDate ? `לפני ${daysSinceWallClean} ימים` : "שגרה חודשית"}
+                  {lastWallCleanDate ? `לפני ${daysSinceWallClean} ימים (הבא: ${nextWallCleanDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextWallClean} יום)` : "שגרה דו-שבועית (14 יום)"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">שטיפת פילטר:</span>
                 <span className="font-semibold text-slate-200">
-                  {lastFilterWashDate ? `לפני ${daysSinceFilterWash} ימים` : "שגרה שבועית"}
+                  {lastFilterWashDate ? `לפני ${daysSinceFilterWash} ימים (הבא: ${nextFilterWashDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextFilterWash} יום)` : "שגרה שבועית (7 ימים)"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">החלפת פילטר:</span>
                 <span className="font-semibold text-teal-300">
                   {lastFilterReplaceDate
-                    ? `לפני ${daysSinceFilterReplace} ימים (הבא: בעוד ${daysUntilNextFilterReplace} יום)`
+                    ? `לפני ${daysSinceFilterReplace} ימים (הבא: ${nextFilterReplaceDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextFilterReplace} יום)`
                     : "שנתי (365 יום)"}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
                 <span className="text-slate-400">ניקוי כיסוי:</span>
                 <span className="font-semibold text-slate-200">
-                  {lastCoverCleanDate ? `לפני ${daysSinceCoverClean} ימים` : "שגרה חודשית"}
+                  {lastCoverCleanDate ? `לפני ${daysSinceCoverClean} ימים (הבא: ${nextCoverCleanDate.toLocaleDateString("he-IL")} / בעוד ${daysUntilNextCoverClean} יום)` : "שגרה חודשית (30 יום)"}
                 </span>
               </div>
             </div>
