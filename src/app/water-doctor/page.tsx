@@ -223,23 +223,23 @@ export default function WaterDoctorPage() {
 
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-2">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-bold border border-purple-500/20">
-          <Sparkles className="w-4 h-4 text-purple-400" />
-          <span>מרחב ייעוץ ובדיקות תיאורטיות (Sandbox) • שיח פתוח ללא שמירה בהיסטוריה</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-900 text-slate-300 text-xs font-semibold border border-slate-800">
+          <Sparkles className="w-4 h-4 text-teal-300" />
+          <span>מרחב ייעוץ ובדיקות תיאורטיות • שיח פתוח ללא שמירה בהיסטוריה</span>
         </div>
-        <h1 className="text-3xl font-black text-white">רופא המים של הג'קוזי (ייעוץ מורכב ומעמיק)</h1>
-        <p className="text-sm text-slate-300">
-          מרחב ייעוץ מדעי ופתוח לכל מדדי המים. לחץ על כפתור <strong>(?)</strong> ליד כל מדד להסבר מעמיק על סכנות ודרכי טיפול.
+        <h1 className="text-3xl font-black text-white">רופא המים של הג'קוזי (אבחון מקיף)</h1>
+        <p className="text-sm text-slate-400">
+          מרחב ייעוץ מקצועי לכל מדדי המים. לחץ על כפתור <strong>(?)</strong> ליד כל מדד להסבר מעמיק על סכנות ודרכי טיפול.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Input Form (5 Cols) */}
-        <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+        <div className="lg:col-span-5 bg-[#0f171e] border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
           <h2 className="text-lg font-bold text-white flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
-              <Droplets className="w-5 h-5 text-cyan-400" />
-              <span>הזנת נתוני בדיקה מתקדמת</span>
+              <Droplets className="w-5 h-5 text-teal-300" />
+              <span>הזנת נתוני בדיקה</span>
             </div>
             <span className="text-[11px] text-slate-400 font-normal">לחץ (?) להסבר מדד</span>
           </h2>
@@ -256,23 +256,22 @@ export default function WaterDoctorPage() {
                     onClick={() => setClarity(opt.value)}
                     className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between ${
                       clarity === opt.value
-                        ? "bg-cyan-500/20 border-cyan-400 text-white shadow-inner"
-                        : "bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700"
+                        ? "bg-slate-800 border-teal-500/60 text-white shadow-sm"
+                        : "bg-[#0a0f13] border-slate-800 text-slate-300 hover:border-slate-700"
                     }`}
                   >
-                    <div className="text-lg mb-1">{opt.icon}</div>
                     <div className="text-xs font-bold">{opt.label}</div>
-                    <div className="text-[10px] text-slate-400">{opt.desc}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{opt.desc}</div>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Routine Strip Parameters */}
-            <div className="space-y-3 pt-2 border-t border-slate-800/80">
+            <div className="space-y-3 pt-2 border-t border-slate-800">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-                  <FlaskConical className="w-3.5 h-3.5 text-cyan-400" />
+                <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <FlaskConical className="w-3.5 h-3.5 text-teal-300" />
                   <span>2. בדיקות יסוד שגרתיות (מקלון 3 ב-1)</span>
                 </label>
               </div>

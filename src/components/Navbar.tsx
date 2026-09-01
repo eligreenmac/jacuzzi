@@ -50,25 +50,25 @@ export default function Navbar() {
   const isAuthPage = pathname === "/login" || pathname === "/register" || (pathname === "/" && !user);
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-cyan-900/40 text-slate-100 shadow-lg">
+    <header className="sticky top-0 z-50 bg-[#0e161c]/90 backdrop-blur-md border-b border-slate-800/80 text-slate-200 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              <Droplets className="w-6 h-6 text-white animate-pulse" />
+            <div className="w-9 h-9 rounded-xl bg-teal-950/60 border border-teal-800/50 flex items-center justify-center shadow-sm group-hover:border-teal-700 transition-colors">
+              <Droplets className="w-5 h-5 text-teal-300" />
             </div>
             <div className="flex flex-col">
-              <span className="font-extrabold text-lg tracking-wide bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              <span className="font-bold text-base tracking-wide text-white">
                 Jacuzzi Spa Master
               </span>
-              <span className="text-[11px] text-cyan-200/60 -mt-1 font-medium">ניהול תחזוקה ובינה מלאכותית</span>
+              <span className="text-[10px] text-slate-400 -mt-0.5">תחזוקת מים ורוגע ספא</span>
             </div>
           </Link>
 
           {/* Desktop Nav */}
           {!isAuthPage && (
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-1.5">
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = pathname === link.href;
@@ -76,13 +76,13 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
                       isActive
-                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-inner font-bold"
+                        ? "bg-slate-800 text-teal-300 border border-slate-700 font-bold shadow-sm"
                         : "text-slate-300 hover:text-white hover:bg-slate-800/60"
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${isActive ? "text-cyan-400" : "text-slate-400"}`} />
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? "text-teal-300" : "text-slate-400"}`} />
                     <span>{link.label}</span>
                   </Link>
                 );
@@ -93,13 +93,13 @@ export default function Navbar() {
           {/* User actions */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-full">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xs bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1 rounded-full">
                   👤 {user.name || user.email}
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-1.5 text-xs text-rose-300 hover:text-rose-200 hover:bg-rose-950/40 px-3 py-1.5 rounded-lg border border-rose-900/40 transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-850 px-2.5 py-1 rounded-lg border border-slate-800 transition-colors"
                   title="התנתק"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -110,13 +110,13 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="text-sm text-slate-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+                  className="text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
                 >
                   התחברות
                 </Link>
                 <Link
                   href="/register"
-                  className="text-sm bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium px-4 py-1.5 rounded-lg shadow-md shadow-cyan-600/30 transition-all"
+                  className="text-xs bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-semibold px-3.5 py-1.5 rounded-xl shadow-sm transition-all"
                 >
                   הרשמה חינם
                 </Link>
@@ -138,7 +138,7 @@ export default function Navbar() {
 
       {/* Mobile dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-slate-900 border-b border-cyan-900/40 px-4 pt-2 pb-4 space-y-2">
+        <div className="md:hidden bg-[#0e161c] border-b border-slate-800 px-4 pt-2 pb-4 space-y-2">
           {!isAuthPage &&
             navLinks.map((link) => {
               const Icon = link.icon;

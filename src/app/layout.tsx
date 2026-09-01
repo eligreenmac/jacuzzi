@@ -14,13 +14,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="he" dir="rtl">
-      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-white flex flex-col font-sans">
+      <body className="min-h-screen bg-[#0b1115] text-slate-200 antialiased selection:bg-teal-700/40 selection:text-white flex flex-col font-sans">
         <Navbar />
         <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
           {children}
         </main>
-        <footer className="border-t border-slate-800/80 bg-slate-900/60 py-6 text-center text-xs text-slate-400">
-          <p>© {new Date().getFullYear()} Jacuzzi Spa Master • מנוהל באמצעות Google Gemini AI • תחזוקת מים וספא</p>
+        <footer className="border-t border-slate-800/60 bg-[#0e161c]/70 py-6 text-center text-xs text-slate-400">
+          <p>© {new Date().getFullYear()} Jacuzzi Spa Master • תחזוקת מים וספא חכמה ורוגע מרבי</p>
         </footer>
       </body>
     </html>

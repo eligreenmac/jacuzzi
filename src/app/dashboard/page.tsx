@@ -131,12 +131,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* 🌟 Unified Master Board: הג'קוזי שלי ובדיקות מים */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/95 to-cyan-950/80 border border-cyan-800/40 p-6 sm:p-8 shadow-2xl space-y-6">
+      <div className="relative overflow-hidden rounded-3xl bg-[#0f171e] border border-slate-800/80 p-6 sm:p-8 shadow-xl space-y-6">
         {/* Header Area */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-slate-300 bg-slate-950 px-3 py-1 rounded-full border border-slate-800">
+              <span className="text-xs font-semibold text-slate-300 bg-[#0a0f13] px-3 py-1 rounded-full border border-slate-800">
                 נפח: {jacuzzi?.volumeLiters || 1200} ליטר
               </span>
             </div>
@@ -151,9 +151,9 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/water-tests"
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs shadow-md flex items-center gap-2 transition-all hover:scale-105"
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-bold text-xs shadow flex items-center gap-2 transition-all hover:scale-105"
             >
-              <FlaskConical className="w-4 h-4 text-cyan-400" />
+              <FlaskConical className="w-4 h-4 text-teal-300" />
               <span>בדיקות מים מלאות</span>
               <ArrowLeft className="w-3.5 h-3.5" />
             </Link>
@@ -163,7 +163,7 @@ export default function DashboardPage() {
         {/* 4 Quick Metrics Cards (Unified & Clean) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: גיל המים */}
-          <div className="bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl space-y-1">
+          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1">
             <div className="text-[11px] text-slate-400 font-medium">
               גיל המים
             </div>
@@ -174,7 +174,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Card 2: תאריך ניקוי צנרת */}
-          <div className="bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl space-y-1">
+          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1">
             <div className="text-[11px] text-slate-400 font-medium">
               ניקוי צנרת ושטיפה
             </div>
@@ -187,7 +187,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Card 3: משימות פתוחות */}
-          <div className="bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl space-y-1">
+          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1">
             <div className="text-[11px] text-slate-400 font-medium">
               משימות פתוחות
             </div>
@@ -198,7 +198,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Card 4: ארון חומרים */}
-          <div className="bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl space-y-1">
+          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1">
             <div className="text-[11px] text-slate-400 font-medium">
               ארון חומרים
             </div>
@@ -210,14 +210,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Integrated Water Test Section inside Master Board */}
-        <div className="bg-slate-950/60 border border-cyan-900/30 rounded-2xl p-4 sm:p-5 space-y-3">
+        <div className="bg-[#0a0f13] border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <FlaskConical className="w-4 h-4 text-cyan-400" />
+              <FlaskConical className="w-4 h-4 text-teal-300" />
               <span className="text-xs sm:text-sm font-bold text-white">איכות מים ואבחון אחרון</span>
             </div>
             {latestWaterLog ? (
-              <span className="text-[11px] font-semibold text-cyan-300 bg-cyan-950/80 px-2.5 py-0.5 rounded-full border border-cyan-800">
+              <span className="text-[11px] font-semibold text-slate-300 bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-800">
                 נבדק בתאריך: {new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")}
               </span>
             ) : (

@@ -32,30 +32,30 @@ import {
 
 // Standard Test Strip Range Scales
 const PH_RANGES = [
-  { id: "LOW_CRIT", label: "< 6.8 (חומצי מאוד 🔴)", val: 6.6, color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "LOW", label: "6.8 - 7.1 (נמוך 🟠)", val: 7.0, color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "IDEAL", label: "7.2 - 7.6 (אידיאלי ומאוזן ✨ 🟢)", val: 7.4, color: "border-emerald-700 bg-emerald-950/50 text-emerald-300" },
-  { id: "HIGH", label: "7.7 - 8.0 (גבוה 🟠)", val: 7.8, color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "HIGH_CRIT", label: "> 8.0 (בסיסי מאוד 🔴)", val: 8.2, color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "UNKNOWN", label: "לא יודע / לא נבדק", val: null, color: "border-slate-800 bg-slate-950 text-slate-400" },
+  { id: "LOW_CRIT", label: "מתחת ל-6.8 (חומצי מאוד)", val: 6.6 },
+  { id: "LOW", label: "6.8 - 7.1 (נמוך / דורש איזון)", val: 7.0 },
+  { id: "IDEAL", label: "7.2 - 7.6 (אידיאלי ומאוזן)", val: 7.4 },
+  { id: "HIGH", label: "7.7 - 8.0 (בסיסי / גבוה)", val: 7.8 },
+  { id: "HIGH_CRIT", label: "מעל 8.0 (בסיסי מאוד)", val: 8.2 },
+  { id: "UNKNOWN", label: "לא נבדק", val: null },
 ];
 
 const CHLORINE_RANGES = [
-  { id: "ZERO", label: "0 ppm (ללא חיטוי 🔴)", val: 0.0, color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "LOW", label: "0.5 - 1.5 ppm (נמוך 🟠)", val: 1.0, color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "IDEAL", label: "2.0 - 4.0 ppm (אידיאלי ✨ 🟢)", val: 3.0, color: "border-emerald-700 bg-emerald-950/50 text-emerald-300" },
-  { id: "HIGH", label: "5.0 - 8.0 ppm (גבוה 🟠)", val: 6.0, color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "SHOCK", label: "> 10.0 ppm (שוק 🔴)", val: 10.0, color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "UNKNOWN", label: "לא יודע / לא נבדק", val: null, color: "border-slate-800 bg-slate-950 text-slate-400" },
+  { id: "ZERO", label: "0 ppm (ללא חיטוי)", val: 0.0 },
+  { id: "LOW", label: "0.5 - 1.5 ppm (נמוך)", val: 1.0 },
+  { id: "IDEAL", label: "2.0 - 4.0 ppm (אידיאלי לג'קוזי)", val: 3.0 },
+  { id: "HIGH", label: "5.0 - 8.0 ppm (גבוה)", val: 6.0 },
+  { id: "SHOCK", label: "מעל 10.0 ppm (שוק / גבוה)", val: 10.0 },
+  { id: "UNKNOWN", label: "לא נבדק", val: null },
 ];
 
 const ALKALINITY_RANGES = [
-  { id: "LOW_CRIT", label: "< 40 ppm (נמוכה מאוד 🔴)", val: 30, color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "LOW", label: "40 - 70 ppm (נמוכה 🟠)", val: 60, color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "IDEAL", label: "80 - 120 ppm (אידיאלי ✨ 🟢)", val: 100, color: "border-emerald-700 bg-emerald-950/50 text-emerald-300" },
-  { id: "HIGH", label: "130 - 180 ppm (גבוהה 🟠)", val: 150, color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "HIGH_CRIT", label: "> 180 ppm (גבוהה מאוד 🔴)", val: 200, color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "UNKNOWN", label: "לא יודע / לא נבדק", val: null, color: "border-slate-800 bg-slate-950 text-slate-400" },
+  { id: "LOW_CRIT", label: "מתחת ל-40 ppm (נמוכה מאוד)", val: 30 },
+  { id: "LOW", label: "40 - 70 ppm (נמוכה)", val: 60 },
+  { id: "IDEAL", label: "80 - 120 ppm (אידיאלי לג'קוזי)", val: 100 },
+  { id: "HIGH", label: "130 - 180 ppm (גבוהה)", val: 150 },
+  { id: "HIGH_CRIT", label: "מעל 180 ppm (גבוהה מאוד)", val: 200 },
+  { id: "UNKNOWN", label: "לא נבדק", val: null },
 ];
 
 export default function CalendarPage() {
