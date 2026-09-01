@@ -1162,7 +1162,7 @@ export default function CalendarPage() {
         </div>
 
         <div className="grid grid-cols-3 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full md:w-auto">
-          {/* 1. פעולת אחזקה חדשה */}
+          {/* 1. פעולת אחזקה */}
           <button
             onClick={() => {
               setIsProactiveModalOpen(true);
@@ -1172,7 +1172,7 @@ export default function CalendarPage() {
             className="h-10 px-3 sm:px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm whitespace-nowrap min-w-0"
           >
             <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>פעולת אחזקה חדשה</span>
+            <span>פעולת אחזקה</span>
           </button>
 
           {/* 2. הערה חדשה */}
