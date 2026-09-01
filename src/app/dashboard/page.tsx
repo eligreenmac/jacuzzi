@@ -330,6 +330,29 @@ export default function DashboardPage() {
 
   const lowStockChemicals = chemicals.filter((c: any) => c.quantity <= (c.minThreshold || 100));
 
+  // AI Recommended Purchases (from AI inventory check task, diary entries, or low stock)
+  const aiPurchaseTask = tasks.find((t: any) => 
+    t.title?.includes("רכש מומלץ") || t.title?.includes("רכש AI") || t.title?.includes("המלצת רכש")
+  );
+  const aiPurchaseDiary = (data?.diaryEntries || []).find((d: any) =>
+    d.title?.includes("בדיקת חומרים") || d.title?.includes("חומרים חסרים") || d.content?.includes("מומלצים לרכש")
+  );
+
+  let recommendedPurchaseText = "אין חוסרים ✓";
+  if (aiPurchaseTask) {
+    const raw = aiPurchaseTask.title.replace(/רכש מומלץ AI:\s*/g, "").replace(/רכש מומלץ:\s*/g, "").replace(/רכש AI:\s*/g, "").trim();
+    if (raw && !raw.includes("אין חוסרים")) {
+      recommendedPurchaseText = raw;
+    }
+  } else if (aiPurchaseDiary) {
+    const match = aiPurchaseDiary.content?.match(/מומלצים לרכש:\s*([^.\n]+)/);
+    if (match && match[1] && !match[1].includes("אין חוסרים")) {
+      recommendedPurchaseText = match[1].trim();
+    }
+  } else if (lowStockChemicals.length > 0) {
+    recommendedPurchaseText = lowStockChemicals.map((c: any) => c.name).join(", ");
+  }
+
   return (
     <div className="space-y-8 pb-12">
       {/* 🌟 Unified Master Board: הג'קוזי שלי ובדיקות מים */}
@@ -573,8 +596,13 @@ export default function DashboardPage() {
 
               <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-slate-300">
                 <span className="text-slate-400">רכש מומלץ:</span>
-                <span className="font-semibold text-slate-300 truncate max-w-[140px]">
-                  {lowStockChemicals.length > 0 ? lowStockChemicals.map((c: any) => c.name).join(", ") : "אין חוסרים ✓"}
+                <span
+                  className={`font-semibold truncate max-w-[150px] ${
+                    recommendedPurchaseText !== "אין חוסרים ✓" ? "text-amber-400 font-bold" : "text-emerald-400"
+                  }`}
+                  title={recommendedPurchaseText}
+                >
+                  {recommendedPurchaseText}
                 </span>
               </div>
             </div>
