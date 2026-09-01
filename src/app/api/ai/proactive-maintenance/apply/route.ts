@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const actionDateObj = actionDate ? new Date(actionDate) : new Date();
 
-    // 0. Deduct used chemicals from chemical cabinet inventory
+    // 0. Deduct used chemicals from chemical cabinet inventory and schedule recurring tasks if requested
     const chemicalsUsed = body.chemicalsUsed || [];
     const chemicalDeductionsSummary: string[] = [];
     if (Array.isArray(chemicalsUsed) && chemicalsUsed.length > 0) {
@@ -39,7 +39,55 @@ export async function POST(req: NextRequest) {
                 lastUsedAmount: chemItem.amount,
               },
             });
-            chemicalDeductionsSummary.push(`${chemical.name} (${chemItem.amount} ${chemItem.unit || chemical.unit || "גרם"})`);
+            const repeatText = chemItem.repeatDays && chemItem.repeatDays > 0 ? ` (חזרה כל ${chemItem.repeatDays} ימים)` : "";
+            chemicalDeductionsSummary.push(`${chemical.name} (${chemItem.amount} ${chemItem.unit || chemical.unit || "גרם"}${repeatText})`);
+
+            // If user requested recurring scheduling for this chemical:
+            if (chemItem.repeatDays && chemItem.repeatDays > 0) {
+              const repeatDaysNum = parseInt(chemItem.repeatDays, 10);
+              const nextDue = new Date(actionDateObj.getTime() + repeatDaysNum * 24 * 3600 * 1000);
+              const taskCategory = repeatDaysNum <= 7 ? "WEEKLY" : (repeatDaysNum <= 30 ? "MONTHLY" : "CUSTOM");
+              const chemTitle = `הוספת ${chemItem.amount} ${chemItem.unit || chemical.unit || "גרם"} ${chemical.name}`;
+
+              const existingTask = await prisma.maintenanceTask.findFirst({
+                where: {
+                  userId: user.id,
+                  OR: [
+                    { title: { contains: chemical.name } },
+                    { description: { contains: chemical.name } },
+                  ],
+                },
+              });
+
+              if (existingTask) {
+                await prisma.maintenanceTask.update({
+                  where: { id: existingTask.id },
+                  data: {
+                    title: chemTitle,
+                    description: `שגרת הוספת חומר: ${chemItem.amount} ${chemItem.unit || chemical.unit || "גרם"} ${chemical.name} כל ${repeatDaysNum} ימים.`,
+                    frequencyDays: repeatDaysNum,
+                    nextDueDate: nextDue,
+                    lastDoneDate: actionDateObj,
+                    category: taskCategory,
+                    isCompleted: false,
+                  },
+                });
+              } else {
+                await prisma.maintenanceTask.create({
+                  data: {
+                    userId: user.id,
+                    title: chemTitle,
+                    description: `שגרת הוספת חומר: ${chemItem.amount} ${chemItem.unit || chemical.unit || "גרם"} ${chemical.name} כל ${repeatDaysNum} ימים.`,
+                    category: taskCategory,
+                    frequencyDays: repeatDaysNum,
+                    nextDueDate: nextDue,
+                    lastDoneDate: actionDateObj,
+                    priority: "MEDIUM",
+                    isCompleted: false,
+                  },
+                });
+              }
+            }
           }
         }
       }

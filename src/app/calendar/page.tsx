@@ -147,7 +147,11 @@ export default function CalendarPage() {
   const [isApplyingProactive, setIsApplyingProactive] = useState(false);
   const [selectedProactiveChemicalId, setSelectedProactiveChemicalId] = useState<string>("");
   const [proactiveChemicalAmount, setProactiveChemicalAmount] = useState<string>("");
-  const [addedProactiveChemicals, setAddedProactiveChemicals] = useState<Array<{ id: string; name: string; amount: number; unit: string }>>([]);
+  const [proactiveRepeatDays, setProactiveRepeatDays] = useState<string>("0");
+  const [customRepeatDays, setCustomRepeatDays] = useState<string>("");
+  const [addedProactiveChemicals, setAddedProactiveChemicals] = useState<
+    Array<{ id: string; name: string; amount: number; unit: string; repeatDays: number }>
+  >([]);
 
   const handleAddProactiveChemical = () => {
     if (!proactiveChemicalAmount.trim()) return;
@@ -158,22 +162,32 @@ export default function CalendarPage() {
     const amountNum = parseFloat(proactiveChemicalAmount);
     if (isNaN(amountNum) || amountNum <= 0) return;
 
+    let repeatNum = 0;
+    if (proactiveRepeatDays === "custom") {
+      repeatNum = parseInt(customRepeatDays, 10) || 0;
+    } else {
+      repeatNum = parseInt(proactiveRepeatDays, 10) || 0;
+    }
+
     const existingIndex = addedProactiveChemicals.findIndex((c) => c.id === chem.id);
     let updated = [...addedProactiveChemicals];
     if (existingIndex >= 0) {
       updated[existingIndex].amount += amountNum;
+      updated[existingIndex].repeatDays = repeatNum;
     } else {
       updated.push({
         id: chem.id,
         name: chem.name,
         amount: amountNum,
         unit: chem.unit || "גרם",
+        repeatDays: repeatNum,
       });
     }
     setAddedProactiveChemicals(updated);
 
     // Also append text to proactiveText nicely
-    const chemText = `הוספת ${amountNum} ${chem.unit || "גרם"} ${chem.name}`;
+    const repeatLabel = repeatNum > 0 ? ` (תזמון חוזר בעוד ${repeatNum} ימים)` : "";
+    const chemText = `הוספת ${amountNum} ${chem.unit || "גרם"} ${chem.name}${repeatLabel}`;
     if (!proactiveText.trim()) {
       setProactiveText(chemText);
     } else if (!proactiveText.includes(chemText)) {
@@ -186,14 +200,12 @@ export default function CalendarPage() {
   const handleRemoveProactiveChemical = (chemId: string) => {
     const chem = addedProactiveChemicals.find((c) => c.id === chemId);
     if (chem) {
-      const chemText = `הוספת ${chem.amount} ${chem.unit} ${chem.name}`;
       setProactiveText((prev) =>
         prev
-          .replace(chemText, "")
-          .replace(chem.name, "")
-          .replace(/\+\s*\+/, "+")
-          .trim()
-          .replace(/^\+|\+$/, "")
+          .split("+")
+          .map((s) => s.trim())
+          .filter((s) => !s.includes(chem.name))
+          .join(" + ")
           .trim()
       );
     }
@@ -2238,14 +2250,12 @@ export default function CalendarPage() {
                   </div>
 
                   <div className="space-y-3">
-                    {/* 1. Water Chemistry & Balance */}
+                    {/* 1. Water Testing */}
                     <div className="space-y-1">
-                      <span className="text-[10px] text-cyan-400 font-bold block">🧪 איזון וכימיית המים:</span>
+                      <span className="text-[10px] text-cyan-400 font-bold block">🧪 בדיקת מים וחיטוי:</span>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {[
                           { label: "בדיקת איכות מים (מקלון)", text: "בדיקת איכות מים וחיטוי שבועית במקלון" },
-                          { label: "תוספת אנזימים שבועית", text: "תוספת אנזימים שבועית לפירוק שומנים" },
-                          { label: "שוק חיטוי מחמצן (MPS)", text: "טיפול שוק מחמצן שבועי (Non-Chlorine Shock)" },
                         ].map((routine, idx) => {
                           const isSelected = proactiveText.includes(routine.text);
                           return (
@@ -2383,60 +2393,107 @@ export default function CalendarPage() {
                       </div>
                     </div>
 
-                    {/* 5. Chemical Additions */}
-                    <div className="space-y-1.5 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800">
-                      <span className="text-[10px] text-pink-400 font-bold block">💊 הוספת חומרים מהארון (ינוכה אוטומטית מהמלאי):</span>
+                    {/* 5. Chemical Additions & Recurring Scheduling */}
+                    <div className="space-y-2 p-3 rounded-xl bg-slate-950/80 border border-pink-900/40 shadow-inner">
+                      <span className="text-[11px] text-pink-400 font-bold block">💊 הוספת חומרים מהארון (כולל קביעת שגרה מחזורית וניכוי מהמלאי):</span>
                       
-                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                        <select
-                          value={selectedProactiveChemicalId || chemicals[0]?.id || ""}
-                          onChange={(e) => setSelectedProactiveChemicalId(e.target.value)}
-                          className="w-full sm:w-1/2 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-[11px] focus:border-pink-500 font-medium"
-                        >
-                          {chemicals.map((chem) => (
-                            <option key={chem.id} value={chem.id}>
-                              {chem.name} ({chem.quantity ?? chem.amountInStock ?? 0} {chem.unit || "גרם"} במלאי)
-                            </option>
-                          ))}
-                        </select>
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                        {/* Chemical Select */}
+                        <div className="sm:col-span-4">
+                          <select
+                            value={selectedProactiveChemicalId || chemicals[0]?.id || ""}
+                            onChange={(e) => setSelectedProactiveChemicalId(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-[11px] focus:border-pink-500 font-medium"
+                          >
+                            {chemicals.map((chem) => (
+                              <option key={chem.id} value={chem.id}>
+                                {chem.name} ({chem.quantity ?? chem.amountInStock ?? 0} {chem.unit || "גרם"} במלאי)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                        {/* Amount */}
+                        <div className="sm:col-span-3 flex items-center gap-1.5">
                           <input
                             type="number"
                             min="1"
                             placeholder="כמות"
                             value={proactiveChemicalAmount}
                             onChange={(e) => setProactiveChemicalAmount(e.target.value)}
-                            className="w-20 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-[11px] font-bold focus:border-pink-500 text-center"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white text-[11px] font-bold focus:border-pink-500 text-center"
                           />
-                          <span className="text-[10px] text-slate-400 font-semibold min-w-[28px]">
+                          <span className="text-[10px] text-slate-400 font-semibold min-w-[26px]">
                             {chemicals.find((c) => c.id === (selectedProactiveChemicalId || chemicals[0]?.id))?.unit || "גרם"}
                           </span>
+                        </div>
+
+                        {/* Recurrence Dropdown */}
+                        <div className="sm:col-span-3">
+                          <select
+                            value={proactiveRepeatDays}
+                            onChange={(e) => setProactiveRepeatDays(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-200 text-[10px] focus:border-pink-500 font-medium"
+                          >
+                            <option value="0">חד-פעמי (ללא חזרה)</option>
+                            <option value="3">הוסף שוב בעוד 3 ימים</option>
+                            <option value="7">שגרה שבועית (כל 7 ימים)</option>
+                            <option value="14">שגרה דו-שבועית (כל 14 ימים)</option>
+                            <option value="30">שגרה חודשית (כל 30 ימים)</option>
+                            <option value="custom">מותאם אישית (ימים)...</option>
+                          </select>
+                        </div>
+
+                        {/* Add Button */}
+                        <div className="sm:col-span-2">
                           <button
                             type="button"
                             onClick={handleAddProactiveChemical}
                             disabled={!proactiveChemicalAmount.trim() || parseFloat(proactiveChemicalAmount) <= 0}
-                            className="px-3 py-1.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-40 text-white rounded-lg text-[10px] font-bold transition-all shadow-sm shrink-0"
+                            className="w-full py-1.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-40 text-white rounded-lg text-[10px] font-bold transition-all shadow-sm flex items-center justify-center gap-1"
                           >
-                            + הוסף לפעולה
+                            + הוסף
                           </button>
                         </div>
                       </div>
 
+                      {/* Custom Days Input if selected */}
+                      {proactiveRepeatDays === "custom" && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-[10px] text-pink-300">תדירות חזרה כל:</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max="365"
+                            placeholder="מספר ימים"
+                            value={customRepeatDays}
+                            onChange={(e) => setCustomRepeatDays(e.target.value)}
+                            className="w-24 bg-slate-900 border border-pink-700/60 rounded-lg px-2 py-1 text-white text-[11px] font-bold text-center"
+                          />
+                          <span className="text-[10px] text-slate-400">ימים</span>
+                        </div>
+                      )}
+
                       {/* Added Chemicals Chips List */}
                       {addedProactiveChemicals.length > 0 && (
-                        <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-slate-800/80">
+                        <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-800/80">
                           <span className="text-[10px] text-slate-400 font-semibold">חומרים שנוספו לפעולה זו:</span>
                           {addedProactiveChemicals.map((c) => (
                             <span
                               key={c.id}
-                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-pink-950/80 border border-pink-700/60 text-pink-300 text-[10px] font-bold"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-pink-950/90 border border-pink-700/70 text-pink-200 text-[10px] font-bold shadow-sm"
                             >
-                              <span>{c.name}: {c.amount} {c.unit}</span>
+                              <span>
+                                {c.name}: {c.amount} {c.unit}{" "}
+                                <span className="text-pink-400 font-normal">
+                                  {c.repeatDays > 0 ? `(חזרה כל ${c.repeatDays} ימים)` : `(חד-פעמי)`}
+                                </span>
+                              </span>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveProactiveChemical(c.id)}
-                                className="text-pink-400 hover:text-white font-black ml-0.5"
+                                className="text-pink-400 hover:text-white font-black ml-1 text-xs"
+                                title="הסר חומר"
                               >
                                 ✕
                               </button>

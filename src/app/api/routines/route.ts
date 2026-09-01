@@ -16,18 +16,6 @@ export const DEFAULT_ROUTINES_CONFIG = [
     explanation: "בדיקת המקלון השבועית היא עמוד השדרה של בריאות הג'קוזי. היא מאפשרת גילוי מוקדם של סטיות בחומציות או ברמת החיטוי לפני שמתפתחים עכירות, אצות או גירויים בעור.",
   },
   {
-    key: "ENZYMES",
-    title: "תוספת אנזימים שבועית (פירוק שומנים אורגניים)",
-    description: "הוספת מנת אנזימים (30-50 מ\"ל) לפירוק שומני גוף, שמנים וקרמים, מניעת טבעת שומן על הדופן ושמירה על הפילטר.",
-    category: "WEEKLY",
-    defaultFrequencyDays: 7,
-    minDays: 2,
-    maxDays: 30,
-    priority: "MEDIUM",
-    icon: "FlaskConical",
-    explanation: "אנזימים טבעיים מפרקים שומנים, שמני גוף ותחליבים במים. הוספה שבועית מונעת את טבעת השומן על קו המים, מונעת סתימת שומנים בפילטר ומקלה משמעותית על חומר החיטוי.",
-  },
-  {
     key: "FILTER_WASH",
     title: "שטיפת פילטר שבועית בזרם מים",
     description: "הוצאת מסנן הג'קוזי ושטיפה יסודית בלחץ מים להסרת לכלוך ושומנים שהצטברו.",
@@ -38,18 +26,6 @@ export const DEFAULT_ROUTINES_CONFIG = [
     priority: "MEDIUM",
     icon: "Droplets",
     explanation: "הפילטר לוכד לכלוך גס, שומני גוף ושאריות קרמים. שטיפה שבועית בזרם מים חזק שומרת על סירקולציה תקינה וחוסכת עד 40% בצריכת הכימיקלים.",
-  },
-  {
-    key: "SHOCK",
-    title: "שוק חיטוי שבועי (Non-Chlorine Shock / כלור מהיר)",
-    description: "הוספת מכת שוק לחימצון תרכובות אורגניות, מניעת ריחות והחזרת צלילות המים.",
-    category: "WEEKLY",
-    defaultFrequencyDays: 7,
-    minDays: 3,
-    maxDays: 60,
-    priority: "HIGH",
-    icon: "Zap",
-    explanation: "מכת שוק מחמצנת (MPS) מפרקת תרכובות שומניות, כלוראמינים (כלור קשור) וחומרים אורגניים שחומר החיטוי הרגיל לא מצליח לפרק, ומונעת ריח חריף והקצפה.",
   },
   {
     key: "WATERLINE_CLEAN",
@@ -128,9 +104,7 @@ export async function GET(req: NextRequest) {
     const routines = DEFAULT_ROUTINES_CONFIG.map((def) => {
       const match = tasks.find((t) => {
         if (def.key === "WATER_TEST") return t.title.includes("בדיקת מים") || t.title.includes("מקלון") || t.title.includes("איכות מים");
-        if (def.key === "ENZYMES") return t.title.includes("אנזים") || t.title.includes("אנזימים");
         if (def.key === "FILTER_WASH") return t.title.includes("שטיפת פילטר") || (t.title.includes("פילטר") && t.frequencyDays < 20);
-        if (def.key === "SHOCK") return t.title.includes("שוק");
         if (def.key === "WATERLINE_CLEAN") return t.title.includes("דופן") || t.title.includes("דפנות") || t.title.includes("קו מים");
         if (def.key === "FILTER_DEEP_CLEAN") return t.title.includes("השריה") || (t.title.includes("פילטר") && t.frequencyDays >= 20);
         if (def.key === "PARTIAL_REFILL") return t.title.includes("חלקית") || (t.title.includes("ריענון") && t.title.includes("מים"));
