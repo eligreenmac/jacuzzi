@@ -184,6 +184,14 @@ export function getDefaultMaintenanceTasks(jacuzzi: JacuzziParameters) {
       priority: "LOW",
     },
     {
+      title: "ניקוי קו מים ודפנות הג'קוזי",
+      description: "ניגוב קו המים והדפנות במטלית מיקרופייבר לחה או ספוגית ייעודית (ללא חומרי ניקוי ביתיים מקציפים) להסרת שומנים וטבעת לכלוך.",
+      category: "WEEKLY",
+      frequencyDays: 14,
+      nextDueDate: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
+      priority: "MEDIUM",
+    },
+    {
       title: "שטיפת צנרת (Biofilm Flush), ריקון ומילוי מים חדשים",
       description: "הוספת חומר שטיפת צנרת, הפעלת ג'טים, ריקון מלא, ניקוי דפנות ומילוי מים חדשים ורעננים.",
       category: "QUARTERLY",

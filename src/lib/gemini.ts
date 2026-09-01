@@ -1443,6 +1443,7 @@ ${JSON.stringify(req.inventory, null, 2)}
 3. **הוספת משימות חיוניות שחסרות (tasksToCreate)**:
    - בדיקת מקלון שבועית (אם לא קיימת).
    - שטיפת פילטר שבועית.
+   - ניקוי קו מים ודפנות הג'קוזי (במטלית מיקרופייבר לחה / ספוגית ייעודית ללא סבון מקציף כל שבועיים).
    - ניקוי והשריית פילטר חודשית בחומר מסיר שומנים.
    - ריקון ומילוי מים רבעוני (בהתאם לגיל המים).
    - שוק מחמצן תקופתי.
@@ -1576,6 +1577,7 @@ function generateRuleBasedRoutineOptimization(
   const hasWaterTest = req.currentTasks.some((t) => t.title.includes("בדיק") || t.title.includes("מקלון") || t.title.includes("איכות"));
   const hasDrainRefill = req.currentTasks.some((t) => t.title.includes("החלפת מים") || t.title.includes("ריקון"));
   const hasShock = req.currentTasks.some((t) => t.title.includes("שוק") || t.title.includes("חיטוי"));
+  const hasWaterlineClean = req.currentTasks.some((t) => t.title.includes("דופן") || t.title.includes("דפנות") || t.title.includes("קו מים"));
 
   if (!hasFilterWash) {
     tasksToCreate.push({
@@ -1598,6 +1600,18 @@ function generateRuleBasedRoutineOptimization(
       nextDueDate: new Date(now + 2 * 24 * 3600 * 1000).toISOString(),
       priority: "HIGH",
       reason: "בדיקת מים שבועית היא עמוד השדרה של בריאות הג'קוזי.",
+    });
+  }
+
+  if (!hasWaterlineClean) {
+    tasksToCreate.push({
+      title: "ניקוי קו מים ודפנות הג'קוזי",
+      description: "ניגוב קו המים והדפנות במטלית מיקרופייבר לחה או ספוגית ייעודית (ללא חומרי ניקוי ביתיים מקציפים) להסרת שומנים וטבעת לכלוך.",
+      category: "WEEKLY",
+      frequencyDays: 14,
+      nextDueDate: new Date(now + 6 * 24 * 3600 * 1000).toISOString(),
+      priority: "MEDIUM",
+      reason: "ניקוי קו מים ודפנות כל שבועיים מונע הצטברות טבעת שומנים ולכלוך ושומר על ציפוי האקריליק.",
     });
   }
 

@@ -64,6 +64,18 @@ export const DEFAULT_ROUTINES_CONFIG = [
     explanation: "הכיסוי התרמי שומר על החום ומונע אידוי מים וכימיקלים. טיפוח עם ספריי UV מונע יובש וסדקים ושומר על אטימות ובידוד מקסימלי.",
   },
   {
+    key: "WATERLINE_CLEAN",
+    title: "ניקוי קו מים ודפנות הג'קוזי",
+    description: "ניגוב קו המים והדפנות במטלית מיקרופייבר לחה או ספוגית ייעודית (ללא חומרי ניקוי ביתיים מקציפים) להסרת שומנים וטבעת לכלוך (Scum Line).",
+    category: "WEEKLY",
+    defaultFrequencyDays: 14,
+    minDays: 3,
+    maxDays: 60,
+    priority: "MEDIUM",
+    icon: "Sparkles",
+    explanation: "על קו המים מצטברים שומני גוף, קרמים ואבנית. ניגוב קבוע במטלית מיקרופייבר או ספוגית לחה מונע שקיעת שומנים, שומר על ציפוי האקריליק ומסיר את טבעת הלכלוך ללא שימוש בסבונים מקציפים.",
+  },
+  {
     key: "DRAIN_AND_REFILL",
     title: "שטיפת צנרת (Biofilm Flush), ריקון ומילוי מים חדשים",
     description: "הוספת חומר שטיפת צנרת, הפעלת ג'טים, ריקון מלא, ניקוי דפנות ומילוי מים חדשים ורעננים (מחזור מומלץ של 90 ימים).",
@@ -96,6 +108,7 @@ export async function GET(req: NextRequest) {
         if (def.key === "SHOCK") return t.title.includes("שוק");
         if (def.key === "FILTER_DEEP_CLEAN") return t.title.includes("השריה") || (t.title.includes("פילטר") && t.frequencyDays >= 20);
         if (def.key === "COVER_CARE") return t.title.includes("כיסוי");
+        if (def.key === "WATERLINE_CLEAN") return t.title.includes("דופן") || t.title.includes("דפנות") || t.title.includes("קו מים");
         if (def.key === "DRAIN_AND_REFILL") return t.title.includes("צנרת") || t.title.includes("ריקון") || t.title.includes("החלפת מים");
         return false;
       });
