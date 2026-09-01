@@ -145,6 +145,60 @@ export default function CalendarPage() {
   const [isAnalyzingProactive, setIsAnalyzingProactive] = useState(false);
   const [proactiveAnalysis, setProactiveAnalysis] = useState<any | null>(null);
   const [isApplyingProactive, setIsApplyingProactive] = useState(false);
+  const [selectedProactiveChemicalId, setSelectedProactiveChemicalId] = useState<string>("");
+  const [proactiveChemicalAmount, setProactiveChemicalAmount] = useState<string>("");
+  const [addedProactiveChemicals, setAddedProactiveChemicals] = useState<Array<{ id: string; name: string; amount: number; unit: string }>>([]);
+
+  const handleAddProactiveChemical = () => {
+    if (!proactiveChemicalAmount.trim()) return;
+    const chemId = selectedProactiveChemicalId || chemicals[0]?.id;
+    if (!chemId) return;
+    const chem = chemicals.find((c) => c.id === chemId);
+    if (!chem) return;
+    const amountNum = parseFloat(proactiveChemicalAmount);
+    if (isNaN(amountNum) || amountNum <= 0) return;
+
+    const existingIndex = addedProactiveChemicals.findIndex((c) => c.id === chem.id);
+    let updated = [...addedProactiveChemicals];
+    if (existingIndex >= 0) {
+      updated[existingIndex].amount += amountNum;
+    } else {
+      updated.push({
+        id: chem.id,
+        name: chem.name,
+        amount: amountNum,
+        unit: chem.unit || "גרם",
+      });
+    }
+    setAddedProactiveChemicals(updated);
+
+    // Also append text to proactiveText nicely
+    const chemText = `הוספת ${amountNum} ${chem.unit || "גרם"} ${chem.name}`;
+    if (!proactiveText.trim()) {
+      setProactiveText(chemText);
+    } else if (!proactiveText.includes(chemText)) {
+      setProactiveText((prev) => `${prev} + ${chemText}`);
+    }
+
+    setProactiveChemicalAmount("");
+  };
+
+  const handleRemoveProactiveChemical = (chemId: string) => {
+    const chem = addedProactiveChemicals.find((c) => c.id === chemId);
+    if (chem) {
+      const chemText = `הוספת ${chem.amount} ${chem.unit} ${chem.name}`;
+      setProactiveText((prev) =>
+        prev
+          .replace(chemText, "")
+          .replace(chem.name, "")
+          .replace(/\+\s*\+/, "+")
+          .trim()
+          .replace(/^\+|\+$/, "")
+          .trim()
+      );
+    }
+    setAddedProactiveChemicals((prev) => prev.filter((c) => c.id !== chemId));
+  };
 
   const handleAnalyzeProactive = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,6 +243,7 @@ export default function CalendarPage() {
           updateJacuzziRefill: proactiveAnalysis.updateJacuzziRefill,
           suggestedDiaryTitle: proactiveAnalysis.suggestedDiaryTitle,
           suggestedDiaryContent: proactiveAnalysis.suggestedDiaryContent,
+          chemicalsUsed: addedProactiveChemicals,
         }),
       });
 
@@ -199,6 +254,7 @@ export default function CalendarPage() {
       setIsProactiveModalOpen(false);
       setProactiveAnalysis(null);
       setProactiveText("");
+      setAddedProactiveChemicals([]);
       loadData();
     } catch (err: any) {
       alert(err.message);
@@ -2325,6 +2381,69 @@ export default function CalendarPage() {
                           );
                         })}
                       </div>
+                    </div>
+
+                    {/* 5. Chemical Additions */}
+                    <div className="space-y-1.5 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800">
+                      <span className="text-[10px] text-pink-400 font-bold block">💊 הוספת חומרים מהארון (ינוכה אוטומטית מהמלאי):</span>
+                      
+                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        <select
+                          value={selectedProactiveChemicalId || chemicals[0]?.id || ""}
+                          onChange={(e) => setSelectedProactiveChemicalId(e.target.value)}
+                          className="w-full sm:w-1/2 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-[11px] focus:border-pink-500 font-medium"
+                        >
+                          {chemicals.map((chem) => (
+                            <option key={chem.id} value={chem.id}>
+                              {chem.name} ({chem.quantity ?? chem.amountInStock ?? 0} {chem.unit || "גרם"} במלאי)
+                            </option>
+                          ))}
+                        </select>
+
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="כמות"
+                            value={proactiveChemicalAmount}
+                            onChange={(e) => setProactiveChemicalAmount(e.target.value)}
+                            className="w-20 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-[11px] font-bold focus:border-pink-500 text-center"
+                          />
+                          <span className="text-[10px] text-slate-400 font-semibold min-w-[28px]">
+                            {chemicals.find((c) => c.id === (selectedProactiveChemicalId || chemicals[0]?.id))?.unit || "גרם"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleAddProactiveChemical}
+                            disabled={!proactiveChemicalAmount.trim() || parseFloat(proactiveChemicalAmount) <= 0}
+                            className="px-3 py-1.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-40 text-white rounded-lg text-[10px] font-bold transition-all shadow-sm shrink-0"
+                          >
+                            + הוסף לפעולה
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Added Chemicals Chips List */}
+                      {addedProactiveChemicals.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-slate-800/80">
+                          <span className="text-[10px] text-slate-400 font-semibold">חומרים שנוספו לפעולה זו:</span>
+                          {addedProactiveChemicals.map((c) => (
+                            <span
+                              key={c.id}
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-pink-950/80 border border-pink-700/60 text-pink-300 text-[10px] font-bold"
+                            >
+                              <span>{c.name}: {c.amount} {c.unit}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveProactiveChemical(c.id)}
+                                className="text-pink-400 hover:text-white font-black ml-0.5"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

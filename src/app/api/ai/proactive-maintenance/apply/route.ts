@@ -20,6 +20,31 @@ export async function POST(req: NextRequest) {
 
     const actionDateObj = actionDate ? new Date(actionDate) : new Date();
 
+    // 0. Deduct used chemicals from chemical cabinet inventory
+    const chemicalsUsed = body.chemicalsUsed || [];
+    const chemicalDeductionsSummary: string[] = [];
+    if (Array.isArray(chemicalsUsed) && chemicalsUsed.length > 0) {
+      for (const chemItem of chemicalsUsed) {
+        if (chemItem.id && chemItem.amount > 0) {
+          const chemical = await prisma.chemicalInventory.findFirst({
+            where: { id: chemItem.id, userId: user.id },
+          });
+          if (chemical) {
+            const newQuantity = Math.max(0, (chemical.quantity || 0) - chemItem.amount);
+            await prisma.chemicalInventory.update({
+              where: { id: chemItem.id },
+              data: {
+                quantity: newQuantity,
+                lastUsedDate: actionDateObj,
+                lastUsedAmount: chemItem.amount,
+              },
+            });
+            chemicalDeductionsSummary.push(`${chemical.name} (${chemItem.amount} ${chemItem.unit || chemical.unit || "גרם"})`);
+          }
+        }
+      }
+    }
+
     // 1. Apply Schedule Shifts to existing Maintenance Tasks
     const shiftedTasksSummary = [];
     for (const shift of scheduleShifts) {
@@ -65,6 +90,7 @@ export async function POST(req: NextRequest) {
         content: diaryContent,
         entryDate: actionDateObj,
         waterQualityRating: 5,
+        chemicalsAdded: chemicalDeductionsSummary.length > 0 ? chemicalDeductionsSummary.join(", ") : undefined,
       },
     });
 
