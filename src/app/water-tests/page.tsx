@@ -62,20 +62,20 @@ export function getParamDomain(
 ) {
   if (rangeStr) {
     const s = rangeStr.toUpperCase();
-    if (s.includes("VERY_LOW") || s.includes("חומצי מאוד") || s.includes("ללא חיטוי") || s.includes("נמוכה מאוד")) {
+    if (s.includes("VERY_LOW") || s.includes("VERY LOW") || s.includes("חומצי מאוד") || s.includes("ללא חיטוי") || s.includes("נמוכה מאוד")) {
       return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+    }
+    if (s.includes("VERY_HIGH") || s.includes("VERY HIGH") || s.includes("בסיסי מאוד") || s.includes("שוק") || s.includes("עודף") || s.includes("גבוהה מאוד")) {
+      return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
     }
     if (s.includes("LOW") || s.includes("נמוך") || s.includes("נמוכה")) {
       return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
     }
-    if (s.includes("OK") || s.includes("תקין") || s.includes("אידיאלי") || s.includes("תקינה")) {
-      return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
-    }
-    if (s.includes("VERY_HIGH") || s.includes("בסיסי מאוד") || s.includes("שוק") || s.includes("עודף") || s.includes("גבוהה מאוד")) {
-      return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
-    }
     if (s.includes("HIGH") || s.includes("גבוה") || s.includes("גבוהה")) {
       return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    }
+    if (s.includes("OK") || s.includes("תקין") || s.includes("אידיאלי") || s.includes("תקינה")) {
+      return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
     }
   }
 
@@ -519,9 +519,9 @@ export default function WaterTestsPage() {
               const testDateObj = new Date(test.testedAt);
               const clarityInfo = clarityLabels[test.waterClarity] || clarityLabels.CLEAR;
 
-              const phDomain = getParamDomain("PH", test.ph);
-              const clDomain = getParamDomain("CHLORINE", test.freeChlorine);
-              const alkDomain = getParamDomain("ALKALINITY", test.alkalinity);
+              const phDomain = getParamDomain("PH", test.ph, test.phRange);
+              const clDomain = getParamDomain("CHLORINE", test.freeChlorine, test.chlorineRange);
+              const alkDomain = getParamDomain("ALKALINITY", test.alkalinity, test.alkalinityRange);
 
               return (
                 <div
