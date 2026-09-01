@@ -816,19 +816,7 @@ export default function CalendarPage() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* 1. הזן משימה עתידית */}
-          <button
-            onClick={() => {
-              setSelectedDay(new Date());
-              setIsTaskModalOpen(true);
-            }}
-            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
-          >
-            <Plus className="w-4 h-4 text-cyan-400" />
-            <span>הזן משימה עתידית</span>
-          </button>
-
-          {/* 2. הזן פעולת אחזקה שבוצעה */}
+          {/* 1. הזן פעולת אחזקה שבוצעה */}
           <button
             onClick={() => {
               setIsProactiveModalOpen(true);
@@ -841,7 +829,7 @@ export default function CalendarPage() {
             <span>הזן פעולת אחזקה שבוצעה</span>
           </button>
 
-          {/* 3. הערה ביומן */}
+          {/* 2. הערה ביומן */}
           <button
             onClick={() => {
               setSelectedDay(new Date());
@@ -853,17 +841,7 @@ export default function CalendarPage() {
             <span>הערה ביומן</span>
           </button>
 
-          {/* 4. סנכרון שגרה AI */}
-          <button
-            onClick={handleScanRoutine}
-            disabled={isOptimizingRoutine}
-            className="h-10 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-          >
-            <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" style={{ animationDuration: isOptimizingRoutine ? "1s" : "0s" }} />
-            <span>{isOptimizingRoutine ? "מסנכרן שגרה..." : "סנכרון שגרה AI"}</span>
-          </button>
-
-          {/* 5. שלח התראה */}
+          {/* 3. שלח התראה */}
           <button
             onClick={handleSendEmailReminder}
             disabled={emailSending}
