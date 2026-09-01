@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Check,
 } from "lucide-react";
+import { getParamDomain } from "@/app/water-tests/page";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -231,36 +232,25 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {/* 1. pH */}
                 {(() => {
-                  const phVal = latestWaterLog.ph;
-                  const phRange = latestWaterLog.phRange || "";
-                  let label = "לא נבדק";
-                  let colorClass = "text-slate-400 font-medium";
-
-                  if (phRange.includes("VERY_LOW") || phRange.includes("חומצי מאוד") || (typeof phVal === "number" && phVal < 6.8)) {
-                    label = "Very Low";
-                    colorClass = "text-rose-400 font-bold";
-                  } else if (phRange.includes("LOW") || phRange.includes("נמוך") || (typeof phVal === "number" && phVal < 7.2)) {
-                    label = "Low";
-                    colorClass = "text-amber-400 font-bold";
-                  } else if (phRange.includes("OK") || phRange.includes("תקין") || (typeof phVal === "number" && phVal <= 7.6)) {
-                    label = "OK";
-                    colorClass = "text-emerald-400 font-bold";
-                  } else if (phRange.includes("VERY_HIGH") || phRange.includes("בסיסי מאוד") || (typeof phVal === "number" && phVal > 8.0)) {
-                    label = "Very High";
-                    colorClass = "text-rose-400 font-bold";
-                  } else if (phRange.includes("HIGH") || phRange.includes("גבוה") || (typeof phVal === "number" && phVal <= 8.0)) {
-                    label = "High";
-                    colorClass = "text-amber-400 font-bold";
-                  }
+                  const domain = getParamDomain("PH", latestWaterLog.ph, latestWaterLog.phRange);
+                  const isOk = domain.id === "OK";
+                  const isAbnormal = domain.id === "VERY_LOW" || domain.id === "VERY_HIGH";
+                  const colorClass = isOk
+                    ? "text-emerald-400 font-bold"
+                    : isAbnormal
+                    ? "text-rose-400 font-bold"
+                    : domain.id === "UNKNOWN"
+                    ? "text-slate-400 font-medium"
+                    : "text-amber-400 font-bold";
 
                   return (
                     <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
                       <div className="text-[11px] text-slate-400 font-semibold">חומציות (pH)</div>
                       <div className={`text-sm sm:text-base ${colorClass}`}>
-                        {label}
+                        {domain.label}
                       </div>
                       <div className="text-[11px] text-slate-400 font-medium pt-0.5">
-                        {typeof phVal === "number" ? `pH ${phVal}` : "—"}
+                        {typeof latestWaterLog.ph === "number" ? `pH ${latestWaterLog.ph}` : "—"}
                       </div>
                     </div>
                   );
@@ -268,36 +258,25 @@ export default function DashboardPage() {
 
                 {/* 2. Chlorine / Sanitization */}
                 {(() => {
-                  const clVal = latestWaterLog.freeChlorine;
-                  const clRange = latestWaterLog.chlorineRange || "";
-                  let label = "לא נבדק";
-                  let colorClass = "text-slate-400 font-medium";
-
-                  if (clRange.includes("VERY_LOW") || clRange.includes("ללא חיטוי") || (typeof clVal === "number" && clVal < 0.5)) {
-                    label = "Very Low";
-                    colorClass = "text-rose-400 font-bold";
-                  } else if (clRange.includes("LOW") || clRange.includes("נמוך") || (typeof clVal === "number" && clVal < 2.0)) {
-                    label = "Low";
-                    colorClass = "text-amber-400 font-bold";
-                  } else if (clRange.includes("OK") || clRange.includes("תקין") || (typeof clVal === "number" && clVal <= 4.0)) {
-                    label = "OK";
-                    colorClass = "text-emerald-400 font-bold";
-                  } else if (clRange.includes("VERY_HIGH") || clRange.includes("שוק") || clRange.includes("עודף") || (typeof clVal === "number" && clVal > 8.0)) {
-                    label = "Very High";
-                    colorClass = "text-rose-400 font-bold";
-                  } else if (clRange.includes("HIGH") || clRange.includes("גבוה") || (typeof clVal === "number" && clVal <= 8.0)) {
-                    label = "High";
-                    colorClass = "text-amber-400 font-bold";
-                  }
+                  const domain = getParamDomain("CHLORINE", latestWaterLog.freeChlorine, latestWaterLog.chlorineRange);
+                  const isOk = domain.id === "OK";
+                  const isAbnormal = domain.id === "VERY_LOW" || domain.id === "VERY_HIGH";
+                  const colorClass = isOk
+                    ? "text-emerald-400 font-bold"
+                    : isAbnormal
+                    ? "text-rose-400 font-bold"
+                    : domain.id === "UNKNOWN"
+                    ? "text-slate-400 font-medium"
+                    : "text-amber-400 font-bold";
 
                   return (
                     <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
                       <div className="text-[11px] text-slate-400 font-semibold">חיטוי</div>
                       <div className={`text-sm sm:text-base ${colorClass}`}>
-                        {label}
+                        {domain.label}
                       </div>
                       <div className="text-[11px] text-slate-400 font-medium pt-0.5">
-                        {typeof clVal === "number" ? `${clVal} ppm` : "—"}
+                        {typeof latestWaterLog.freeChlorine === "number" ? `${latestWaterLog.freeChlorine} ppm` : "—"}
                       </div>
                     </div>
                   );
@@ -305,36 +284,25 @@ export default function DashboardPage() {
 
                 {/* 3. Alkalinity */}
                 {(() => {
-                  const alkVal = latestWaterLog.alkalinity;
-                  const alkRange = latestWaterLog.alkalinityRange || "";
-                  let label = "לא נבדק";
-                  let colorClass = "text-slate-400 font-medium";
-
-                  if (alkRange.includes("VERY_LOW") || alkRange.includes("נמוכה מאוד") || (typeof alkVal === "number" && alkVal < 40)) {
-                    label = "Very Low";
-                    colorClass = "text-rose-400 font-bold";
-                  } else if (alkRange.includes("LOW") || alkRange.includes("נמוכה") || (typeof alkVal === "number" && alkVal < 80)) {
-                    label = "Low";
-                    colorClass = "text-amber-400 font-bold";
-                  } else if (alkRange.includes("OK") || alkRange.includes("תקינה") || (typeof alkVal === "number" && alkVal <= 120)) {
-                    label = "OK";
-                    colorClass = "text-emerald-400 font-bold";
-                  } else if (alkRange.includes("VERY_HIGH") || alkRange.includes("גבוהה מאוד") || (typeof alkVal === "number" && alkVal > 180)) {
-                    label = "Very High";
-                    colorClass = "text-rose-400 font-bold";
-                  } else if (alkRange.includes("HIGH") || alkRange.includes("גבוהה") || (typeof alkVal === "number" && alkVal <= 180)) {
-                    label = "High";
-                    colorClass = "text-amber-400 font-bold";
-                  }
+                  const domain = getParamDomain("ALKALINITY", latestWaterLog.alkalinity, latestWaterLog.alkalinityRange);
+                  const isOk = domain.id === "OK";
+                  const isAbnormal = domain.id === "VERY_LOW" || domain.id === "VERY_HIGH";
+                  const colorClass = isOk
+                    ? "text-emerald-400 font-bold"
+                    : isAbnormal
+                    ? "text-rose-400 font-bold"
+                    : domain.id === "UNKNOWN"
+                    ? "text-slate-400 font-medium"
+                    : "text-amber-400 font-bold";
 
                   return (
                     <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
                       <div className="text-[11px] text-slate-400 font-semibold">בסיסיות (TA)</div>
                       <div className={`text-sm sm:text-base ${colorClass}`}>
-                        {label}
+                        {domain.label}
                       </div>
                       <div className="text-[11px] text-slate-400 font-medium pt-0.5">
-                        {typeof alkVal === "number" ? `${alkVal} ppm` : "—"}
+                        {typeof latestWaterLog.alkalinity === "number" ? `${latestWaterLog.alkalinity} ppm` : "—"}
                       </div>
                     </div>
                   );
