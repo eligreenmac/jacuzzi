@@ -136,23 +136,14 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-semibold border border-cyan-500/30">
-                {jacuzzi?.sanitizationType === "CHLORINE"
-                  ? "חיטוי בכלור"
-                  : jacuzzi?.sanitizationType === "BROMINE"
-                  ? "חיטוי בברום"
-                  : jacuzzi?.sanitizationType === "SALT"
-                  ? "מערכת מלח"
-                  : "חמצן פעיל"}
-              </span>
-              <span className="text-xs text-slate-400 bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-800">
+              <span className="text-xs font-semibold text-slate-300 bg-slate-950 px-3 py-1 rounded-full border border-slate-800">
                 נפח: {jacuzzi?.volumeLiters || 1200} ליטר
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2.5">
               <span>{jacuzzi?.name || "הג'קוזי שלי"}</span>
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300">
+            <p className="text-xs sm:text-sm text-slate-400">
               שלום {data.name}! לוח בקרה מרכזי לניטור מצב הג'קוזי, איכות המים ותוכנית התחזוקה.
             </p>
           </div>
@@ -160,23 +151,23 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/water-tests"
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-900/30 flex items-center gap-2 transition-all hover:scale-105"
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs shadow-md flex items-center gap-2 transition-all hover:scale-105"
             >
-              <FlaskConical className="w-4 h-4" />
+              <FlaskConical className="w-4 h-4 text-cyan-400" />
               <span>בדיקות מים מלאות</span>
               <ArrowLeft className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
 
-        {/* 4 Quick Metrics Cards */}
+        {/* 4 Quick Metrics Cards (Unified & Clean) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: גיל המים */}
           <div className="bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl space-y-1">
             <div className="text-[11px] text-slate-400 font-medium">
               גיל המים
             </div>
-            <div className="text-xl font-black text-cyan-300">{daysSinceRefill} ימים</div>
+            <div className="text-xl font-black text-white">{daysSinceRefill} ימים</div>
             <div className="text-[10px] text-slate-400 truncate">
               החלפה בעוד {daysUntilNextRefill} יום ({nextRefillDate.toLocaleDateString("he-IL")})
             </div>
@@ -187,7 +178,7 @@ export default function DashboardPage() {
             <div className="text-[11px] text-slate-400 font-medium">
               ניקוי צנרת ושטיפה
             </div>
-            <div className="text-xl font-black text-teal-300">
+            <div className="text-xl font-black text-white">
               {daysSinceDeepClean !== null ? `${daysSinceDeepClean} ימים` : "טרם עודכן"}
             </div>
             <div className="text-[10px] text-slate-400 truncate">
@@ -200,7 +191,7 @@ export default function DashboardPage() {
             <div className="text-[11px] text-slate-400 font-medium">
               משימות פתוחות
             </div>
-            <div className="text-xl font-black text-amber-300">{pendingTasks.length}</div>
+            <div className="text-xl font-black text-white">{pendingTasks.length}</div>
             <div className="text-[10px] text-slate-400 truncate">
               {completedTasks.length > 0 ? `${completedTasks.length} בוצעו השבוע` : "לשבוע הקרוב"}
             </div>
@@ -211,7 +202,7 @@ export default function DashboardPage() {
             <div className="text-[11px] text-slate-400 font-medium">
               ארון חומרים
             </div>
-            <div className="text-xl font-black text-sky-300">{chemicals.length} פריטים</div>
+            <div className="text-xl font-black text-white">{chemicals.length} פריטים</div>
             <div className="text-[10px] text-slate-400 truncate">
               {lowStockChemicals.length > 0 ? `⚠️ ${lowStockChemicals.length} במלאי נמוך` : "מלאי תקין ✓"}
             </div>
@@ -283,19 +274,19 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl text-center space-y-0.5">
-                  <div className="text-[10px] text-slate-400 font-medium">צלילות ומצב</div>
+                  <div className="text-[10px] text-slate-400 font-medium">צלילות המים</div>
                   <div className="text-base sm:text-lg font-black text-white">
                     {latestWaterLog.clarity === "CLEAR" ? "צלול" : latestWaterLog.clarity === "FOAMY" ? "מקציף" : "עכור"}
                   </div>
                   <div className="text-[10px] text-slate-400">
-                    {latestWaterLog.waterTemp ? `${latestWaterLog.waterTemp}°C` : "38°C"}
+                    {latestWaterLog.clarity === "CLEAR" ? "תקין" : "דורש טיפול"}
                   </div>
                 </div>
               </div>
 
               {latestWaterLog.notes && (
-                <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-800/40 text-xs text-cyan-200 flex items-center gap-2">
-                  <span className="font-bold">💡 אבחון מים:</span>
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+                  <span className="font-bold text-cyan-300">אבחון מים:</span>
                   <span className="truncate">{latestWaterLog.notes}</span>
                 </div>
               )}
@@ -305,7 +296,7 @@ export default function DashboardPage() {
               <p>טרם בוצעה בדיקת מקלון במערכת. בצע בדיקה ראשונה לקבלת אבחון כימי מלא ומינונים מומלצים.</p>
               <Link
                 href="/water-tests"
-                className="text-xs bg-cyan-950 text-cyan-300 hover:bg-cyan-900 border border-cyan-800 px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 text-center"
+                className="text-xs bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 text-center"
               >
                 + בצע בדיקת מים ראשונה
               </Link>
@@ -317,11 +308,11 @@ export default function DashboardPage() {
       {/* 2-Column Responsive Grid: יומן ומשימות | ארון חומרים */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Column 1: 📅 יומן ומשימות */}
-        <div className="bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 border border-sky-800/40 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-sky-500/50 transition-all">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-slate-700 transition-all">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
+                <div className="w-9 h-9 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center border border-slate-700">
                   <Calendar className="w-5 h-5" />
                 </div>
                 <div>
@@ -331,12 +322,12 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center gap-1.5">
                 {completedTasks.length > 0 && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1">
-                    <Check className="w-3 h-3" />
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-400" />
                     <span>{completedTasks.length} בוצעו</span>
                   </span>
                 )}
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-950 text-sky-300 border border-sky-800">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                   {pendingTasks.length} פתוחות
                 </span>
               </div>
@@ -358,8 +349,8 @@ export default function DashboardPage() {
                         key={task.id}
                         className={`p-3 rounded-xl border transition-all space-y-1 ${
                           isDone
-                            ? "bg-emerald-950/20 border-emerald-900/50 hover:border-emerald-800/80"
-                            : "bg-slate-950/70 border-slate-850 hover:border-slate-700"
+                            ? "bg-slate-950 border-slate-800"
+                            : "bg-slate-950/70 border-slate-800 hover:border-slate-700"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -367,9 +358,9 @@ export default function DashboardPage() {
                             {isDone ? (
                               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                             ) : (
-                              <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             )}
-                            <h4 className={`font-bold text-xs truncate ${isDone ? "text-slate-300 line-through decoration-emerald-500/50" : "text-white"}`}>
+                            <h4 className={`font-bold text-xs truncate ${isDone ? "text-slate-400 line-through" : "text-white"}`}>
                               {task.title}
                             </h4>
                           </div>
@@ -378,7 +369,7 @@ export default function DashboardPage() {
                             <button
                               type="button"
                               onClick={() => handleResetTask(task)}
-                              className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 hover:bg-rose-950 hover:text-rose-300 hover:border-rose-800 text-emerald-300 border border-emerald-800 shrink-0 flex items-center gap-1 transition-colors group/btn"
+                              className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 flex items-center gap-1 transition-colors group/btn"
                               title="לחץ כאן כדי לבטל סימון ביצוע ולהחזיר למצב לא בוצע"
                             >
                               <span className="group-hover/btn:hidden">✓ בוצע</span>
@@ -387,10 +378,8 @@ export default function DashboardPage() {
                           ) : (
                             <span
                               className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
-                                task.priority === "URGENT" || isOverdue
+                                isOverdue
                                   ? "bg-rose-950 text-rose-300 border border-rose-800"
-                                  : task.priority === "HIGH"
-                                  ? "bg-amber-950 text-amber-300 border border-amber-800"
                                   : "bg-slate-900 text-slate-400 border border-slate-700"
                               }`}
                             >
@@ -401,7 +390,7 @@ export default function DashboardPage() {
 
                         <div className="flex items-center justify-between text-[10px] text-slate-400 pr-5">
                           {isDone ? (
-                            <span className="text-emerald-400/90 flex items-center gap-1">
+                            <span className="text-slate-400 flex items-center gap-1">
                               <span>✓</span>
                               <span>
                                 בוצע בתאריך: {task.lastDoneDate ? new Date(task.lastDoneDate).toLocaleDateString("he-IL") : new Date(task.updatedAt || task.nextDueDate).toLocaleDateString("he-IL")}
@@ -426,7 +415,7 @@ export default function DashboardPage() {
 
           <Link
             href="/calendar"
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs shadow flex items-center justify-center gap-1.5 transition-all hover:scale-[1.01]"
           >
             <span>מעבר ליומן ותחזוקה</span>
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -434,11 +423,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Column 2: 📦 ארון חומרים ומלאי */}
-        <div className="bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 border border-blue-800/40 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-blue-500/50 transition-all">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-slate-700 transition-all">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+                <div className="w-9 h-9 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center border border-slate-700">
                   <Package className="w-5 h-5" />
                 </div>
                 <div>
@@ -446,7 +435,7 @@ export default function DashboardPage() {
                   <p className="text-[11px] text-slate-400">מעקב כמויות, זיהוי חוסרים ובטיחות</p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                 {chemicals.length} פריטים
               </span>
             </div>
@@ -459,13 +448,13 @@ export default function DashboardPage() {
                   <div
                     key={chem.id}
                     className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-all ${
-                      isLow ? "bg-rose-950/40 border-rose-800/60" : "bg-slate-950/70 border-slate-850"
+                      isLow ? "bg-slate-950 border-rose-900/50" : "bg-slate-950/70 border-slate-800"
                     }`}
                   >
                     <div className="space-y-0.5">
                       <div className="font-semibold text-slate-200 flex items-center gap-1">
                         <span>{chem.name}</span>
-                        {isLow && <span className="text-rose-400 font-bold text-[10px]">⚠️</span>}
+                        {isLow && <span className="text-amber-400 font-bold text-[10px]">⚠️</span>}
                       </div>
                       <div className="text-[11px] text-slate-400">
                         נותרו: {chem.quantity} {chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit === "TABLETS" ? "טבליות" : chem.unit === "STRIPS" ? "מקלונים" : "יחידות"}
@@ -473,13 +462,13 @@ export default function DashboardPage() {
                     </div>
                     {isLow ? (
                       <span
-                        className="text-[9px] font-bold bg-rose-950 text-rose-300 px-2 py-0.5 rounded border border-rose-800"
+                        className="text-[9px] font-bold bg-slate-900 text-amber-300 px-2 py-0.5 rounded border border-amber-800/60"
                         title="המלאי מתחת לשליש - שובצה משימת רכש להיום ביומן"
                       >
                         מתחת לשליש! (להזמין)
                       </span>
                     ) : (
-                      <span className="text-[10px] bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">
+                      <span className="text-[10px] bg-slate-900 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
                         תקין
                       </span>
                     )}
@@ -488,7 +477,7 @@ export default function DashboardPage() {
               })}
 
               {chemicals.some((c: any) => c.quantity <= (c.minThreshold && c.minThreshold > 0 ? c.minThreshold : (c.unit === "GRAMS" || c.unit === "ML" ? 330 : 15))) && (
-                <div className="p-2 rounded-xl bg-amber-950/30 border border-amber-800/50 text-amber-300 text-[10px] flex items-center gap-1.5">
+                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-[10px] flex items-center gap-1.5">
                   <span>🔔</span>
                   <span>חומרים מתחת לשליש: שובצו משימות רכש להיום ביומן.</span>
                 </div>
@@ -505,7 +494,7 @@ export default function DashboardPage() {
 
           <Link
             href="/inventory"
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-500 hover:to-teal-500 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs shadow flex items-center justify-center gap-1.5 transition-all hover:scale-[1.01]"
           >
             <span>מעבר לארון חומרים ומלאי</span>
             <ArrowLeft className="w-3.5 h-3.5" />
