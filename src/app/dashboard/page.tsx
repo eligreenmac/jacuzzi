@@ -227,81 +227,144 @@ export default function DashboardPage() {
 
           {latestWaterLog ? (
             <div className="space-y-3">
-              {/* 4 Mini Parameter Metrics (5 Domains: Very Low, Low, OK, High, Very High) */}
+              {/* 4 Mini Parameter Metrics: Verbal domain is PROMINENT (Top/Big), numerical value is SUBTITLE (Bottom/Small) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl text-center space-y-0.5">
-                  <div className="text-[10px] text-slate-400 font-medium">חומציות (pH)</div>
-                  <div className="text-base sm:text-lg font-black text-white">{latestWaterLog.ph ?? "—"}</div>
-                  <div className="text-[10px]">
-                    {latestWaterLog.ph === null || latestWaterLog.ph === undefined ? (
-                      <span className="text-slate-400">לא נבדק</span>
-                    ) : latestWaterLog.ph < 6.8 ? (
-                      <span className="text-rose-400 font-bold">Very Low (חומצי מאוד)</span>
-                    ) : latestWaterLog.ph < 7.2 ? (
-                      <span className="text-amber-400 font-bold">Low (נמוך)</span>
-                    ) : latestWaterLog.ph <= 7.6 ? (
-                      <span className="text-emerald-400 font-bold">OK (תקין)</span>
-                    ) : latestWaterLog.ph <= 8.0 ? (
-                      <span className="text-amber-400 font-bold">High (גבוה)</span>
-                    ) : (
-                      <span className="text-rose-400 font-bold">Very High (בסיסי מאוד)</span>
-                    )}
-                  </div>
-                </div>
+                {/* 1. pH */}
+                {(() => {
+                  const phVal = latestWaterLog.ph;
+                  const phRange = latestWaterLog.phRange || "";
+                  let label = "לא נבדק";
+                  let colorClass = "text-slate-400 font-medium";
 
-                <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl text-center space-y-0.5">
-                  <div className="text-[10px] text-slate-400 font-medium">חיטוי</div>
-                  <div className="text-base sm:text-lg font-black text-white">
-                    {latestWaterLog.freeChlorine !== null ? `${latestWaterLog.freeChlorine} ppm` : "—"}
-                  </div>
-                  <div className="text-[10px]">
-                    {latestWaterLog.freeChlorine === null || latestWaterLog.freeChlorine === undefined ? (
-                      <span className="text-slate-400">לא נבדק</span>
-                    ) : latestWaterLog.freeChlorine < 0.5 ? (
-                      <span className="text-rose-400 font-bold">Very Low (ללא חיטוי)</span>
-                    ) : latestWaterLog.freeChlorine < 2.0 ? (
-                      <span className="text-amber-400 font-bold">Low (נמוך)</span>
-                    ) : latestWaterLog.freeChlorine <= 4.0 ? (
-                      <span className="text-emerald-400 font-bold">OK (תקין)</span>
-                    ) : latestWaterLog.freeChlorine <= 8.0 ? (
-                      <span className="text-amber-400 font-bold">High (גבוה)</span>
-                    ) : (
-                      <span className="text-rose-400 font-bold">Very High (שוק / עודף)</span>
-                    )}
-                  </div>
-                </div>
+                  if (phRange.includes("VERY_LOW") || phRange.includes("חומצי מאוד") || (typeof phVal === "number" && phVal < 6.8)) {
+                    label = "Very Low (חומצי מאוד)";
+                    colorClass = "text-rose-400 font-bold";
+                  } else if (phRange.includes("LOW") || phRange.includes("נמוך") || (typeof phVal === "number" && phVal < 7.2)) {
+                    label = "Low (נמוך)";
+                    colorClass = "text-amber-400 font-bold";
+                  } else if (phRange.includes("OK") || phRange.includes("תקין") || (typeof phVal === "number" && phVal <= 7.6)) {
+                    label = "OK (תקין)";
+                    colorClass = "text-emerald-400 font-bold";
+                  } else if (phRange.includes("VERY_HIGH") || phRange.includes("בסיסי מאוד") || (typeof phVal === "number" && phVal > 8.0)) {
+                    label = "Very High (בסיסי מאוד)";
+                    colorClass = "text-rose-400 font-bold";
+                  } else if (phRange.includes("HIGH") || phRange.includes("גבוה") || (typeof phVal === "number" && phVal <= 8.0)) {
+                    label = "High (גבוה)";
+                    colorClass = "text-amber-400 font-bold";
+                  }
 
-                <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl text-center space-y-0.5">
-                  <div className="text-[10px] text-slate-400 font-medium">בסיסיות (TA)</div>
-                  <div className="text-base sm:text-lg font-black text-white">
-                    {latestWaterLog.alkalinity !== null ? `${latestWaterLog.alkalinity} ppm` : "—"}
-                  </div>
-                  <div className="text-[10px]">
-                    {latestWaterLog.alkalinity === null || latestWaterLog.alkalinity === undefined ? (
-                      <span className="text-slate-400">לא נבדק</span>
-                    ) : latestWaterLog.alkalinity < 40 ? (
-                      <span className="text-rose-400 font-bold">Very Low (נמוכה מאוד)</span>
-                    ) : latestWaterLog.alkalinity < 80 ? (
-                      <span className="text-amber-400 font-bold">Low (נמוכה)</span>
-                    ) : latestWaterLog.alkalinity <= 120 ? (
-                      <span className="text-emerald-400 font-bold">OK (תקינה)</span>
-                    ) : latestWaterLog.alkalinity <= 180 ? (
-                      <span className="text-amber-400 font-bold">High (גבוהה)</span>
-                    ) : (
-                      <span className="text-rose-400 font-bold">Very High (גבוהה מאוד)</span>
-                    )}
-                  </div>
-                </div>
+                  return (
+                    <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
+                      <div className="text-[11px] text-slate-400 font-semibold">חומציות (pH)</div>
+                      <div className={`text-sm sm:text-base ${colorClass}`}>
+                        {label}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
+                        {typeof phVal === "number" ? `pH ${phVal}` : "—"}
+                      </div>
+                    </div>
+                  );
+                })()}
 
-                <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl text-center space-y-0.5">
-                  <div className="text-[10px] text-slate-400 font-medium">צלילות המים</div>
-                  <div className="text-base sm:text-lg font-black text-white">
-                    {latestWaterLog.clarity === "CLEAR" ? "צלול" : latestWaterLog.clarity === "FOAMY" ? "מקציף" : "עכור"}
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    {latestWaterLog.clarity === "CLEAR" ? "תקין" : "דורש טיפול"}
-                  </div>
-                </div>
+                {/* 2. Chlorine / Sanitization */}
+                {(() => {
+                  const clVal = latestWaterLog.freeChlorine;
+                  const clRange = latestWaterLog.chlorineRange || "";
+                  let label = "לא נבדק";
+                  let colorClass = "text-slate-400 font-medium";
+
+                  if (clRange.includes("VERY_LOW") || clRange.includes("ללא חיטוי") || (typeof clVal === "number" && clVal < 0.5)) {
+                    label = "Very Low (ללא חיטוי)";
+                    colorClass = "text-rose-400 font-bold";
+                  } else if (clRange.includes("LOW") || clRange.includes("נמוך") || (typeof clVal === "number" && clVal < 2.0)) {
+                    label = "Low (נמוך)";
+                    colorClass = "text-amber-400 font-bold";
+                  } else if (clRange.includes("OK") || clRange.includes("תקין") || (typeof clVal === "number" && clVal <= 4.0)) {
+                    label = "OK (תקין)";
+                    colorClass = "text-emerald-400 font-bold";
+                  } else if (clRange.includes("VERY_HIGH") || clRange.includes("שוק") || clRange.includes("עודף") || (typeof clVal === "number" && clVal > 8.0)) {
+                    label = "Very High (שוק / עודף)";
+                    colorClass = "text-rose-400 font-bold";
+                  } else if (clRange.includes("HIGH") || clRange.includes("גבוה") || (typeof clVal === "number" && clVal <= 8.0)) {
+                    label = "High (גבוה)";
+                    colorClass = "text-amber-400 font-bold";
+                  }
+
+                  return (
+                    <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
+                      <div className="text-[11px] text-slate-400 font-semibold">חיטוי</div>
+                      <div className={`text-sm sm:text-base ${colorClass}`}>
+                        {label}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
+                        {typeof clVal === "number" ? `${clVal} ppm` : "—"}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 3. Alkalinity */}
+                {(() => {
+                  const alkVal = latestWaterLog.alkalinity;
+                  const alkRange = latestWaterLog.alkalinityRange || "";
+                  let label = "לא נבדק";
+                  let colorClass = "text-slate-400 font-medium";
+
+                  if (alkRange.includes("VERY_LOW") || alkRange.includes("נמוכה מאוד") || (typeof alkVal === "number" && alkVal < 40)) {
+                    label = "Very Low (נמוכה מאוד)";
+                    colorClass = "text-rose-400 font-bold";
+                  } else if (alkRange.includes("LOW") || alkRange.includes("נמוכה") || (typeof alkVal === "number" && alkVal < 80)) {
+                    label = "Low (נמוכה)";
+                    colorClass = "text-amber-400 font-bold";
+                  } else if (alkRange.includes("OK") || alkRange.includes("תקינה") || (typeof alkVal === "number" && alkVal <= 120)) {
+                    label = "OK (תקינה)";
+                    colorClass = "text-emerald-400 font-bold";
+                  } else if (alkRange.includes("VERY_HIGH") || alkRange.includes("גבוהה מאוד") || (typeof alkVal === "number" && alkVal > 180)) {
+                    label = "Very High (גבוהה מאוד)";
+                    colorClass = "text-rose-400 font-bold";
+                  } else if (alkRange.includes("HIGH") || alkRange.includes("גבוהה") || (typeof alkVal === "number" && alkVal <= 180)) {
+                    label = "High (גבוהה)";
+                    colorClass = "text-amber-400 font-bold";
+                  }
+
+                  return (
+                    <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
+                      <div className="text-[11px] text-slate-400 font-semibold">בסיסיות (TA)</div>
+                      <div className={`text-sm sm:text-base ${colorClass}`}>
+                        {label}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
+                        {typeof alkVal === "number" ? `${alkVal} ppm` : "—"}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 4. Clarity */}
+                {(() => {
+                  const clarityRaw = latestWaterLog.waterClarity || latestWaterLog.clarity || "CLEAR";
+                  const isClear = clarityRaw === "CLEAR";
+                  const clarityLabel =
+                    clarityRaw === "CLEAR"
+                      ? "צלול"
+                      : clarityRaw === "FOAMY"
+                      ? "מקציף"
+                      : clarityRaw === "GREEN"
+                      ? "ירוק / אצות"
+                      : "עכור";
+
+                  return (
+                    <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
+                      <div className="text-[11px] text-slate-400 font-semibold">צלילות המים</div>
+                      <div className={`text-sm sm:text-base font-bold ${isClear ? "text-emerald-400" : "text-amber-400"}`}>
+                        {clarityLabel}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
+                        {isClear ? "תקין" : "דורש טיפול"}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {latestWaterLog.notes && (

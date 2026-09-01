@@ -81,10 +81,13 @@ export default function CalendarPage() {
   const [externalChemicalName, setExternalChemicalName] = useState("");
   const [chemicalNotes, setChemicalNotes] = useState("");
 
-  // Water Test Form (5 Range Domains)
+  // Water Test Form (5 Range Domains + Optional Manual Values)
   const [selectedPhRange, setSelectedPhRange] = useState("OK");
+  const [manualPh, setManualPh] = useState("");
   const [selectedClRange, setSelectedClRange] = useState("OK");
+  const [manualCl, setManualCl] = useState("");
   const [selectedAlkRange, setSelectedAlkRange] = useState("OK");
+  const [manualAlk, setManualAlk] = useState("");
   const [clarity, setClarity] = useState("CLEAR");
   const [testNotes, setTestNotes] = useState("");
 
@@ -498,17 +501,21 @@ export default function CalendarPage() {
         const clObj = CHLORINE_RANGES.find((r) => r.id === selectedClRange);
         const alkObj = ALKALINITY_RANGES.find((r) => r.id === selectedAlkRange);
 
+        const parsedPh = manualPh.trim() ? parseFloat(manualPh) : null;
+        const parsedCl = manualCl.trim() ? parseFloat(manualCl) : null;
+        const parsedAlk = manualAlk.trim() ? parseFloat(manualAlk) : null;
+
         await fetch("/api/water-tests", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             testedAt: new Date().toISOString(),
-            ph: phObj?.val !== null ? phObj?.val : "UNKNOWN",
-            phRange: phObj?.label,
-            freeChlorine: clObj?.val !== null ? clObj?.val : "UNKNOWN",
-            chlorineRange: clObj?.label,
-            alkalinity: alkObj?.val !== null ? alkObj?.val : "UNKNOWN",
-            alkalinityRange: alkObj?.label,
+            ph: parsedPh,
+            phRange: phObj?.label || selectedPhRange,
+            freeChlorine: parsedCl,
+            chlorineRange: clObj?.label || selectedClRange,
+            alkalinity: parsedAlk,
+            alkalinityRange: alkObj?.label || selectedAlkRange,
             waterClarity: clarity,
             description: `משימה שבוצעה: ${completingTask.title}${testNotes ? ` - ${testNotes}` : ""}`,
           }),
@@ -521,11 +528,14 @@ export default function CalendarPage() {
           body: JSON.stringify({
             id: completingTask.id,
             markDoneAndReschedule: true,
-            valueAfter: `pH: ${phObj?.label || "לא נבדק"}, כלור: ${clObj?.label || "לא נבדק"}`,
+            valueAfter: `pH: ${phObj?.label || "לא נבדק"}${parsedPh ? ` (${parsedPh})` : ""}, כלור: ${clObj?.label || "לא נבדק"}${parsedCl ? ` (${parsedCl} ppm)` : ""}`,
             notes: testNotes,
           }),
         });
 
+        setManualPh("");
+        setManualCl("");
+        setManualAlk("");
         setActionNotice("תוצאות הבדיקה נשמרו בעמוד בדיקות המים והמשימה סומנה כבוצעה!");
       }
 
@@ -1675,6 +1685,14 @@ export default function CalendarPage() {
                         <option key={r.id} value={r.id}>{r.label}</option>
                       ))}
                     </select>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="ערך מספרי מדויק (אופציונלי, השאר ריק להצגת קו —)"
+                      value={manualPh}
+                      onChange={(e) => setManualPh(e.target.value)}
+                      className="w-full mt-1 bg-slate-900/90 border border-slate-750 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                    />
                   </div>
 
                   {/* 2. Chlorine Range Picker */}
@@ -1692,6 +1710,14 @@ export default function CalendarPage() {
                         <option key={r.id} value={r.id}>{r.label}</option>
                       ))}
                     </select>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="ערך מספרי מדויק ב-ppm (אופציונלי, השאר ריק להצגת קו —)"
+                      value={manualCl}
+                      onChange={(e) => setManualCl(e.target.value)}
+                      className="w-full mt-1 bg-slate-900/90 border border-slate-750 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                    />
                   </div>
 
                   {/* 3. Alkalinity Range Picker */}
@@ -1709,6 +1735,14 @@ export default function CalendarPage() {
                         <option key={r.id} value={r.id}>{r.label}</option>
                       ))}
                     </select>
+                    <input
+                      type="number"
+                      step="1"
+                      placeholder="ערך מספרי מדויק ב-ppm (אופציונלי, השאר ריק להצגת קו —)"
+                      value={manualAlk}
+                      onChange={(e) => setManualAlk(e.target.value)}
+                      className="w-full mt-1 bg-slate-900/90 border border-slate-750 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                    />
                   </div>
 
                   {/* Clarity */}

@@ -29,70 +29,97 @@ import {
 // Standard Test Strip Range Scales (Clean & Calibrated)
 // Standard Test Strip Range Scales (5 Distinct Domains: Very Low, Low, OK, High, Very High)
 const PH_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (< 6.8 - חומצי מאוד)", val: 6.6, badge: "Very Low" },
-  { id: "LOW", label: "Low (6.8 - 7.1 - נמוך)", val: 7.0, badge: "Low" },
-  { id: "OK", label: "OK (7.2 - 7.6 - תקין)", val: 7.4, badge: "OK" },
-  { id: "HIGH", label: "High (7.7 - 8.0 - גבוה)", val: 7.8, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 8.0 - בסיסי מאוד)", val: 8.2, badge: "Very High" },
-  { id: "UNKNOWN", label: "לא נבדק", val: null, badge: "לא נבדק" },
+  { id: "VERY_LOW", label: "Very Low (< 6.8 - חומצי מאוד)", defaultVal: 6.5, badge: "Very Low" },
+  { id: "LOW", label: "Low (6.8 - 7.1 - נמוך)", defaultVal: 7.0, badge: "Low" },
+  { id: "OK", label: "OK (7.2 - 7.6 - תקין)", defaultVal: 7.4, badge: "OK" },
+  { id: "HIGH", label: "High (7.7 - 8.0 - גבוה)", defaultVal: 7.8, badge: "High" },
+  { id: "VERY_HIGH", label: "Very High (> 8.0 - בסיסי מאוד)", defaultVal: 8.3, badge: "Very High" },
+  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
 ];
 
 const CHLORINE_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (0 - 0.5 ppm - ללא חיטוי)", val: 0.0, badge: "Very Low" },
-  { id: "LOW", label: "Low (0.5 - 1.5 ppm - נמוך)", val: 1.0, badge: "Low" },
-  { id: "OK", label: "OK (2.0 - 4.0 ppm - תקין)", val: 3.0, badge: "OK" },
-  { id: "HIGH", label: "High (5.0 - 8.0 ppm - גבוה)", val: 6.0, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 8.0 ppm - גבוה מאוד / שוק)", val: 10.0, badge: "Very High" },
-  { id: "UNKNOWN", label: "לא נבדק", val: null, badge: "לא נבדק" },
+  { id: "VERY_LOW", label: "Very Low (0 - 0.5 ppm - ללא חיטוי)", defaultVal: 0.0, badge: "Very Low" },
+  { id: "LOW", label: "Low (0.5 - 1.5 ppm - נמוך)", defaultVal: 1.0, badge: "Low" },
+  { id: "OK", label: "OK (2.0 - 4.0 ppm - תקין)", defaultVal: 3.0, badge: "OK" },
+  { id: "HIGH", label: "High (5.0 - 8.0 ppm - גבוה)", defaultVal: 6.0, badge: "High" },
+  { id: "VERY_HIGH", label: "Very High (> 8.0 ppm - גבוה מאוד / שוק)", defaultVal: 10.0, badge: "Very High" },
+  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
 ];
 
 const ALKALINITY_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (< 40 ppm - נמוכה מאוד)", val: 30, badge: "Very Low" },
-  { id: "LOW", label: "Low (40 - 70 ppm - נמוכה)", val: 60, badge: "Low" },
-  { id: "OK", label: "OK (80 - 120 ppm - תקינה)", val: 100, badge: "OK" },
-  { id: "HIGH", label: "High (130 - 180 ppm - גבוהה)", val: 150, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 180 ppm - גבוהה מאוד)", val: 200, badge: "Very High" },
-  { id: "UNKNOWN", label: "לא נבדק", val: null, badge: "לא נבדק" },
+  { id: "VERY_LOW", label: "Very Low (< 40 ppm - נמוכה מאוד)", defaultVal: 30, badge: "Very Low" },
+  { id: "LOW", label: "Low (40 - 70 ppm - נמוכה)", defaultVal: 60, badge: "Low" },
+  { id: "OK", label: "OK (80 - 120 ppm - תקינה)", defaultVal: 100, badge: "OK" },
+  { id: "HIGH", label: "High (130 - 180 ppm - גבוהה)", defaultVal: 150, badge: "High" },
+  { id: "VERY_HIGH", label: "Very High (> 180 ppm - גבוהה מאוד)", defaultVal: 200, badge: "Very High" },
+  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
 ];
 
-export function getParamDomain(type: "PH" | "CHLORINE" | "ALKALINITY", val: number | null | undefined) {
-  if (val === null || val === undefined || isNaN(val)) {
-    return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700" };
+export function getParamDomain(
+  type: "PH" | "CHLORINE" | "ALKALINITY",
+  val: number | null | undefined,
+  rangeStr?: string | null
+) {
+  if (rangeStr) {
+    const s = rangeStr.toUpperCase();
+    if (s.includes("VERY_LOW") || s.includes("חומצי מאוד") || s.includes("ללא חיטוי") || s.includes("נמוכה מאוד")) {
+      return { id: "VERY_LOW", label: type === "PH" ? "Very Low (חומצי מאוד)" : type === "CHLORINE" ? "Very Low (ללא חיטוי)" : "Very Low (נמוכה מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+    }
+    if (s.includes("LOW") || s.includes("נמוך") || s.includes("נמוכה")) {
+      return { id: "LOW", label: type === "ALKALINITY" ? "Low (נמוכה)" : "Low (נמוך)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
+    }
+    if (s.includes("OK") || s.includes("תקין") || s.includes("אידיאלי") || s.includes("תקינה")) {
+      return { id: "OK", label: type === "ALKALINITY" ? "OK (תקינה)" : "OK (תקין)", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK (תקין)" };
+    }
+    if (s.includes("VERY_HIGH") || s.includes("בסיסי מאוד") || s.includes("שוק") || s.includes("עודף") || s.includes("גבוהה מאוד")) {
+      return { id: "VERY_HIGH", label: type === "PH" ? "Very High (בסיסי מאוד)" : type === "CHLORINE" ? "Very High (שוק / עודף)" : "Very High (גבוהה מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    }
+    if (s.includes("HIGH") || s.includes("גבוה") || s.includes("גבוהה")) {
+      return { id: "HIGH", label: type === "ALKALINITY" ? "High (גבוהה)" : "High (גבוה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    }
   }
+
+  if (val === null || val === undefined || isNaN(val)) {
+    return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700", shortLabel: "לא נבדק" };
+  }
+
   if (type === "PH") {
-    if (val < 6.8) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
-    if (val < 7.2) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
-    if (val <= 7.6) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
-    if (val <= 8.0) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
-    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 6.8) return { id: "VERY_LOW", label: "Very Low (חומצי מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+    if (val < 7.2) return { id: "LOW", label: "Low (נמוך)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
+    if (val <= 7.6) return { id: "OK", label: "OK (תקין)", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK (תקין)" };
+    if (val <= 8.0) return { id: "HIGH", label: "High (גבוה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    return { id: "VERY_HIGH", label: "Very High (בסיסי מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
   }
   if (type === "CHLORINE") {
-    if (val < 0.5) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
-    if (val < 2.0) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
-    if (val <= 4.0) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
-    if (val <= 8.0) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
-    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 0.5) return { id: "VERY_LOW", label: "Very Low (ללא חיטוי)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+    if (val < 2.0) return { id: "LOW", label: "Low (נמוך)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
+    if (val <= 4.0) return { id: "OK", label: "OK (תקין)", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK (תקין)" };
+    if (val <= 8.0) return { id: "HIGH", label: "High (גבוה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    return { id: "VERY_HIGH", label: "Very High (שוק / עודף)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
   }
   if (type === "ALKALINITY") {
-    if (val < 40) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
-    if (val < 80) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
-    if (val <= 120) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
-    if (val <= 180) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
-    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 40) return { id: "VERY_LOW", label: "Very Low (נמוכה מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+    if (val < 80) return { id: "LOW", label: "Low (נמוכה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
+    if (val <= 120) return { id: "OK", label: "OK (תקינה)", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK (תקין)" };
+    if (val <= 180) return { id: "HIGH", label: "High (גבוהה)", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    return { id: "VERY_HIGH", label: "Very High (גבוהה מאוד)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
   }
-  return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700" };
+  return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700", shortLabel: "לא נבדק" };
 }
 
 export default function WaterTestsPage() {
   const [tests, setTests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Add Test Modal State (5 Range Domains)
+  // Add Test Modal State (5 Range Domains + Optional Manual Values)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [testDate, setTestDate] = useState(new Date().toISOString().slice(0, 16));
   const [selectedPhRange, setSelectedPhRange] = useState("OK");
+  const [manualPh, setManualPh] = useState("");
   const [selectedClRange, setSelectedClRange] = useState("OK");
+  const [manualCl, setManualCl] = useState("");
   const [selectedAlkRange, setSelectedAlkRange] = useState("OK");
+  const [manualAlk, setManualAlk] = useState("");
   const [clarity, setClarity] = useState("CLEAR");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
@@ -105,8 +132,11 @@ export default function WaterTestsPage() {
   const [editForm, setEditForm] = useState({
     testedAt: "",
     phRangeId: "OK",
+    manualPh: "",
     clRangeId: "OK",
+    manualCl: "",
     alkRangeId: "OK",
+    manualAlk: "",
     waterClarity: "CLEAR",
     description: "",
   });
@@ -175,18 +205,22 @@ export default function WaterTestsPage() {
     const clObj = CHLORINE_RANGES.find((r) => r.id === selectedClRange);
     const alkObj = ALKALINITY_RANGES.find((r) => r.id === selectedAlkRange);
 
+    const parsedPh = manualPh.trim() ? parseFloat(manualPh) : null;
+    const parsedCl = manualCl.trim() ? parseFloat(manualCl) : null;
+    const parsedAlk = manualAlk.trim() ? parseFloat(manualAlk) : null;
+
     try {
       const res = await fetch("/api/water-tests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           testedAt: new Date(testDate).toISOString(),
-          ph: phObj?.val !== null ? phObj?.val : "UNKNOWN",
-          phRange: phObj?.label,
-          freeChlorine: clObj?.val !== null ? clObj?.val : "UNKNOWN",
-          chlorineRange: clObj?.label,
-          alkalinity: alkObj?.val !== null ? alkObj?.val : "UNKNOWN",
-          alkalinityRange: alkObj?.label,
+          ph: parsedPh,
+          phRange: phObj?.label || selectedPhRange,
+          freeChlorine: parsedCl,
+          chlorineRange: clObj?.label || selectedClRange,
+          alkalinity: parsedAlk,
+          alkalinityRange: alkObj?.label || selectedAlkRange,
           waterClarity: clarity,
           description: description || null,
         }),
@@ -199,6 +233,9 @@ export default function WaterTestsPage() {
 
       setIsAddModalOpen(false);
       setDescription("");
+      setManualPh("");
+      setManualCl("");
+      setManualAlk("");
       loadTests();
     } catch (err: any) {
       setErrorMsg(err.message);
@@ -218,6 +255,13 @@ export default function WaterTestsPage() {
       else if (test.ph <= 7.6) phId = "OK";
       else if (test.ph <= 8.0) phId = "HIGH";
       else phId = "VERY_HIGH";
+    } else if (test.phRange) {
+      const upper = test.phRange.toUpperCase();
+      if (upper.includes("VERY_LOW") || upper.includes("חומצי מאוד")) phId = "VERY_LOW";
+      else if (upper.includes("LOW") || upper.includes("נמוך")) phId = "LOW";
+      else if (upper.includes("OK") || upper.includes("תקין")) phId = "OK";
+      else if (upper.includes("VERY_HIGH") || upper.includes("בסיסי מאוד")) phId = "VERY_HIGH";
+      else if (upper.includes("HIGH") || upper.includes("גבוה")) phId = "HIGH";
     }
 
     let clId = "UNKNOWN";
@@ -227,6 +271,13 @@ export default function WaterTestsPage() {
       else if (test.freeChlorine <= 4.0) clId = "OK";
       else if (test.freeChlorine <= 8.0) clId = "HIGH";
       else clId = "VERY_HIGH";
+    } else if (test.chlorineRange) {
+      const upper = test.chlorineRange.toUpperCase();
+      if (upper.includes("VERY_LOW") || upper.includes("ללא חיטוי")) clId = "VERY_LOW";
+      else if (upper.includes("LOW") || upper.includes("נמוך")) clId = "LOW";
+      else if (upper.includes("OK") || upper.includes("תקין")) clId = "OK";
+      else if (upper.includes("VERY_HIGH") || upper.includes("שוק") || upper.includes("עודף")) clId = "VERY_HIGH";
+      else if (upper.includes("HIGH") || upper.includes("גבוה")) clId = "HIGH";
     }
 
     let alkId = "UNKNOWN";
@@ -236,13 +287,23 @@ export default function WaterTestsPage() {
       else if (test.alkalinity <= 120) alkId = "OK";
       else if (test.alkalinity <= 180) alkId = "HIGH";
       else alkId = "VERY_HIGH";
+    } else if (test.alkalinityRange) {
+      const upper = test.alkalinityRange.toUpperCase();
+      if (upper.includes("VERY_LOW") || upper.includes("נמוכה מאוד")) alkId = "VERY_LOW";
+      else if (upper.includes("LOW") || upper.includes("נמוכה")) alkId = "LOW";
+      else if (upper.includes("OK") || upper.includes("תקינה")) alkId = "OK";
+      else if (upper.includes("VERY_HIGH") || upper.includes("גבוהה מאוד")) alkId = "VERY_HIGH";
+      else if (upper.includes("HIGH") || upper.includes("גבוהה")) alkId = "HIGH";
     }
 
     setEditForm({
       testedAt: test.testedAt ? new Date(test.testedAt).toISOString().slice(0, 16) : "",
       phRangeId: phId,
+      manualPh: typeof test.ph === "number" ? `${test.ph}` : "",
       clRangeId: clId,
+      manualCl: typeof test.freeChlorine === "number" ? `${test.freeChlorine}` : "",
       alkRangeId: alkId,
+      manualAlk: typeof test.alkalinity === "number" ? `${test.alkalinity}` : "",
       waterClarity: test.waterClarity || "CLEAR",
       description: test.description || "",
     });
@@ -256,6 +317,10 @@ export default function WaterTestsPage() {
     const clObj = CHLORINE_RANGES.find((r) => r.id === editForm.clRangeId);
     const alkObj = ALKALINITY_RANGES.find((r) => r.id === editForm.alkRangeId);
 
+    const parsedPh = editForm.manualPh?.trim() ? parseFloat(editForm.manualPh) : null;
+    const parsedCl = editForm.manualCl?.trim() ? parseFloat(editForm.manualCl) : null;
+    const parsedAlk = editForm.manualAlk?.trim() ? parseFloat(editForm.manualAlk) : null;
+
     try {
       await fetch("/api/water-tests", {
         method: "PUT",
@@ -263,12 +328,12 @@ export default function WaterTestsPage() {
         body: JSON.stringify({
           id: editingTest.id,
           testedAt: new Date(editForm.testedAt).toISOString(),
-          ph: phObj?.val !== null ? phObj?.val : "UNKNOWN",
-          phRange: phObj?.label,
-          freeChlorine: clObj?.val !== null ? clObj?.val : "UNKNOWN",
-          chlorineRange: clObj?.label,
-          alkalinity: alkObj?.val !== null ? alkObj?.val : "UNKNOWN",
-          alkalinityRange: alkObj?.label,
+          ph: parsedPh,
+          phRange: phObj?.label || editForm.phRangeId,
+          freeChlorine: parsedCl,
+          chlorineRange: clObj?.label || editForm.clRangeId,
+          alkalinity: parsedAlk,
+          alkalinityRange: alkObj?.label || editForm.alkRangeId,
           waterClarity: editForm.waterClarity,
           description: editForm.description,
         }),
@@ -487,54 +552,49 @@ export default function WaterTestsPage() {
                     </div>
                   </div>
 
-                  {/* Values Badges Grid (5 Domains: Very Low, Low, OK, High, Very High) */}
+                  {/* Values Badges Grid (5 Domains: Verbal status is PROMINENT, numerical value is subtitle) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {/* pH Badge */}
-                    <div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
-                      <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between">
-                        <span>חומציות (pH)</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${phDomain.badgeClass}`}>
-                          {phDomain.label}
-                        </span>
+                    <div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1 text-center">
+                      <div className="text-[11px] text-slate-400 font-semibold">חומציות (pH)</div>
+                      <div className={`text-sm sm:text-base font-bold ${phDomain.badgeClass.includes("text-emerald") ? "text-emerald-400" : phDomain.badgeClass.includes("text-amber") ? "text-amber-400" : phDomain.badgeClass.includes("text-rose") ? "text-rose-400" : "text-slate-400"}`}>
+                        {phDomain.label}
                       </div>
-                      <div className="text-sm font-bold text-white">
-                        {test.phRange || (typeof test.ph === "number" ? `pH ${test.ph}` : "לא נבדק")}
+                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
+                        {typeof test.ph === "number" ? `pH ${test.ph}` : "—"}
                       </div>
                     </div>
 
                     {/* Chlorine Badge */}
-                    <div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
-                      <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between">
-                        <span>חיטוי (כלור / ברום)</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${clDomain.badgeClass}`}>
-                          {clDomain.label}
-                        </span>
+                    <div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1 text-center">
+                      <div className="text-[11px] text-slate-400 font-semibold">חיטוי (כלור / ברום)</div>
+                      <div className={`text-sm sm:text-base font-bold ${clDomain.badgeClass.includes("text-emerald") ? "text-emerald-400" : clDomain.badgeClass.includes("text-amber") ? "text-amber-400" : clDomain.badgeClass.includes("text-rose") ? "text-rose-400" : "text-slate-400"}`}>
+                        {clDomain.label}
                       </div>
-                      <div className="text-sm font-bold text-white">
-                        {test.chlorineRange || (typeof test.freeChlorine === "number" ? `${test.freeChlorine} ppm` : "לא נבדק")}
+                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
+                        {typeof test.freeChlorine === "number" ? `${test.freeChlorine} ppm` : "—"}
                       </div>
                     </div>
 
                     {/* Alkalinity Badge */}
-                    <div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
-                      <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between">
-                        <span>בסיסיות כוללת (TA)</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${alkDomain.badgeClass}`}>
-                          {alkDomain.label}
-                        </span>
+                    <div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1 text-center">
+                      <div className="text-[11px] text-slate-400 font-semibold">בסיסיות כוללת (TA)</div>
+                      <div className={`text-sm sm:text-base font-bold ${alkDomain.badgeClass.includes("text-emerald") ? "text-emerald-400" : alkDomain.badgeClass.includes("text-amber") ? "text-amber-400" : alkDomain.badgeClass.includes("text-rose") ? "text-rose-400" : "text-slate-400"}`}>
+                        {alkDomain.label}
                       </div>
-                      <div className="text-sm font-bold text-white">
-                        {test.alkalinityRange || (typeof test.alkalinity === "number" ? `${test.alkalinity} ppm` : "לא נבדק")}
+                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
+                        {typeof test.alkalinity === "number" ? `${test.alkalinity} ppm` : "—"}
                       </div>
                     </div>
 
                     {/* Clarity Badge */}
-                    <div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
+                    <div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1 text-center">
                       <div className="text-[11px] text-slate-400 font-semibold">צלילות המים</div>
-                      <div>
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg border ${clarityInfo.color}`}>
-                          {clarityInfo.label}
-                        </span>
+                      <div className={`text-sm sm:text-base font-bold ${clarityInfo.label.includes("צלול") ? "text-emerald-400" : "text-amber-400"}`}>
+                        {clarityInfo.label}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-medium pt-0.5">
+                        {clarityInfo.label.includes("צלול") ? "תקין" : "דורש טיפול"}
                       </div>
                     </div>
                   </div>
@@ -842,6 +902,17 @@ export default function WaterTestsPage() {
                     </button>
                   ))}
                 </div>
+                <div className="pt-2 border-t border-slate-800">
+                  <label className="text-[11px] text-slate-400 font-medium">הזנת ערך מספרי מדויק (אופציונלי):</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="השאר ריק אם לא נמדד ערך מספרי מדויק (יוצג קו —)"
+                    value={manualPh}
+                    onChange={(e) => setManualPh(e.target.value)}
+                    className="w-full mt-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                  />
+                </div>
               </div>
 
               {/* 2. Chlorine Range Picker */}
@@ -866,6 +937,17 @@ export default function WaterTestsPage() {
                     </button>
                   ))}
                 </div>
+                <div className="pt-2 border-t border-slate-800">
+                  <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm (אופציונלי):</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="השאר ריק אם לא נמדד ערך מספרי מדויק (יוצג קו —)"
+                    value={manualCl}
+                    onChange={(e) => setManualCl(e.target.value)}
+                    className="w-full mt-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                  />
+                </div>
               </div>
 
               {/* 3. Alkalinity Range Picker */}
@@ -889,6 +971,17 @@ export default function WaterTestsPage() {
                       {r.label}
                     </button>
                   ))}
+                </div>
+                <div className="pt-2 border-t border-slate-800">
+                  <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm (אופציונלי):</label>
+                  <input
+                    type="number"
+                    step="1"
+                    placeholder="השאר ריק אם לא נמדד ערך מספרי מדויק (יוצג קו —)"
+                    value={manualAlk}
+                    onChange={(e) => setManualAlk(e.target.value)}
+                    className="w-full mt-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                  />
                 </div>
               </div>
 
@@ -981,6 +1074,14 @@ export default function WaterTestsPage() {
                     <option key={r.id} value={r.id}>{r.label}</option>
                   ))}
                 </select>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="ערך מספרי מדויק (אופציונלי, השאר ריק להצגת קו —)"
+                  value={editForm.manualPh}
+                  onChange={(e) => setEditForm({ ...editForm, manualPh: e.target.value })}
+                  className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
+                />
               </div>
 
               <div className="space-y-1">
@@ -994,6 +1095,14 @@ export default function WaterTestsPage() {
                     <option key={r.id} value={r.id}>{r.label}</option>
                   ))}
                 </select>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="ערך מספרי מדויק (אופציונלי, השאר ריק להצגת קו —)"
+                  value={editForm.manualCl}
+                  onChange={(e) => setEditForm({ ...editForm, manualCl: e.target.value })}
+                  className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
+                />
               </div>
 
               <div className="space-y-1">
@@ -1007,6 +1116,14 @@ export default function WaterTestsPage() {
                     <option key={r.id} value={r.id}>{r.label}</option>
                   ))}
                 </select>
+                <input
+                  type="number"
+                  step="1"
+                  placeholder="ערך מספרי מדויק (אופציונלי, השאר ריק להצגת קו —)"
+                  value={editForm.manualAlk}
+                  onChange={(e) => setEditForm({ ...editForm, manualAlk: e.target.value })}
+                  className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
+                />
               </div>
 
               <div className="space-y-1">
