@@ -549,7 +549,8 @@ export default function WaterTestsPage() {
           </h2>
 
           <div className="grid grid-cols-1 gap-4">
-            {tests.map((test) => {
+            {tests.map((test, idx) => {
+              const isLatestTest = idx === 0;
               const testDateObj = new Date(test.testedAt);
               const clarityInfo = clarityLabels[test.waterClarity] || clarityLabels.CLEAR;
 
@@ -560,24 +561,36 @@ export default function WaterTestsPage() {
               return (
                 <div
                   key={test.id}
-                  className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-3xl p-5 sm:p-6 transition-all shadow-xl space-y-4"
+                  className={`bg-slate-900/90 border ${isLatestTest ? "border-cyan-800/80 ring-1 ring-cyan-500/20 shadow-cyan-950/30" : "border-slate-800 hover:border-slate-700"} rounded-3xl p-5 sm:p-6 transition-all shadow-xl space-y-4`}
                 >
                   {/* Top Bar: Date & Actions */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-slate-800 text-teal-300 flex items-center justify-center font-bold text-sm border border-slate-700">
+                      <div className={`w-10 h-10 rounded-2xl ${isLatestTest ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/60" : "bg-slate-800 text-teal-300 border-slate-700"} flex items-center justify-center font-bold text-sm border`}>
                         <Calendar className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="font-bold text-white text-base">
-                          {testDateObj.toLocaleDateString("he-IL", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-white text-base">
+                            {testDateObj.toLocaleDateString("he-IL", {
+                              weekday: "long",
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </span>
+                          {isLatestTest ? (
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span>בדיקה עדכנית (מצב מים נוכחי)</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-400 border border-slate-700/60 font-medium">
+                              היסטוריית בדיקות
+                            </span>
+                          )}
                         </div>
-                        <div className="text-xs text-slate-400 flex items-center gap-1">
+                        <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
                           <Clock className="w-3 h-3 text-slate-500" />
                           <span>שעה: {testDateObj.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</span>
                         </div>
@@ -758,12 +771,17 @@ export default function WaterTestsPage() {
                               </div>
                             )}
 
-                            {/* Step By Step Treatment Plan with Inventory Matching & Web Search */}
-                            {actionableSteps.length > 0 && (
-                              <div className="space-y-2.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
-                                  <Zap className="w-4 h-4 text-cyan-400" />
-                                  <span>תוכנית טיפול מומלצת:</span>
+                            {/* Step By Step Treatment Plan with Inventory Matching & Web Search - ONLY ON LATEST TEST */}
+                            {actionableSteps.length > 0 && isLatestTest && (
+                              <div className="space-y-2.5 bg-slate-950 p-4 rounded-2xl border border-cyan-800/40 shadow-inner">
+                                <div className="flex items-center justify-between gap-2 text-xs font-bold text-slate-200">
+                                  <div className="flex items-center gap-2">
+                                    <Zap className="w-4 h-4 text-cyan-400" />
+                                    <span>תוכנית טיפול פעילה ומומלצת (על פי בדיקה עדכנית):</span>
+                                  </div>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-medium">
+                                    מצב מים אמיתי
+                                  </span>
                                 </div>
 
                                 <div className="space-y-2.5">
@@ -903,8 +921,21 @@ export default function WaterTestsPage() {
                               </div>
                             )}
 
-                            {/* Follow up actions & Prevention guidelines */}
-                            {((recs?.followUpRequirements && recs.followUpRequirements.length > 0) || (recs?.preventionGuidelines && recs.preventionGuidelines.length > 0)) && (
+                            {/* Closed Treatment Notice for Older Tests */}
+                            {actionableSteps.length > 0 && !isLatestTest && (
+                              <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 text-slate-400 flex items-center justify-between gap-3 text-xs">
+                                <div className="flex items-center gap-2.5">
+                                  <CheckCircle2 className="w-4 h-4 text-slate-500 shrink-0" />
+                                  <span>תוכנית טיפול זו נסגרה – רק תוצאות הבדיקה העדכנית ביותר מייצגות את מצב המים האמיתי.</span>
+                                </div>
+                                <span className="text-[10px] text-slate-500 font-semibold bg-slate-900 px-2 py-0.5 rounded-full shrink-0">
+                                  היסטורי
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Follow up actions & Prevention guidelines - ONLY ON LATEST TEST */}
+                            {isLatestTest && ((recs?.followUpRequirements && recs.followUpRequirements.length > 0) || (recs?.preventionGuidelines && recs.preventionGuidelines.length > 0)) && (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                                 {recs.followUpRequirements?.length > 0 && (
                                   <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">

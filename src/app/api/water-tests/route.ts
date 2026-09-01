@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { analyzeWaterWithGemini } from "@/lib/gemini";
-import { reconcileWaterTasks } from "@/lib/water-tasks-reconciler";
 
 export async function GET(req: NextRequest) {
   try {
@@ -265,8 +264,64 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // 🌟 Auto-scan and auto-close previous tasks whose parameters balanced out
-      await reconcileWaterTasks(user.id, newTest);
+      // 🌟 Close all previous open treatment/follow-up tasks from older tests
+      const oldTreatmentTasks = await prisma.maintenanceTask.findMany({
+        where: {
+          userId: user.id,
+          isCompleted: false,
+          OR: [
+            { title: { contains: "מעקב" } },
+            { title: { contains: "בדיקה חוזרת" } },
+            { title: { contains: "הוספת מעלה" } },
+            { title: { contains: "הוספת מוריד" } },
+            { title: { contains: "איזון" } },
+            { category: "CUSTOM" },
+          ],
+        },
+      });
+
+      for (const oldTask of oldTreatmentTasks) {
+        await prisma.maintenanceTask.update({
+          where: { id: oldTask.id },
+          data: {
+            isCompleted: true,
+            lastDoneDate: now,
+            lastValueAfter: "נסגר אוטומטית - הוחלף בתוצאות בדיקת מים עדכנית",
+          },
+        });
+      }
+
+      // 🌟 Mark all previous water logs' treatment plans as superseded
+      const previousLogs = await prisma.waterLog.findMany({
+        where: {
+          userId: user.id,
+          id: { not: newTest.id },
+        },
+      });
+
+      for (const prevLog of previousLogs) {
+        if (prevLog.aiRecommendations) {
+          try {
+            const recObj = JSON.parse(prevLog.aiRecommendations);
+            if (recObj.stepByStepPlan && Array.isArray(recObj.stepByStepPlan)) {
+              let modified = false;
+              recObj.stepByStepPlan = recObj.stepByStepPlan.map((step: any) => {
+                if (!step.isExecuted) {
+                  modified = true;
+                  return { ...step, isExecuted: true, isSuperseded: true, supersededBy: newTest.id };
+                }
+                return step;
+              });
+              if (modified) {
+                await prisma.waterLog.update({
+                  where: { id: prevLog.id },
+                  data: { aiRecommendations: JSON.stringify(recObj) },
+                });
+              }
+            }
+          } catch (err) {}
+        }
+      }
     } catch (syncErr) {
       console.error("Failed to auto-sync water test with tasks:", syncErr);
     }
@@ -442,9 +497,6 @@ export async function PUT(req: NextRequest) {
         aiRecommendations: JSON.stringify(diagnosis),
       },
     });
-
-    // 🌟 Auto-scan and auto-close previous tasks whose parameters balanced out
-    await reconcileWaterTasks(user.id, updated);
 
     return NextResponse.json({ success: true, test: updated, diagnosis });
   } catch (error: any) {
