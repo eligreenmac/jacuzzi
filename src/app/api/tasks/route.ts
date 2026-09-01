@@ -420,15 +420,6 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "משימה לא נמצאה" }, { status: 404 });
     }
 
-    // Guard: Prevent deleting future scheduled tasks
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-    if (!existing.isCompleted && new Date(existing.nextDueDate).getTime() > todayEnd.getTime()) {
-      return NextResponse.json({
-        error: `לא ניתן למחוק משימה עתידית מתוכננת (${existing.title}). משימות עתידיות נעולות למחיקה.`,
-      }, { status: 400 });
-    }
-
     // Always restore inventory if chemical was deducted for this task!
     if (existing.lastChemicalInventoryId && existing.lastDeductAmount && existing.lastDeductAmount > 0) {
       const chem = await prisma.chemicalInventory.findFirst({

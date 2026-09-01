@@ -1059,6 +1059,17 @@ export default function CalendarPage() {
                             <span className="font-bold text-white leading-tight">
                               {t.title}
                             </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTask(t.id);
+                              }}
+                              className="text-slate-500 hover:text-rose-400 p-0.5 rounded transition-colors shrink-0"
+                              title="מחק משימה"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </div>
 
                           {/* Complete / Lock Button */}
