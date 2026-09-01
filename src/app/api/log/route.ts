@@ -104,12 +104,56 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "מזהה רשומה חסר" }, { status: 400 });
     }
 
-    await prisma.diaryEntry.deleteMany({
+    const entry = await prisma.diaryEntry.findFirst({
       where: { id, userId: user.id },
     });
 
-    return NextResponse.json({ success: true });
+    if (entry) {
+      // 🌟 Restore deducted chemicals to inventory
+      const fullText = `${entry.title || ""} ${entry.content || ""} ${entry.chemicalsAdded || ""}`;
+      const userChems = await prisma.chemicalInventory.findMany({
+        where: { userId: user.id },
+      });
+
+      for (const chem of userChems) {
+        if (fullText.includes(chem.name)) {
+          // Extract the quantity associated with this chemical in the text
+          // Example formats: "מוריד קצף (30 ML)" or "כלור גרגרים: 50 גרם" or "הוספת 30 ML מוריד קצף"
+          const chemEscaped = chem.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const regexPatterns = [
+            new RegExp(`${chemEscaped}[^0-9]*(\\d+(\\.\\d+)?)`, "i"),
+            new RegExp(`(\\d+(\\.\\d+)?)[^0-9]*${chemEscaped}`, "i"),
+          ];
+
+          let amountToRestore = 0;
+          for (const regex of regexPatterns) {
+            const match = fullText.match(regex);
+            if (match) {
+              const num = parseFloat(match[1] || match[2] || "0");
+              if (num > 0 && num <= 5000) {
+                amountToRestore = num;
+                break;
+              }
+            }
+          }
+
+          if (amountToRestore > 0) {
+            await prisma.chemicalInventory.update({
+              where: { id: chem.id },
+              data: { quantity: chem.quantity + amountToRestore },
+            });
+          }
+        }
+      }
+
+      await prisma.diaryEntry.delete({
+        where: { id: entry.id },
+      });
+    }
+
+    return NextResponse.json({ success: true, restocked: true });
   } catch (error: any) {
+    console.error("Diary entry delete error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

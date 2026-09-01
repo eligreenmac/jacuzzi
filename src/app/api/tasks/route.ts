@@ -169,11 +169,13 @@ export async function PUT(req: NextRequest) {
     if (resetTask) {
       // 1. Restore inventory quantity
       let restockedAmount = 0;
-      if (existing.lastChemicalInventoryId && existing.lastDeductAmount && existing.lastDeductAmount > 0) {
-        const chem = await prisma.chemicalInventory.findFirst({
-          where: { id: existing.lastChemicalInventoryId, userId: user.id },
-        });
+      const userChems = await prisma.chemicalInventory.findMany({
+        where: { userId: user.id },
+      });
+      const fullTaskText = `${existing.title || ""} ${existing.description || ""} ${existing.lastChemicalUsed || ""} ${existing.lastAmountAdded || ""}`;
 
+      if (existing.lastChemicalInventoryId && existing.lastDeductAmount && existing.lastDeductAmount > 0) {
+        const chem = userChems.find((c) => c.id === existing.lastChemicalInventoryId);
         if (chem) {
           restockedAmount = existing.lastDeductAmount;
           await prisma.chemicalInventory.update({
@@ -181,22 +183,29 @@ export async function PUT(req: NextRequest) {
             data: { quantity: chem.quantity + existing.lastDeductAmount },
           });
         }
-      } else if (existing.lastChemicalUsed && existing.lastAmountAdded) {
-        const numMatch = existing.lastAmountAdded.match(/(\d+(\.\d+)?)/);
-        if (numMatch) {
-          const amountToRestore = parseFloat(numMatch[0]);
-          const chem = await prisma.chemicalInventory.findFirst({
-            where: {
-              userId: user.id,
-              name: { contains: existing.lastChemicalUsed.trim() },
-            },
-          });
-          if (chem) {
-            restockedAmount = amountToRestore;
-            await prisma.chemicalInventory.update({
-              where: { id: chem.id },
-              data: { quantity: chem.quantity + amountToRestore },
-            });
+      } else {
+        for (const chem of userChems) {
+          if (fullTaskText.includes(chem.name)) {
+            const chemEscaped = chem.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const regexPatterns = [
+              new RegExp(`${chemEscaped}[^0-9]*(\\d+(\\.\\d+)?)`, "i"),
+              new RegExp(`(\\d+(\\.\\d+)?)[^0-9]*${chemEscaped}`, "i"),
+            ];
+
+            for (const regex of regexPatterns) {
+              const match = fullTaskText.match(regex);
+              if (match) {
+                const num = parseFloat(match[1] || match[2] || "0");
+                if (num > 0 && num <= 5000) {
+                  restockedAmount += num;
+                  await prisma.chemicalInventory.update({
+                    where: { id: chem.id },
+                    data: { quantity: chem.quantity + num },
+                  });
+                  break;
+                }
+              }
+            }
           }
         }
       }
@@ -420,33 +429,48 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "משימה לא נמצאה" }, { status: 404 });
     }
 
-    // Always restore inventory if chemical was deducted for this task!
-    if (existing.lastChemicalInventoryId && existing.lastDeductAmount && existing.lastDeductAmount > 0) {
-      const chem = await prisma.chemicalInventory.findFirst({
-        where: { id: existing.lastChemicalInventoryId, userId: user.id },
-      });
+    // 🌟 Always restore chemical inventory if chemical was deducted or referenced in this task
+    const userChems = await prisma.chemicalInventory.findMany({
+      where: { userId: user.id },
+    });
 
+    const fullTaskText = `${existing.title || ""} ${existing.description || ""} ${existing.lastChemicalUsed || ""} ${existing.lastAmountAdded || ""}`;
+
+    if (existing.lastChemicalInventoryId && existing.lastDeductAmount && existing.lastDeductAmount > 0) {
+      const chem = userChems.find((c) => c.id === existing.lastChemicalInventoryId);
       if (chem) {
         await prisma.chemicalInventory.update({
           where: { id: chem.id },
           data: { quantity: chem.quantity + existing.lastDeductAmount },
         });
       }
-    } else if (existing.lastChemicalUsed && existing.lastAmountAdded) {
-      const numMatch = existing.lastAmountAdded.match(/(\d+(\.\d+)?)/);
-      if (numMatch) {
-        const amountToRestore = parseFloat(numMatch[0]);
-        const chem = await prisma.chemicalInventory.findFirst({
-          where: {
-            userId: user.id,
-            name: { contains: existing.lastChemicalUsed.trim() },
-          },
-        });
-        if (chem) {
-          await prisma.chemicalInventory.update({
-            where: { id: chem.id },
-            data: { quantity: chem.quantity + amountToRestore },
-          });
+    } else {
+      for (const chem of userChems) {
+        if (fullTaskText.includes(chem.name)) {
+          const chemEscaped = chem.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const regexPatterns = [
+            new RegExp(`${chemEscaped}[^0-9]*(\\d+(\\.\\d+)?)`, "i"),
+            new RegExp(`(\\d+(\\.\\d+)?)[^0-9]*${chemEscaped}`, "i"),
+          ];
+
+          let amountToRestore = 0;
+          for (const regex of regexPatterns) {
+            const match = fullTaskText.match(regex);
+            if (match) {
+              const num = parseFloat(match[1] || match[2] || "0");
+              if (num > 0 && num <= 5000) {
+                amountToRestore = num;
+                break;
+              }
+            }
+          }
+
+          if (amountToRestore > 0) {
+            await prisma.chemicalInventory.update({
+              where: { id: chem.id },
+              data: { quantity: chem.quantity + amountToRestore },
+            });
+          }
         }
       }
     }
