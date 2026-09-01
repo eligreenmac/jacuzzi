@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Settings,
   Droplets,
@@ -13,6 +14,9 @@ import {
   Send,
   AlertCircle,
   ExternalLink,
+  ChevronLeft,
+  Clock,
+  Waves,
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -159,6 +163,38 @@ export default function SettingsPage() {
           <span>{errorMsg}</span>
         </div>
       )}
+
+      {/* 🌟 Dedicated Link to Routines Management & Educational Guide */}
+      <Link
+        href="/settings/routines"
+        className="block bg-gradient-to-r from-cyan-950/40 via-slate-900 to-slate-900/90 border border-cyan-800/40 hover:border-cyan-600/70 rounded-3xl p-6 transition-all shadow-xl group"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-950/80 border border-cyan-800/60 flex items-center justify-center text-cyan-300 group-hover:scale-105 transition-transform shadow-inner">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">
+                  ניהול שגרות ותדירויות תחזוקה
+                </h2>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-medium">
+                  חדש
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                התאם אישית את מרווחי הזמן של בדיקת המים, שטיפת הפילטר, השוק והריקון, וקרא הסבר מלא על החלפת מים חלקית ושקלול גיל המים.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-400 shrink-0 group-hover:translate-x-[-4px] transition-transform">
+            <span>פתח שגרות</span>
+            <ChevronLeft className="w-4 h-4" />
+          </div>
+        </div>
+      </Link>
 
       <form onSubmit={handleSave} className="space-y-8">
         {/* Jacuzzi Parameters Section */}
