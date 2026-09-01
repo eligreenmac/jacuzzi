@@ -30,31 +30,31 @@ import {
   Lock,
 } from "lucide-react";
 
-// Standard Test Strip Range Scales
+// Standard Test Strip Range Scales (5 Distinct Domains: Very Low, Low, OK, High, Very High)
 const PH_RANGES = [
-  { id: "LOW_CRIT", label: "מתחת ל-6.8 (חומצי מאוד)", val: 6.6 },
-  { id: "LOW", label: "6.8 - 7.1 (נמוך / דורש איזון)", val: 7.0 },
-  { id: "IDEAL", label: "7.2 - 7.6 (אידיאלי ומאוזן)", val: 7.4 },
-  { id: "HIGH", label: "7.7 - 8.0 (בסיסי / גבוה)", val: 7.8 },
-  { id: "HIGH_CRIT", label: "מעל 8.0 (בסיסי מאוד)", val: 8.2 },
+  { id: "VERY_LOW", label: "Very Low (< 6.8 - חומצי מאוד)", val: 6.6 },
+  { id: "LOW", label: "Low (6.8 - 7.1 - נמוך)", val: 7.0 },
+  { id: "OK", label: "OK (7.2 - 7.6 - תקין)", val: 7.4 },
+  { id: "HIGH", label: "High (7.7 - 8.0 - גבוה)", val: 7.8 },
+  { id: "VERY_HIGH", label: "Very High (> 8.0 - בסיסי מאוד)", val: 8.2 },
   { id: "UNKNOWN", label: "לא נבדק", val: null },
 ];
 
 const CHLORINE_RANGES = [
-  { id: "ZERO", label: "0 ppm (ללא חיטוי)", val: 0.0 },
-  { id: "LOW", label: "0.5 - 1.5 ppm (נמוך)", val: 1.0 },
-  { id: "IDEAL", label: "2.0 - 4.0 ppm (אידיאלי לג'קוזי)", val: 3.0 },
-  { id: "HIGH", label: "5.0 - 8.0 ppm (גבוה)", val: 6.0 },
-  { id: "SHOCK", label: "מעל 10.0 ppm (שוק / גבוה)", val: 10.0 },
+  { id: "VERY_LOW", label: "Very Low (0 - 0.5 ppm - ללא חיטוי)", val: 0.0 },
+  { id: "LOW", label: "Low (0.5 - 1.5 ppm - נמוך)", val: 1.0 },
+  { id: "OK", label: "OK (2.0 - 4.0 ppm - תקין)", val: 3.0 },
+  { id: "HIGH", label: "High (5.0 - 8.0 ppm - גבוה)", val: 6.0 },
+  { id: "VERY_HIGH", label: "Very High (> 8.0 ppm - גבוה מאוד / שוק)", val: 10.0 },
   { id: "UNKNOWN", label: "לא נבדק", val: null },
 ];
 
 const ALKALINITY_RANGES = [
-  { id: "LOW_CRIT", label: "מתחת ל-40 ppm (נמוכה מאוד)", val: 30 },
-  { id: "LOW", label: "40 - 70 ppm (נמוכה)", val: 60 },
-  { id: "IDEAL", label: "80 - 120 ppm (אידיאלי לג'קוזי)", val: 100 },
-  { id: "HIGH", label: "130 - 180 ppm (גבוהה)", val: 150 },
-  { id: "HIGH_CRIT", label: "מעל 180 ppm (גבוהה מאוד)", val: 200 },
+  { id: "VERY_LOW", label: "Very Low (< 40 ppm - נמוכה מאוד)", val: 30 },
+  { id: "LOW", label: "Low (40 - 70 ppm - נמוכה)", val: 60 },
+  { id: "OK", label: "OK (80 - 120 ppm - תקינה)", val: 100 },
+  { id: "HIGH", label: "High (130 - 180 ppm - גבוהה)", val: 150 },
+  { id: "VERY_HIGH", label: "Very High (> 180 ppm - גבוהה מאוד)", val: 200 },
   { id: "UNKNOWN", label: "לא נבדק", val: null },
 ];
 
@@ -81,10 +81,10 @@ export default function CalendarPage() {
   const [externalChemicalName, setExternalChemicalName] = useState("");
   const [chemicalNotes, setChemicalNotes] = useState("");
 
-  // Water Test Form (Test Strip Ranges)
-  const [selectedPhRange, setSelectedPhRange] = useState("IDEAL");
-  const [selectedClRange, setSelectedClRange] = useState("IDEAL");
-  const [selectedAlkRange, setSelectedAlkRange] = useState("IDEAL");
+  // Water Test Form (5 Range Domains)
+  const [selectedPhRange, setSelectedPhRange] = useState("OK");
+  const [selectedClRange, setSelectedClRange] = useState("OK");
+  const [selectedAlkRange, setSelectedAlkRange] = useState("OK");
   const [clarity, setClarity] = useState("CLEAR");
   const [testNotes, setTestNotes] = useState("");
 

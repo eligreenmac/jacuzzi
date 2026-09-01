@@ -227,18 +227,24 @@ export default function DashboardPage() {
 
           {latestWaterLog ? (
             <div className="space-y-3">
-              {/* 4 Mini Parameter Metrics */}
+              {/* 4 Mini Parameter Metrics (5 Domains: Very Low, Low, OK, High, Very High) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl text-center space-y-0.5">
                   <div className="text-[10px] text-slate-400 font-medium">חומציות (pH)</div>
                   <div className="text-base sm:text-lg font-black text-white">{latestWaterLog.ph ?? "—"}</div>
                   <div className="text-[10px]">
-                    {latestWaterLog.ph >= 7.2 && latestWaterLog.ph <= 7.6 ? (
-                      <span className="text-emerald-400 font-bold">✓ אידיאלי</span>
+                    {latestWaterLog.ph === null || latestWaterLog.ph === undefined ? (
+                      <span className="text-slate-400">לא נבדק</span>
+                    ) : latestWaterLog.ph < 6.8 ? (
+                      <span className="text-rose-400 font-bold">Very Low (חומצי מאוד)</span>
                     ) : latestWaterLog.ph < 7.2 ? (
-                      <span className="text-amber-400 font-bold">חומצי מדי</span>
+                      <span className="text-amber-400 font-bold">Low (נמוך)</span>
+                    ) : latestWaterLog.ph <= 7.6 ? (
+                      <span className="text-emerald-400 font-bold">OK (תקין)</span>
+                    ) : latestWaterLog.ph <= 8.0 ? (
+                      <span className="text-amber-400 font-bold">High (גבוה)</span>
                     ) : (
-                      <span className="text-rose-400 font-bold">בסיסי מדי</span>
+                      <span className="text-rose-400 font-bold">Very High (בסיסי מאוד)</span>
                     )}
                   </div>
                 </div>
@@ -249,12 +255,18 @@ export default function DashboardPage() {
                     {latestWaterLog.freeChlorine !== null ? `${latestWaterLog.freeChlorine} ppm` : "—"}
                   </div>
                   <div className="text-[10px]">
-                    {latestWaterLog.freeChlorine >= 2 && latestWaterLog.freeChlorine <= 5 ? (
-                      <span className="text-emerald-400 font-bold">✓ תקין</span>
-                    ) : latestWaterLog.freeChlorine < 2 ? (
-                      <span className="text-rose-400 font-bold">נמוך</span>
+                    {latestWaterLog.freeChlorine === null || latestWaterLog.freeChlorine === undefined ? (
+                      <span className="text-slate-400">לא נבדק</span>
+                    ) : latestWaterLog.freeChlorine < 0.5 ? (
+                      <span className="text-rose-400 font-bold">Very Low (ללא חיטוי)</span>
+                    ) : latestWaterLog.freeChlorine < 2.0 ? (
+                      <span className="text-amber-400 font-bold">Low (נמוך)</span>
+                    ) : latestWaterLog.freeChlorine <= 4.0 ? (
+                      <span className="text-emerald-400 font-bold">OK (תקין)</span>
+                    ) : latestWaterLog.freeChlorine <= 8.0 ? (
+                      <span className="text-amber-400 font-bold">High (גבוה)</span>
                     ) : (
-                      <span className="text-amber-400 font-bold">גבוה</span>
+                      <span className="text-rose-400 font-bold">Very High (שוק / עודף)</span>
                     )}
                   </div>
                 </div>
@@ -265,10 +277,18 @@ export default function DashboardPage() {
                     {latestWaterLog.alkalinity !== null ? `${latestWaterLog.alkalinity} ppm` : "—"}
                   </div>
                   <div className="text-[10px]">
-                    {latestWaterLog.alkalinity >= 80 && latestWaterLog.alkalinity <= 120 ? (
-                      <span className="text-emerald-400 font-bold">✓ מאוזן</span>
+                    {latestWaterLog.alkalinity === null || latestWaterLog.alkalinity === undefined ? (
+                      <span className="text-slate-400">לא נבדק</span>
+                    ) : latestWaterLog.alkalinity < 40 ? (
+                      <span className="text-rose-400 font-bold">Very Low (נמוכה מאוד)</span>
+                    ) : latestWaterLog.alkalinity < 80 ? (
+                      <span className="text-amber-400 font-bold">Low (נמוכה)</span>
+                    ) : latestWaterLog.alkalinity <= 120 ? (
+                      <span className="text-emerald-400 font-bold">OK (תקינה)</span>
+                    ) : latestWaterLog.alkalinity <= 180 ? (
+                      <span className="text-amber-400 font-bold">High (גבוהה)</span>
                     ) : (
-                      <span className="text-amber-400 font-bold">לא מאוזן</span>
+                      <span className="text-rose-400 font-bold">Very High (גבוהה מאוד)</span>
                     )}
                   </div>
                 </div>
