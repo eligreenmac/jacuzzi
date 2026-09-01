@@ -26,32 +26,32 @@ import {
   Zap,
 } from "lucide-react";
 
-// Standard Test Strip Range Scales
+// Standard Test Strip Range Scales (Clean & Calibrated)
 const PH_RANGES = [
-  { id: "LOW_CRIT", label: "< 6.8 (חומצי מאוד / קריטי 🔴)", val: 6.6, badge: "חומצי מאוד", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "LOW", label: "6.8 - 7.1 (נמוך / דורש מעלה pH 🟠)", val: 7.0, badge: "נמוך", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "IDEAL", label: "7.2 - 7.6 (אידיאלי ומאוזן ✨ 🟢)", val: 7.4, badge: "אידיאלי", color: "border-emerald-700 bg-emerald-950/50 text-emerald-300" },
-  { id: "HIGH", label: "7.7 - 8.0 (גבוה / דורש מוריד pH 🟠)", val: 7.8, badge: "גבוה", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "HIGH_CRIT", label: "> 8.0 (בסיסי מאוד / קריטי 🔴)", val: 8.2, badge: "גבוה מאוד", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "UNKNOWN", label: "לא יודע / לא נבדק", val: null, badge: "לא נבדק", color: "border-slate-800 bg-slate-950 text-slate-400" },
+  { id: "LOW_CRIT", label: "מתחת ל-6.8 (חומצי מאוד)", val: 6.6, badge: "חומצי מאוד" },
+  { id: "LOW", label: "6.8 - 7.1 (נמוך / דורש איזון)", val: 7.0, badge: "נמוך" },
+  { id: "IDEAL", label: "7.2 - 7.6 (אידיאלי ומאוזן)", val: 7.4, badge: "אידיאלי" },
+  { id: "HIGH", label: "7.7 - 8.0 (בסיסי / גבוה)", val: 7.8, badge: "גבוה" },
+  { id: "HIGH_CRIT", label: "מעל 8.0 (בסיסי מאוד)", val: 8.2, badge: "גבוה מאוד" },
+  { id: "UNKNOWN", label: "לא נבדק", val: null, badge: "לא נבדק" },
 ];
 
 const CHLORINE_RANGES = [
-  { id: "ZERO", label: "0 ppm (ללא חיטוי כלל / קריטי 🔴)", val: 0.0, badge: "ללא חיטוי", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "LOW", label: "0.5 - 1.5 ppm (נמוך / דורש חיטוי 🟠)", val: 1.0, badge: "נמוך", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "IDEAL", label: "2.0 - 4.0 ppm (אידיאלי לג'קוזי ✨ 🟢)", val: 3.0, badge: "אידיאלי", color: "border-emerald-700 bg-emerald-950/50 text-emerald-300" },
-  { id: "HIGH", label: "5.0 - 8.0 ppm (גבוה / להמתין לפני רחצה 🟠)", val: 6.0, badge: "גבוה", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "SHOCK", label: "> 10.0 ppm (גבוה מאוד / שוק 🔴)", val: 10.0, badge: "שוק / גבוה", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "UNKNOWN", label: "לא יודע / לא נבדק", val: null, badge: "לא נבדק", color: "border-slate-800 bg-slate-950 text-slate-400" },
+  { id: "ZERO", label: "0 ppm (ללא חיטוי)", val: 0.0, badge: "ללא חיטוי" },
+  { id: "LOW", label: "0.5 - 1.5 ppm (נמוך)", val: 1.0, badge: "נמוך" },
+  { id: "IDEAL", label: "2.0 - 4.0 ppm (אידיאלי לג'קוזי)", val: 3.0, badge: "אידיאלי" },
+  { id: "HIGH", label: "5.0 - 8.0 ppm (גבוה)", val: 6.0, badge: "גבוה" },
+  { id: "SHOCK", label: "מעל 10.0 ppm (שוק / גבוה)", val: 10.0, badge: "גבוה מאוד" },
+  { id: "UNKNOWN", label: "לא נבדק", val: null, badge: "לא נבדק" },
 ];
 
 const ALKALINITY_RANGES = [
-  { id: "LOW_CRIT", label: "< 40 ppm (נמוכה מאוד 🔴)", val: 30, badge: "נמוכה מאוד", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "LOW", label: "40 - 70 ppm (נמוכה 🟠)", val: 60, badge: "נמוכה", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "IDEAL", label: "80 - 120 ppm (אידיאלי לג'קוזי ✨ 🟢)", val: 100, badge: "אידיאלי", color: "border-emerald-700 bg-emerald-950/50 text-emerald-300" },
-  { id: "HIGH", label: "130 - 180 ppm (גבוהה 🟠)", val: 150, badge: "גבוהה", color: "border-amber-700 bg-amber-950/50 text-amber-300" },
-  { id: "HIGH_CRIT", label: "> 180 ppm (גבוהה מאוד 🔴)", val: 200, badge: "גבוהה מאוד", color: "border-rose-700 bg-rose-950/50 text-rose-300" },
-  { id: "UNKNOWN", label: "לא יודע / לא נבדק", val: null, badge: "לא נבדק", color: "border-slate-800 bg-slate-950 text-slate-400" },
+  { id: "LOW_CRIT", label: "מתחת ל-40 ppm (נמוכה מאוד)", val: 30, badge: "נמוכה מאוד" },
+  { id: "LOW", label: "40 - 70 ppm (נמוכה)", val: 60, badge: "נמוכה" },
+  { id: "IDEAL", label: "80 - 120 ppm (אידיאלי לג'קוזי)", val: 100, badge: "אידיאלי" },
+  { id: "HIGH", label: "130 - 180 ppm (גבוהה)", val: 150, badge: "גבוהה" },
+  { id: "HIGH_CRIT", label: "מעל 180 ppm (גבוהה מאוד)", val: 200, badge: "גבוהה מאוד" },
+  { id: "UNKNOWN", label: "לא נבדק", val: null, badge: "לא נבדק" },
 ];
 
 export default function WaterTestsPage() {
@@ -262,15 +262,15 @@ export default function WaterTestsPage() {
     }
   };
 
-  const clarityLabels: Record<string, { label: string; icon: string; color: string }> = {
-    CLEAR: { label: "מים צלולים", icon: "✨", color: "text-emerald-400 border-emerald-800 bg-emerald-950/40" },
-    SLIGHTLY_CLOUDY: { label: "מעט עכורים", icon: "🌫️", color: "text-sky-400 border-sky-800 bg-sky-950/40" },
-    VERY_CLOUDY: { label: "עכורים מאוד", icon: "🥛", color: "text-amber-400 border-amber-800 bg-amber-950/40" },
-    FOAMY: { label: "מקציפים", icon: "🧼", color: "text-indigo-400 border-indigo-800 bg-indigo-950/40" },
-    GREEN: { label: "ירוקים / אצות", icon: "🌿", color: "text-rose-400 border-rose-800 bg-rose-950/40" },
-    BAD_ODOR: { label: "ריח חריף / צריבה", icon: "👃", color: "text-rose-400 border-rose-800 bg-rose-950/40" },
-    METALLIC_COPPER: { label: "ירוק-טורקיז / נחושת (Copper)", icon: "🪙", color: "text-teal-400 border-teal-800 bg-teal-950/40" },
-    METALLIC_RUST: { label: "חום / חלודה / ברזל (Iron)", icon: "⚙️", color: "text-orange-400 border-orange-800 bg-orange-950/40" },
+  const clarityLabels: Record<string, { label: string; color: string }> = {
+    CLEAR: { label: "מים צלולים", color: "text-slate-200 border-slate-750 bg-slate-950" },
+    SLIGHTLY_CLOUDY: { label: "מעט עכורים", color: "text-slate-200 border-slate-750 bg-slate-950" },
+    VERY_CLOUDY: { label: "עכורים מאוד / חלביים", color: "text-slate-200 border-slate-750 bg-slate-950" },
+    FOAMY: { label: "מקציפים", color: "text-slate-200 border-slate-750 bg-slate-950" },
+    GREEN: { label: "ירוקים / אצות", color: "text-rose-300 border-rose-900/40 bg-slate-950" },
+    BAD_ODOR: { label: "ריח חריף", color: "text-rose-300 border-rose-900/40 bg-slate-950" },
+    METALLIC_COPPER: { label: "ירוק-טורקיז (נחושת)", color: "text-teal-300 border-teal-900/40 bg-slate-950" },
+    METALLIC_RUST: { label: "חלודה / ברזל", color: "text-orange-300 border-orange-900/40 bg-slate-950" },
   };
 
   // Metrics calculation
@@ -296,16 +296,16 @@ export default function WaterTestsPage() {
             <span>יומן בדיקות איכות מים</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            תיעוד כרונולוגי לפי סולם טווחי מקלונים (pH, כלור/ברום, בסיסיות, צלילות והשפעות מתכות).
+            תיעוד כרונולוגי של בדיקות מקלונים, איזון מים ותוכניות טיפול.
           </p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
           <Link
             href="/water-doctor"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-purple-600/20 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs sm:text-sm transition-all"
           >
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-4 h-4 text-cyan-400" />
             <span>אבחון מקיף ברופא המים AI</span>
           </Link>
 
@@ -314,7 +314,7 @@ export default function WaterTestsPage() {
               setTestDate(new Date().toISOString().slice(0, 16));
               setIsAddModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-600/20 transition-all hover:scale-105"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-900/20 transition-all hover:scale-105"
           >
             <Plus className="w-4 h-4" />
             <span>הזן תוצאת בדיקת מקלון חדשה</span>
@@ -323,9 +323,9 @@ export default function WaterTestsPage() {
       </div>
 
       {actionNotice && (
-        <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-700 text-emerald-200 text-xs flex items-center justify-between shadow-xl animate-fade-in">
+        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-700 text-slate-200 text-xs flex items-center justify-between shadow-xl animate-fade-in">
           <div className="flex items-center gap-2.5 font-bold">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0" />
             <span>{actionNotice}</span>
           </div>
           <button onClick={() => setActionNotice(null)} className="text-slate-400 hover:text-white">
@@ -336,44 +336,44 @@ export default function WaterTestsPage() {
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 space-y-1">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
-            <span>סה"כ בדיקות שתועדו</span>
-            <Activity className="w-4 h-4 text-cyan-400" />
+            <span>סה"כ בדיקות</span>
+            <Activity className="w-4 h-4 text-slate-500" />
           </div>
           <div className="text-2xl font-black text-white">{totalTests}</div>
-          <div className="text-[11px] text-slate-500">היסטוריית מקלונים ובדיקות</div>
+          <div className="text-[11px] text-slate-400">היסטוריית בדיקות מתועדת</div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 space-y-1">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
             <span>בדיקה אחרונה</span>
-            <Clock className="w-4 h-4 text-emerald-400" />
+            <Clock className="w-4 h-4 text-slate-500" />
           </div>
-          <div className="text-2xl font-black text-emerald-300">
+          <div className="text-2xl font-black text-white">
             {daysSinceLastTest === null ? "טרם נבדק" : daysSinceLastTest === 0 ? "היום" : `לפני ${daysSinceLastTest} ימים`}
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-[11px] text-slate-400">
             {lastTest ? new Date(lastTest.testedAt).toLocaleDateString("he-IL") : "מומלץ לבדוק שבועית"}
           </div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 space-y-1">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
-            <span>רמת pH ממוצעת</span>
-            <Droplets className="w-4 h-4 text-sky-400" />
+            <span>pH ממוצע</span>
+            <Droplets className="w-4 h-4 text-slate-500" />
           </div>
-          <div className="text-2xl font-black text-sky-300">{avgPh}</div>
-          <div className="text-[11px] text-slate-500">טווח יעד אופטימלי: 7.2 - 7.6</div>
+          <div className="text-2xl font-black text-white">{avgPh}</div>
+          <div className="text-[11px] text-slate-400">טווח יעד: 7.2 - 7.6</div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 space-y-1">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
-            <span>כלור חופשי ממוצע</span>
-            <TrendingUp className="w-4 h-4 text-amber-400" />
+            <span>חיטוי ממוצע</span>
+            <TrendingUp className="w-4 h-4 text-slate-500" />
           </div>
-          <div className="text-2xl font-black text-amber-300">{avgCl} {avgCl !== "--" ? "ppm" : ""}</div>
-          <div className="text-[11px] text-slate-500">טווח יעד אופטימלי: 2.0 - 4.0 ppm</div>
+          <div className="text-2xl font-black text-white">{avgCl} {avgCl !== "--" ? "ppm" : ""}</div>
+          <div className="text-[11px] text-slate-400">טווח יעד: 2.0 - 4.0 ppm</div>
         </div>
       </div>
 
@@ -465,17 +465,15 @@ export default function WaterTestsPage() {
                   {/* Values Badges Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {/* pH Badge */}
-                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850 space-y-1.5">
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
                       <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between">
                         <span>חומציות (pH)</span>
                         {typeof test.ph === "number" && (
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                               isPhGood
-                                ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                                : isPhHigh
-                                ? "bg-amber-950 text-amber-300 border-amber-800"
-                                : "bg-rose-950 text-rose-300 border-rose-800"
+                                ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                                : "bg-slate-800 text-slate-300 border-slate-700"
                             }`}
                           >
                             {isPhGood ? "אידיאלי" : isPhHigh ? "גבוה" : "נמוך"}
@@ -488,17 +486,17 @@ export default function WaterTestsPage() {
                     </div>
 
                     {/* Chlorine Badge */}
-                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850 space-y-1.5">
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
                       <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between">
-                        <span>כלור / ברום (חיטוי)</span>
+                        <span>חיטוי (כלור / ברום)</span>
                         {typeof test.freeChlorine === "number" && (
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                               isClGood
-                                ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
                                 : isClLow
-                                ? "bg-rose-950 text-rose-300 border-rose-800"
-                                : "bg-amber-950 text-amber-300 border-amber-800"
+                                ? "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                                : "bg-slate-800 text-slate-300 border-slate-700"
                             }`}
                           >
                             {isClGood ? "אידיאלי" : isClLow ? "חסר" : "גבוה"}
@@ -511,22 +509,21 @@ export default function WaterTestsPage() {
                     </div>
 
                     {/* Alkalinity Badge */}
-                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850 space-y-1.5">
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
                       <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between">
                         <span>בסיסיות כוללת (TA)</span>
                         <span className="text-[10px] text-slate-400">יעד: 80-120</span>
                       </div>
-                      <div className="text-sm font-bold text-cyan-300">
+                      <div className="text-sm font-bold text-white">
                         {test.alkalinityRange || (typeof test.alkalinity === "number" ? `${test.alkalinity} ppm` : "לא נבדק")}
                       </div>
                     </div>
 
                     {/* Clarity Badge */}
-                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850 space-y-1.5">
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
                       <div className="text-[11px] text-slate-400 font-semibold">צלילות המים</div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{clarityInfo.icon}</span>
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${clarityInfo.color}`}>
+                      <div>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg border ${clarityInfo.color}`}>
                           {clarityInfo.label}
                         </span>
                       </div>
@@ -552,7 +549,7 @@ export default function WaterTestsPage() {
                         )}
 
                         {test.aiDiagnosis && (
-                          <div className="p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-800/60 text-cyan-200 flex items-start gap-2.5">
+                          <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 flex items-start gap-2.5">
                             <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                             <div className="space-y-1">
                               <span className="font-bold text-cyan-300">אבחון ומצב המים: </span>
@@ -563,12 +560,12 @@ export default function WaterTestsPage() {
 
                         {/* Root Cause Analysis */}
                         {recs?.rootCauseAnalysis && (
-                          <div className="p-3.5 rounded-2xl bg-purple-950/40 border border-purple-800/60 text-purple-200 space-y-1">
-                            <div className="flex items-center gap-2 font-bold text-purple-300 text-xs">
-                              <Info className="w-4 h-4 text-purple-400" />
-                              <span>ניתוח מקצועי של שורש הבעיה (מעבר לסימפטום):</span>
+                          <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
+                            <div className="flex items-center gap-2 font-bold text-slate-200 text-xs">
+                              <Info className="w-4 h-4 text-cyan-400" />
+                              <span>ניתוח שורש הבעיה:</span>
                             </div>
-                            <div className="text-[11px] leading-relaxed text-purple-200/90 pr-6">
+                            <div className="text-[11px] leading-relaxed text-slate-300 pr-6">
                               {recs.rootCauseAnalysis}
                             </div>
                           </div>
@@ -576,33 +573,27 @@ export default function WaterTestsPage() {
 
                         {/* Step By Step Treatment Plan with Inventory Matching & Web Search */}
                         {recs?.stepByStepPlan && recs.stepByStepPlan.length > 0 && (
-                          <div className="space-y-2.5 bg-slate-950/90 p-4 rounded-2xl border border-slate-850">
-                            <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-                              <Zap className="w-4 h-4 text-amber-400" />
-                              <span>תוכנית טיפול משולבת (שורש הבעיה + הקלה מיידית + אזהרות לוואי):</span>
+                          <div className="space-y-2.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+                              <Zap className="w-4 h-4 text-cyan-400" />
+                              <span>תוכנית טיפול מומלצת:</span>
                             </div>
 
                             <div className="space-y-2.5">
                               {recs.stepByStepPlan.map((step: any, sIdx: number) => (
                                 <div
                                   key={sIdx}
-                                  className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2"
+                                  className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2"
                                 >
                                   <div className="flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-2 font-bold text-white text-xs">
-                                      <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-bold ${
-                                        step.stepType === "ROOT_CAUSE"
-                                          ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                                          : step.stepType === "IMMEDIATE_RELIEF"
-                                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                                          : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                                      }`}>
+                                      <span className="w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-bold bg-slate-800 text-cyan-300 border border-slate-700">
                                         {step.stepNumber || sIdx + 1}
                                       </span>
                                       <span>{step.title}</span>
                                     </div>
                                     {step.amount && step.amount !== "לפי שגרה" && (
-                                      <span className="px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-300 font-bold text-[11px] border border-cyan-800">
+                                      <span className="px-2 py-0.5 rounded-md bg-slate-950 text-cyan-300 font-bold text-[11px] border border-slate-800">
                                         מינון: {step.amount}
                                       </span>
                                     )}
@@ -613,7 +604,7 @@ export default function WaterTestsPage() {
                                   </div>
 
                                   {step.safetyWarning && (
-                                    <div className="mr-7 p-2 rounded-lg bg-amber-950/40 border border-amber-900/60 text-amber-300 text-[10px] flex items-center gap-1.5">
+                                    <div className="mr-7 p-2 rounded-lg bg-slate-950 border border-slate-800 text-amber-300 text-[10px] flex items-center gap-1.5">
                                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                                       <span>{step.safetyWarning}</span>
                                     </div>
@@ -623,37 +614,34 @@ export default function WaterTestsPage() {
                                   {step.chemical && step.chemical !== "ללא חומר" && step.chemical !== "תחזוקה רגילה" && !step.chemical.includes("שטיפת פילטר") && (
                                     <div className="mr-7">
                                       {step.inInventory ? (
-                                        <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/80 text-emerald-300 text-[11px] flex items-center justify-between">
+                                        <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-[11px] flex items-center justify-between">
                                           <div className="flex items-center gap-1.5">
-                                            <Package className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                            <Package className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                                             <span>
-                                              <strong>קיים בארון החומרים שלך:</strong> {step.inventoryItemName || step.chemical} (נותרו: {step.inventoryRemaining || "במלאי"})
+                                              <strong>קיים בארון החומרים:</strong> {step.inventoryItemName || step.chemical} (נותרו: {step.inventoryRemaining || "במלאי"})
                                             </span>
                                           </div>
-                                          <span className="text-[10px] bg-emerald-900/60 px-1.5 py-0.5 rounded font-bold text-emerald-200">
-                                            מוכן לשימוש ✅
+                                          <span className="text-[10px] bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded font-bold text-cyan-300">
+                                            זמין לשימוש
                                           </span>
                                         </div>
                                       ) : (
-                                        <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/80 text-amber-200 text-[11px] space-y-1">
+                                        <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-[11px] space-y-1">
                                           <div className="flex items-center justify-between gap-2 flex-wrap">
                                             <div className="flex items-center gap-1.5">
                                               <ShoppingCart className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                              <span className="font-bold text-amber-300">חסר בארון החומרים - נדרש לרכוש</span>
+                                              <span className="font-bold text-slate-200">חסר בארון החומרים</span>
                                             </div>
                                             <a
                                               href={`https://www.google.com/search?q=${encodeURIComponent(step.searchKeywords || step.chemical + " לג'קוזי")}`}
                                               target="_blank"
                                               rel="noreferrer"
-                                              className="px-2 py-0.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded flex items-center gap-1 transition-all shadow"
+                                              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[10px] rounded flex items-center gap-1 transition-all"
                                             >
                                               <Search className="w-3 h-3" />
                                               <span>חפש ברשת לרכישה</span>
                                               <ExternalLink className="w-2.5 h-2.5" />
                                             </a>
-                                          </div>
-                                          <div className="text-[10px] text-amber-300/80 pr-5">
-                                            💡 {step.buyRecommendation || `חפש ברשת: "${step.searchKeywords || step.chemical}" באתרי ציוד ספא ובריכות`}
                                           </div>
                                         </div>
                                       )}
@@ -661,20 +649,20 @@ export default function WaterTestsPage() {
                                   )}
 
                                   {/* Action Button: Schedule Future Task vs Immediate Done */}
-                                  <div className="mr-7 pt-1 border-t border-slate-800/60 flex items-center justify-between gap-2 flex-wrap">
+                                  <div className="mr-7 pt-1 border-t border-slate-800 flex items-center justify-between gap-2 flex-wrap">
                                     {step.isExecuted ? (
-                                      <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-800">
+                                      <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                                         <span>
-                                          בוצע ותועד ביומן {step.executedAt ? `(${new Date(step.executedAt).toLocaleDateString("he-IL")} ${new Date(step.executedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })})` : "✅"}
+                                          בוצע ותועד ביומן {step.executedAt ? `(${new Date(step.executedAt).toLocaleDateString("he-IL")})` : "✓"}
                                         </span>
                                       </div>
                                     ) : step.isScheduled ? (
                                       <div className="flex items-center justify-between gap-2 w-full flex-wrap">
-                                        <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-[11px] bg-cyan-950/60 px-3 py-1.5 rounded-xl border border-cyan-800">
+                                        <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-[11px] bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
                                           <Clock className="w-3.5 h-3.5 text-cyan-400" />
                                           <span>
-                                            ⏳ תוזמן ללוח השנה {step.scheduledFor ? `ל-${new Date(step.scheduledFor).toLocaleDateString("he-IL")} ${new Date(step.scheduledFor).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                                            תוזמן ליומן {step.scheduledFor ? `ל-${new Date(step.scheduledFor).toLocaleDateString("he-IL")}` : ""}
                                           </span>
                                         </div>
 
@@ -682,18 +670,18 @@ export default function WaterTestsPage() {
                                           <button
                                             type="button"
                                             disabled
-                                            className="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 font-bold text-[11px] cursor-not-allowed opacity-75 flex items-center gap-1 select-none"
+                                            className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-bold text-[11px] cursor-not-allowed opacity-75 flex items-center gap-1 select-none"
                                             title={`משימה עתידית - תיפתח לסימון ביצוע ב-${new Date(step.scheduledFor).toLocaleDateString("he-IL")}`}
                                           >
                                             <Clock className="w-3.5 h-3.5 text-slate-500" />
-                                            <span>⏳ ייפתח לביצוע במועד</span>
+                                            <span>ייפתח לביצוע במועד</span>
                                           </button>
                                         ) : (
                                           <button
                                             type="button"
                                             disabled={executingStep === `${test.id}-${step.stepNumber}`}
                                             onClick={() => handleExecuteStep(test.id, step, recs, false)}
-                                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow flex items-center gap-1 transition-all"
+                                            className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] shadow flex items-center gap-1 transition-all"
                                           >
                                             <CheckCircle2 className="w-3.5 h-3.5" />
                                             <span>סמן כבוצע כעת</span>
@@ -705,20 +693,20 @@ export default function WaterTestsPage() {
                                         type="button"
                                         disabled={executingStep === `${test.id}-${step.stepNumber}`}
                                         onClick={() => handleExecuteStep(test.id, step, recs, true)}
-                                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-[11px] shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
+                                        className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[11px] shadow-sm flex items-center gap-1.5 transition-all disabled:opacity-50"
                                       >
-                                        <Calendar className="w-3.5 h-3.5" />
-                                        <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתזמן ללוח השנה..." : "📅 הכנס ללוח השנה (תזמן ליומן)"}</span>
+                                        <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                                        <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתזמן ליומן..." : "תזמן ליומן"}</span>
                                       </button>
                                     ) : (
                                       <button
                                         type="button"
                                         disabled={executingStep === `${test.id}-${step.stepNumber}`}
                                         onClick={() => handleExecuteStep(test.id, step, recs, false)}
-                                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[11px] shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
+                                        className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
                                       >
                                         <CheckCircle2 className="w-3.5 h-3.5" />
-                                        <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתעד ביומן ומפחית מהארון..." : "✓ סמן כבוצע כעת ותעד ביומן"}</span>
+                                        <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתעד ביומן..." : "סמן כבוצע כעת"}</span>
                                       </button>
                                     )}
                                   </div>
@@ -733,9 +721,9 @@ export default function WaterTestsPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                             {recs.followUpRequirements?.length > 0 && (
                               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                                <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5" />
-                                  <span>פעולות חובה להמשך (24-48 שעות):</span>
+                                <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                                  <span>פעולות להמשך:</span>
                                 </div>
                                 <ul className="text-[11px] text-slate-300 space-y-0.5 list-disc list-inside">
                                   {recs.followUpRequirements.map((req: string, idx: number) => (
@@ -747,9 +735,9 @@ export default function WaterTestsPage() {
 
                             {recs.preventionGuidelines?.length > 0 && (
                               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                                <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  <span>הנחיות מניעה לפעמים הבאות:</span>
+                                <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+                                  <span>הנחיות מניעה:</span>
                                 </div>
                                 <ul className="text-[11px] text-slate-300 space-y-0.5 list-disc list-inside">
                                   {recs.preventionGuidelines.map((prev: string, idx: number) => (
@@ -770,14 +758,14 @@ export default function WaterTestsPage() {
         </div>
       )}
 
-      {/* Modal: Add New Test (With Test Strip Ranges / Verbal Scale) */}
+      {/* Modal: Add New Test */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <FlaskConical className="w-5 h-5 text-cyan-400" />
-                <span>הזנת תוצאות בדיקת מקלון (לפי סולם טווחים)</span>
+                <span>הזנת תוצאות בדיקת מקלון</span>
               </h2>
               <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -805,8 +793,8 @@ export default function WaterTestsPage() {
               {/* 1. pH Range Picker */}
               <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-200">1. רמת חומציות (pH לפי סולם המקלון):</span>
-                  <span className="text-[11px] text-cyan-400">אידיאלי: 7.2 - 7.6</span>
+                  <span className="font-bold text-slate-200">1. רמת חומציות (pH):</span>
+                  <span className="text-[11px] text-slate-400">אידיאלי: 7.2 - 7.6</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {PH_RANGES.map((r) => (
@@ -816,8 +804,8 @@ export default function WaterTestsPage() {
                       onClick={() => setSelectedPhRange(r.id)}
                       className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
                         selectedPhRange === r.id
-                          ? `${r.color} ring-2 ring-cyan-400 font-bold shadow-md`
-                          : "border-slate-850 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                          ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
+                          : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
                       }`}
                     >
                       {r.label}
@@ -829,8 +817,8 @@ export default function WaterTestsPage() {
               {/* 2. Chlorine Range Picker */}
               <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-200">2. כלור חופשי / ברום (ppm חיטוי):</span>
-                  <span className="text-[11px] text-cyan-400">אידיאלי: 2.0 - 4.0 ppm</span>
+                  <span className="font-bold text-slate-200">2. כלור חופשי / ברום (חיטוי):</span>
+                  <span className="text-[11px] text-slate-400">אידיאלי: 2.0 - 4.0 ppm</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {CHLORINE_RANGES.map((r) => (
@@ -840,8 +828,8 @@ export default function WaterTestsPage() {
                       onClick={() => setSelectedClRange(r.id)}
                       className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
                         selectedClRange === r.id
-                          ? `${r.color} ring-2 ring-cyan-400 font-bold shadow-md`
-                          : "border-slate-850 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                          ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
+                          : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
                       }`}
                     >
                       {r.label}
@@ -853,8 +841,8 @@ export default function WaterTestsPage() {
               {/* 3. Alkalinity Range Picker */}
               <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-200">3. בסיסיות כוללת (TA ppm):</span>
-                  <span className="text-[11px] text-cyan-400">אידיאלי: 80 - 120 ppm</span>
+                  <span className="font-bold text-slate-200">3. בסיסיות כוללת (TA):</span>
+                  <span className="text-[11px] text-slate-400">אידיאלי: 80 - 120 ppm</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {ALKALINITY_RANGES.map((r) => (
@@ -864,8 +852,8 @@ export default function WaterTestsPage() {
                       onClick={() => setSelectedAlkRange(r.id)}
                       className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
                         selectedAlkRange === r.id
-                          ? `${r.color} ring-2 ring-cyan-400 font-bold shadow-md`
-                          : "border-slate-850 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                          ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
+                          : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
                       }`}
                     >
                       {r.label}
@@ -874,22 +862,22 @@ export default function WaterTestsPage() {
                 </div>
               </div>
 
-              {/* 4. Clarity Picker (Including Copper & Rust) */}
+              {/* 4. Clarity Picker */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">4. מראה וצלילות המים</label>
                 <select
                   value={clarity}
                   onChange={(e) => setClarity(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-semibold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-medium"
                 >
-                  <option value="CLEAR">✨ מים צלולים לחלוטין וללא ריח</option>
-                  <option value="SLIGHTLY_CLOUDY">🌫️ מעט עכורים / ראות מופחתת בקרקעית</option>
-                  <option value="VERY_CLOUDY">🥛 עכורים מאוד / מים חלביים</option>
-                  <option value="FOAMY">🧼 מקציפים בהפעלת ג'טים</option>
-                  <option value="GREEN">🌿 ירוקים / חשד לאצות</option>
-                  <option value="METALLIC_COPPER">🪙 גוון ירוק-טורקיז צלול / חשד לחמצון נחושת (Copper)</option>
-                  <option value="METALLIC_RUST">⚙️ גוון צהבהב-חום / חלודה / ברזל (Iron / Rust)</option>
-                  <option value="BAD_ODOR">👃 ריח חריף / צריבה בעיניים</option>
+                  <option value="CLEAR">מים צלולים לחלוטין</option>
+                  <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
+                  <option value="VERY_CLOUDY">עכורים מאוד / חלביים</option>
+                  <option value="FOAMY">מקציפים בהפעלת ג'טים</option>
+                  <option value="GREEN">ירוקים / אצות</option>
+                  <option value="METALLIC_COPPER">גוון ירוק-טורקיז / נחושת (Copper)</option>
+                  <option value="METALLIC_RUST">גוון חלודה / ברזל (Iron / Rust)</option>
+                  <option value="BAD_ODOR">ריח חריף</option>
                 </select>
               </div>
 
@@ -916,9 +904,9 @@ export default function WaterTestsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2"
+                  className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2"
                 >
-                  {saving ? "שומר בדיקה..." : "שמור תוצאות בדיקה"}
+                  {saving ? "שומר..." : "שמור תוצאות בדיקה"}
                 </button>
               </div>
             </form>
@@ -998,14 +986,14 @@ export default function WaterTestsPage() {
                   onChange={(e) => setEditForm({ ...editForm, waterClarity: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
                 >
-                  <option value="CLEAR">✨ מים צלולים</option>
-                  <option value="SLIGHTLY_CLOUDY">🌫️ מעט עכורים</option>
-                  <option value="VERY_CLOUDY">🥛 עכורים מאוד</option>
-                  <option value="FOAMY">🧼 מקציפים</option>
-                  <option value="GREEN">🌿 ירוקים / אצות</option>
-                  <option value="METALLIC_COPPER">🪙 גוון ירוק-טורקיז / נחושת (Copper)</option>
-                  <option value="METALLIC_RUST">⚙️ חום / חלודה / ברזל (Iron)</option>
-                  <option value="BAD_ODOR">👃 ריח חריף</option>
+                  <option value="CLEAR">מים צלולים</option>
+                  <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
+                  <option value="VERY_CLOUDY">עכורים מאוד</option>
+                  <option value="FOAMY">מקציפים</option>
+                  <option value="GREEN">ירוקים / אצות</option>
+                  <option value="METALLIC_COPPER">גוון ירוק-טורקיז (נחושת)</option>
+                  <option value="METALLIC_RUST">חלודה / ברזל</option>
+                  <option value="BAD_ODOR">ריח חריף</option>
                 </select>
               </div>
 

@@ -285,7 +285,7 @@ export default function DashboardPage() {
                 <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl text-center space-y-0.5">
                   <div className="text-[10px] text-slate-400 font-medium">צלילות ומצב</div>
                   <div className="text-base sm:text-lg font-black text-white">
-                    {latestWaterLog.clarity === "CLEAR" ? "צלול ✨" : latestWaterLog.clarity === "FOAMY" ? "קצף ⚠️" : "עכור ⚠️"}
+                    {latestWaterLog.clarity === "CLEAR" ? "צלול" : latestWaterLog.clarity === "FOAMY" ? "מקציף" : "עכור"}
                   </div>
                   <div className="text-[10px] text-slate-400">
                     {latestWaterLog.waterTemp ? `${latestWaterLog.waterTemp}°C` : "38°C"}
