@@ -995,20 +995,21 @@ export default function CalendarPage() {
           <RefreshCw className="w-8 h-8 animate-spin mx-auto" />
         </div>
       ) : viewMode === "WEEK" ? (
-        /* WEEKLY 7-DAY SPACIOUS VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-3 items-stretch">
+        /* WEEKLY 7-DAY COMPACT & RESPONSIVE VIEW */
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-2 sm:gap-3 items-stretch">
           {weekDays.map((dayDate, idx) => {
             const { dayTasks, doneTasks, dayEntries, dayWaterLogs } = getEventsForDay(dayDate);
             const isToday = isSameDay(dayDate, new Date());
             const isSelected = selectedDay && isSameDay(dayDate, selectedDay);
             const dayName = daysOfWeek[dayDate.getDay()];
             const pendingDayTasks = dayTasks.filter((t: any) => !t.isCompleted);
+            const hasAnyEvents = pendingDayTasks.length > 0 || doneTasks.length > 0 || dayWaterLogs.length > 0 || dayEntries.length > 0;
 
             return (
               <div
                 key={idx}
                 onClick={() => setSelectedDay(dayDate)}
-                className={`p-3.5 rounded-3xl border flex flex-col justify-between transition-all min-h-[420px] shadow-lg cursor-pointer ${
+                className={`p-2.5 sm:p-3.5 rounded-2xl md:rounded-3xl border flex flex-col justify-between transition-all min-h-0 md:min-h-[400px] shadow-md cursor-pointer ${
                   isSelected
                     ? "bg-cyan-950/30 border-cyan-400 ring-1 ring-cyan-400 shadow-cyan-950/30"
                     : isToday
@@ -1017,13 +1018,13 @@ export default function CalendarPage() {
                 }`}
               >
                 {/* Day Header */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                    <div>
-                      <div className="text-xs font-bold text-slate-300">יום {dayName}</div>
-                      <div className="text-sm font-black text-white">
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5 sm:pb-2">
+                    <div className="flex items-center gap-2 md:block">
+                      <span className="text-xs font-bold text-slate-300">יום {dayName}</span>
+                      <span className="text-xs sm:text-sm font-black text-white">
                         {dayDate.toLocaleDateString("he-IL", { day: "numeric", month: "numeric" })}
-                      </div>
+                      </span>
                     </div>
                     {isToday ? (
                       <span className="text-[10px] font-black bg-cyan-500 text-slate-950 px-2 py-0.5 rounded-full shadow">
@@ -1046,17 +1047,17 @@ export default function CalendarPage() {
                   </div>
 
                   {/* Day Events List */}
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {/* Pending Tasks */}
                     {pendingDayTasks.map((t: any) => {
                       const isFuture = isTaskFuture(t);
                       return (
                         <div
                           key={t.id}
-                          className="p-2.5 rounded-2xl bg-slate-950/90 border border-slate-800 hover:border-cyan-700 transition-all space-y-1.5 text-xs shadow-sm"
+                          className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-slate-950/90 border border-slate-800 hover:border-cyan-700 transition-all space-y-1 sm:space-y-1.5 text-xs shadow-sm"
                         >
                           <div className="flex items-start justify-between gap-1">
-                            <span className="font-bold text-white leading-tight">
+                            <span className="font-bold text-white leading-tight text-[11px] sm:text-xs">
                               {t.title}
                             </span>
                             <button
@@ -1065,7 +1066,7 @@ export default function CalendarPage() {
                                 e.stopPropagation();
                                 handleDeleteTask(t.id);
                               }}
-                              className="p-1.5 text-rose-400/90 hover:text-white bg-rose-950/40 hover:bg-rose-900 rounded-lg border border-rose-900/60 transition-colors shrink-0 flex items-center justify-center min-w-[28px] min-h-[28px]"
+                              className="p-1 text-rose-400/90 hover:text-white bg-rose-950/40 hover:bg-rose-900 rounded-lg border border-rose-900/60 transition-colors shrink-0 flex items-center justify-center min-w-[26px] min-h-[26px]"
                               title="מחק משימה"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1074,7 +1075,7 @@ export default function CalendarPage() {
 
                           {/* Complete / Lock Button */}
                           {isFuture ? (
-                            <div className="text-[10px] text-slate-500 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800 flex items-center justify-center gap-1">
+                            <div className="text-[9px] sm:text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 sm:py-1 rounded-lg border border-slate-800 flex items-center justify-center gap-1">
                               <Lock className="w-2.5 h-2.5" />
                               <span>נעול עד המועד</span>
                             </div>
@@ -1085,7 +1086,7 @@ export default function CalendarPage() {
                                 e.stopPropagation();
                                 openCompletionModal(t);
                               }}
-                              className="w-full py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-[10px] font-bold shadow flex items-center justify-center gap-1 transition-all hover:scale-[1.02]"
+                              className="w-full py-1 sm:py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg sm:rounded-xl text-[10px] font-bold shadow flex items-center justify-center gap-1 transition-all hover:scale-[1.02]"
                             >
                               <CheckCircle2 className="w-3 h-3" />
                               <span>סמן ביצוע</span>
@@ -1103,7 +1104,7 @@ export default function CalendarPage() {
                           e.stopPropagation();
                           handleResetTask(t);
                         }}
-                        className="p-2 rounded-2xl bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/60 hover:border-emerald-600 text-[10px] text-emerald-300 flex items-center justify-between gap-1 font-semibold transition-all cursor-pointer group shadow-sm"
+                        className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/60 hover:border-emerald-600 text-[10px] text-emerald-300 flex items-center justify-between gap-1 font-semibold transition-all cursor-pointer group shadow-sm"
                         title="לחץ כאן כדי לבטל את סימון הביצוע ולהחזיר למצב לא בוצע"
                       >
                         <div className="flex items-center gap-1.5 truncate">
@@ -1129,7 +1130,7 @@ export default function CalendarPage() {
                     {dayWaterLogs.map((w: any) => (
                       <div
                         key={w.id}
-                        className="p-2 rounded-2xl bg-cyan-950/30 border border-cyan-900/50 text-[10px] text-cyan-300 space-y-0.5"
+                        className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-cyan-950/30 border border-cyan-900/50 text-[10px] text-cyan-300 space-y-0.5"
                       >
                         <div className="flex items-center gap-1 font-bold">
                           <FlaskConical className="w-3 h-3 text-cyan-400 shrink-0" />
@@ -1147,7 +1148,7 @@ export default function CalendarPage() {
                     {dayEntries.map((e: any) => (
                       <div
                         key={e.id}
-                        className="p-2 rounded-2xl bg-purple-950/25 border border-purple-900/50 text-[10px] text-purple-300 flex items-center gap-1.5 truncate"
+                        className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-purple-950/25 border border-purple-900/50 text-[10px] text-purple-300 flex items-center gap-1.5 truncate"
                         title={e.title}
                       >
                         <BookOpen className="w-3 h-3 text-purple-400 shrink-0" />
@@ -1155,16 +1156,16 @@ export default function CalendarPage() {
                       </div>
                     ))}
 
-                    {pendingDayTasks.length === 0 && doneTasks.length === 0 && dayWaterLogs.length === 0 && dayEntries.length === 0 && (
-                      <div className="text-center py-10 text-slate-500 text-[11px] border border-dashed border-slate-800/70 rounded-2xl">
-                        <span>אין משימות</span>
+                    {!hasAnyEvents && (
+                      <div className="text-center py-2 md:py-8 text-slate-500 text-[10px] sm:text-[11px] bg-slate-950/30 md:bg-transparent border border-dashed border-slate-800/60 rounded-xl sm:rounded-2xl">
+                        <span>אין משימות ליום זה</span>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Day Footer Status */}
-                <div className="pt-2 border-t border-slate-850 text-[10px] text-slate-400 text-center font-medium">
+                <div className="pt-1.5 md:pt-2 border-t border-slate-850 text-[9px] sm:text-[10px] text-slate-400 text-center font-medium mt-1.5">
                   {pendingDayTasks.length > 0 ? `${pendingDayTasks.length} משימות להשלמה` : "✓ יום פנוי ומאוזן"}
                 </div>
               </div>
