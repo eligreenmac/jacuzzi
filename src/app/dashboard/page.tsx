@@ -82,6 +82,15 @@ export default function DashboardPage() {
   const waterLogs = data.waterLogs || [];
   const latestWaterLog = waterLogs.length > 0 ? waterLogs[0] : null;
 
+  const sanitizerLabel =
+    jacuzzi?.sanitizationType === "BROMINE"
+      ? "חיטוי (ברום)"
+      : jacuzzi?.sanitizationType === "SALT"
+      ? "חיטוי (מלח)"
+      : jacuzzi?.sanitizationType === "ACTIVE_OXYGEN"
+      ? "חיטוי (חמצן פעיל)"
+      : "חיטוי (כלור)";
+
   // Calculate days since last refill
   const refillDate = jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : new Date();
   const daysSinceRefill = Math.max(0, Math.floor((Date.now() - refillDate.getTime()) / (1000 * 60 * 60 * 24)));
@@ -348,7 +357,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">חיטוי (כלור):</span>
+                <span className="text-slate-400">{sanitizerLabel}:</span>
                 <span className="font-bold text-white">
                   {latestWaterLog?.chlorineRange || (latestWaterLog?.freeChlorine !== null ? `${latestWaterLog?.freeChlorine} ppm` : "—")}
                 </span>
@@ -465,7 +474,7 @@ export default function DashboardPage() {
 
                   return (
                     <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl text-center space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">חיטוי</div>
+                      <div className="text-[11px] text-slate-400 font-semibold">{sanitizerLabel}</div>
                       <div className={`text-sm sm:text-base ${colorClass}`}>
                         {domain.label}
                       </div>
