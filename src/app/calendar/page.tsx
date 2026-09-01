@@ -83,10 +83,13 @@ export default function CalendarPage() {
 
   // Water Test Form (5 Range Domains + Optional Manual Values)
   const [selectedPhRange, setSelectedPhRange] = useState("OK");
+  const [noNumericPh, setNoNumericPh] = useState(true);
   const [manualPh, setManualPh] = useState("");
   const [selectedClRange, setSelectedClRange] = useState("OK");
+  const [noNumericCl, setNoNumericCl] = useState(true);
   const [manualCl, setManualCl] = useState("");
   const [selectedAlkRange, setSelectedAlkRange] = useState("OK");
+  const [noNumericAlk, setNoNumericAlk] = useState(true);
   const [manualAlk, setManualAlk] = useState("");
   const [clarity, setClarity] = useState("CLEAR");
   const [testNotes, setTestNotes] = useState("");
@@ -501,9 +504,9 @@ export default function CalendarPage() {
         const clObj = CHLORINE_RANGES.find((r) => r.id === selectedClRange);
         const alkObj = ALKALINITY_RANGES.find((r) => r.id === selectedAlkRange);
 
-        const parsedPh = manualPh.trim() ? parseFloat(manualPh) : null;
-        const parsedCl = manualCl.trim() ? parseFloat(manualCl) : null;
-        const parsedAlk = manualAlk.trim() ? parseFloat(manualAlk) : null;
+        const parsedPh = (!noNumericPh && manualPh.trim()) ? parseFloat(manualPh) : null;
+        const parsedCl = (!noNumericCl && manualCl.trim()) ? parseFloat(manualCl) : null;
+        const parsedAlk = (!noNumericAlk && manualAlk.trim()) ? parseFloat(manualAlk) : null;
 
         await fetch("/api/water-tests", {
           method: "POST",
@@ -534,8 +537,11 @@ export default function CalendarPage() {
         });
 
         setManualPh("");
+        setNoNumericPh(true);
         setManualCl("");
+        setNoNumericCl(true);
         setManualAlk("");
+        setNoNumericAlk(true);
         setActionNotice("תוצאות הבדיקה נשמרו בעמוד בדיקות המים והמשימה סומנה כבוצעה!");
       }
 
@@ -1685,14 +1691,33 @@ export default function CalendarPage() {
                         <option key={r.id} value={r.id}>{r.label}</option>
                       ))}
                     </select>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="ערך מספרי מדויק (אופציונלי, השאר ריק להצגת קו —)"
-                      value={manualPh}
-                      onChange={(e) => setManualPh(e.target.value)}
-                      className="w-full mt-1 bg-slate-900/90 border border-slate-750 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                    />
+                    <div className="pt-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק:</label>
+                        <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={noNumericPh}
+                            onChange={(e) => {
+                              setNoNumericPh(e.target.checked);
+                              if (e.target.checked) setManualPh("");
+                            }}
+                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                        </label>
+                      </div>
+                      {!noNumericPh && (
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="הזן ערך מספרי (למשל: 7.4)"
+                          value={manualPh}
+                          onChange={(e) => setManualPh(e.target.value)}
+                          className="w-full bg-slate-900/90 border border-slate-750 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                        />
+                      )}
+                    </div>
                   </div>
 
                   {/* 2. Chlorine Range Picker */}
@@ -1710,14 +1735,33 @@ export default function CalendarPage() {
                         <option key={r.id} value={r.id}>{r.label}</option>
                       ))}
                     </select>
-                    <input
-                      type="number"
-                      step="0.1"
-                      placeholder="ערך מספרי מדויק ב-ppm (אופציונלי, השאר ריק להצגת קו —)"
-                      value={manualCl}
-                      onChange={(e) => setManualCl(e.target.value)}
-                      className="w-full mt-1 bg-slate-900/90 border border-slate-750 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                    />
+                    <div className="pt-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
+                        <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={noNumericCl}
+                            onChange={(e) => {
+                              setNoNumericCl(e.target.checked);
+                              if (e.target.checked) setManualCl("");
+                            }}
+                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                        </label>
+                      </div>
+                      {!noNumericCl && (
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="הזן ערך מספרי (למשל: 3.0)"
+                          value={manualCl}
+                          onChange={(e) => setManualCl(e.target.value)}
+                          className="w-full bg-slate-900/90 border border-slate-750 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                        />
+                      )}
+                    </div>
                   </div>
 
                   {/* 3. Alkalinity Range Picker */}
@@ -1735,14 +1779,33 @@ export default function CalendarPage() {
                         <option key={r.id} value={r.id}>{r.label}</option>
                       ))}
                     </select>
-                    <input
-                      type="number"
-                      step="1"
-                      placeholder="ערך מספרי מדויק ב-ppm (אופציונלי, השאר ריק להצגת קו —)"
-                      value={manualAlk}
-                      onChange={(e) => setManualAlk(e.target.value)}
-                      className="w-full mt-1 bg-slate-900/90 border border-slate-750 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                    />
+                    <div className="pt-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
+                        <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={noNumericAlk}
+                            onChange={(e) => {
+                              setNoNumericAlk(e.target.checked);
+                              if (e.target.checked) setManualAlk("");
+                            }}
+                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                        </label>
+                      </div>
+                      {!noNumericAlk && (
+                        <input
+                          type="number"
+                          step="1"
+                          placeholder="הזן ערך מספרי (למשל: 90)"
+                          value={manualAlk}
+                          onChange={(e) => setManualAlk(e.target.value)}
+                          className="w-full bg-slate-900/90 border border-slate-750 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                        />
+                      )}
+                    </div>
                   </div>
 
                   {/* Clarity */}

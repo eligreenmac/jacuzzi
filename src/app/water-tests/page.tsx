@@ -115,10 +115,13 @@ export default function WaterTestsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [testDate, setTestDate] = useState(new Date().toISOString().slice(0, 16));
   const [selectedPhRange, setSelectedPhRange] = useState("OK");
+  const [noNumericPh, setNoNumericPh] = useState(true);
   const [manualPh, setManualPh] = useState("");
   const [selectedClRange, setSelectedClRange] = useState("OK");
+  const [noNumericCl, setNoNumericCl] = useState(true);
   const [manualCl, setManualCl] = useState("");
   const [selectedAlkRange, setSelectedAlkRange] = useState("OK");
+  const [noNumericAlk, setNoNumericAlk] = useState(true);
   const [manualAlk, setManualAlk] = useState("");
   const [clarity, setClarity] = useState("CLEAR");
   const [description, setDescription] = useState("");
@@ -132,10 +135,13 @@ export default function WaterTestsPage() {
   const [editForm, setEditForm] = useState({
     testedAt: "",
     phRangeId: "OK",
+    noNumericPh: true,
     manualPh: "",
     clRangeId: "OK",
+    noNumericCl: true,
     manualCl: "",
     alkRangeId: "OK",
+    noNumericAlk: true,
     manualAlk: "",
     waterClarity: "CLEAR",
     description: "",
@@ -205,9 +211,9 @@ export default function WaterTestsPage() {
     const clObj = CHLORINE_RANGES.find((r) => r.id === selectedClRange);
     const alkObj = ALKALINITY_RANGES.find((r) => r.id === selectedAlkRange);
 
-    const parsedPh = manualPh.trim() ? parseFloat(manualPh) : null;
-    const parsedCl = manualCl.trim() ? parseFloat(manualCl) : null;
-    const parsedAlk = manualAlk.trim() ? parseFloat(manualAlk) : null;
+    const parsedPh = (!noNumericPh && manualPh.trim()) ? parseFloat(manualPh) : null;
+    const parsedCl = (!noNumericCl && manualCl.trim()) ? parseFloat(manualCl) : null;
+    const parsedAlk = (!noNumericAlk && manualAlk.trim()) ? parseFloat(manualAlk) : null;
 
     try {
       const res = await fetch("/api/water-tests", {
@@ -234,8 +240,11 @@ export default function WaterTestsPage() {
       setIsAddModalOpen(false);
       setDescription("");
       setManualPh("");
+      setNoNumericPh(true);
       setManualCl("");
+      setNoNumericCl(true);
       setManualAlk("");
+      setNoNumericAlk(true);
       loadTests();
     } catch (err: any) {
       setErrorMsg(err.message);
@@ -296,14 +305,21 @@ export default function WaterTestsPage() {
       else if (upper.includes("HIGH") || upper.includes("גבוהה")) alkId = "HIGH";
     }
 
+    const hasPhNum = typeof test.ph === "number" && !isNaN(test.ph);
+    const hasClNum = typeof test.freeChlorine === "number" && !isNaN(test.freeChlorine);
+    const hasAlkNum = typeof test.alkalinity === "number" && !isNaN(test.alkalinity);
+
     setEditForm({
       testedAt: test.testedAt ? new Date(test.testedAt).toISOString().slice(0, 16) : "",
       phRangeId: phId,
-      manualPh: typeof test.ph === "number" ? `${test.ph}` : "",
+      noNumericPh: !hasPhNum,
+      manualPh: hasPhNum ? `${test.ph}` : "",
       clRangeId: clId,
-      manualCl: typeof test.freeChlorine === "number" ? `${test.freeChlorine}` : "",
+      noNumericCl: !hasClNum,
+      manualCl: hasClNum ? `${test.freeChlorine}` : "",
       alkRangeId: alkId,
-      manualAlk: typeof test.alkalinity === "number" ? `${test.alkalinity}` : "",
+      noNumericAlk: !hasAlkNum,
+      manualAlk: hasAlkNum ? `${test.alkalinity}` : "",
       waterClarity: test.waterClarity || "CLEAR",
       description: test.description || "",
     });
@@ -317,9 +333,9 @@ export default function WaterTestsPage() {
     const clObj = CHLORINE_RANGES.find((r) => r.id === editForm.clRangeId);
     const alkObj = ALKALINITY_RANGES.find((r) => r.id === editForm.alkRangeId);
 
-    const parsedPh = editForm.manualPh?.trim() ? parseFloat(editForm.manualPh) : null;
-    const parsedCl = editForm.manualCl?.trim() ? parseFloat(editForm.manualCl) : null;
-    const parsedAlk = editForm.manualAlk?.trim() ? parseFloat(editForm.manualAlk) : null;
+    const parsedPh = (!editForm.noNumericPh && editForm.manualPh?.trim()) ? parseFloat(editForm.manualPh) : null;
+    const parsedCl = (!editForm.noNumericCl && editForm.manualCl?.trim()) ? parseFloat(editForm.manualCl) : null;
+    const parsedAlk = (!editForm.noNumericAlk && editForm.manualAlk?.trim()) ? parseFloat(editForm.manualAlk) : null;
 
     try {
       await fetch("/api/water-tests", {
@@ -951,16 +967,32 @@ export default function WaterTestsPage() {
                     </button>
                   ))}
                 </div>
-                <div className="pt-2 border-t border-slate-800">
-                  <label className="text-[11px] text-slate-400 font-medium">הזנת ערך מספרי מדויק (אופציונלי):</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="השאר ריק אם לא נמדד ערך מספרי מדויק (יוצג קו —)"
-                    value={manualPh}
-                    onChange={(e) => setManualPh(e.target.value)}
-                    className="w-full mt-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                  />
+                <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-slate-400 font-medium">הזנת ערך מספרי מדויק:</label>
+                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={noNumericPh}
+                        onChange={(e) => {
+                          setNoNumericPh(e.target.checked);
+                          if (e.target.checked) setManualPh("");
+                        }}
+                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                    </label>
+                  </div>
+                  {!noNumericPh && (
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="הזן ערך מספרי (למשל: 7.4)"
+                      value={manualPh}
+                      onChange={(e) => setManualPh(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -986,16 +1018,32 @@ export default function WaterTestsPage() {
                     </button>
                   ))}
                 </div>
-                <div className="pt-2 border-t border-slate-800">
-                  <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm (אופציונלי):</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder="השאר ריק אם לא נמדד ערך מספרי מדויק (יוצג קו —)"
-                    value={manualCl}
-                    onChange={(e) => setManualCl(e.target.value)}
-                    className="w-full mt-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                  />
+                <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
+                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={noNumericCl}
+                        onChange={(e) => {
+                          setNoNumericCl(e.target.checked);
+                          if (e.target.checked) setManualCl("");
+                        }}
+                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                    </label>
+                  </div>
+                  {!noNumericCl && (
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="הזן ערך מספרי (למשל: 3.0)"
+                      value={manualCl}
+                      onChange={(e) => setManualCl(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1021,16 +1069,32 @@ export default function WaterTestsPage() {
                     </button>
                   ))}
                 </div>
-                <div className="pt-2 border-t border-slate-800">
-                  <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm (אופציונלי):</label>
-                  <input
-                    type="number"
-                    step="1"
-                    placeholder="השאר ריק אם לא נמדד ערך מספרי מדויק (יוצג קו —)"
-                    value={manualAlk}
-                    onChange={(e) => setManualAlk(e.target.value)}
-                    className="w-full mt-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                  />
+                <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
+                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={noNumericAlk}
+                        onChange={(e) => {
+                          setNoNumericAlk(e.target.checked);
+                          if (e.target.checked) setManualAlk("");
+                        }}
+                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                    </label>
+                  </div>
+                  {!noNumericAlk && (
+                    <input
+                      type="number"
+                      step="1"
+                      placeholder="הזן ערך מספרי (למשל: 90)"
+                      value={manualAlk}
+                      onChange={(e) => setManualAlk(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1112,7 +1176,8 @@ export default function WaterTestsPage() {
                 />
               </div>
 
-              <div className="space-y-1">
+              {/* 1. pH */}
+              <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
                 <label className="text-xs font-semibold text-slate-300">טווח pH</label>
                 <select
                   value={editForm.phRangeId}
@@ -1123,17 +1188,40 @@ export default function WaterTestsPage() {
                     <option key={r.id} value={r.id}>{r.label}</option>
                   ))}
                 </select>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="ערך מספרי מדויק (אופציונלי, השאר ריק להצגת קו —)"
-                  value={editForm.manualPh}
-                  onChange={(e) => setEditForm({ ...editForm, manualPh: e.target.value })}
-                  className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
-                />
+                <div className="pt-1.5 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק:</label>
+                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={editForm.noNumericPh}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            noNumericPh: e.target.checked,
+                            manualPh: e.target.checked ? "" : editForm.manualPh,
+                          })
+                        }
+                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                    </label>
+                  </div>
+                  {!editForm.noNumericPh && (
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="הזן ערך מספרי מדויק"
+                      value={editForm.manualPh}
+                      onChange={(e) => setEditForm({ ...editForm, manualPh: e.target.value })}
+                      className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
+                    />
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-1">
+              {/* 2. Chlorine */}
+              <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
                 <label className="text-xs font-semibold text-slate-300">טווח כלור/ברום</label>
                 <select
                   value={editForm.clRangeId}
@@ -1144,17 +1232,40 @@ export default function WaterTestsPage() {
                     <option key={r.id} value={r.id}>{r.label}</option>
                   ))}
                 </select>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="ערך מספרי מדויק (אופציונלי, השאר ריק להצגת קו —)"
-                  value={editForm.manualCl}
-                  onChange={(e) => setEditForm({ ...editForm, manualCl: e.target.value })}
-                  className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
-                />
+                <div className="pt-1.5 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק:</label>
+                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={editForm.noNumericCl}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            noNumericCl: e.target.checked,
+                            manualCl: e.target.checked ? "" : editForm.manualCl,
+                          })
+                        }
+                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                    </label>
+                  </div>
+                  {!editForm.noNumericCl && (
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="הזן ערך מספרי מדויק"
+                      value={editForm.manualCl}
+                      onChange={(e) => setEditForm({ ...editForm, manualCl: e.target.value })}
+                      className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
+                    />
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-1">
+              {/* 3. Alkalinity */}
+              <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
                 <label className="text-xs font-semibold text-slate-300">טווח בסיסיות (TA)</label>
                 <select
                   value={editForm.alkRangeId}
@@ -1165,14 +1276,36 @@ export default function WaterTestsPage() {
                     <option key={r.id} value={r.id}>{r.label}</option>
                   ))}
                 </select>
-                <input
-                  type="number"
-                  step="1"
-                  placeholder="ערך מספרי מדויק (אופציונלי, השאר ריק להצגת קו —)"
-                  value={editForm.manualAlk}
-                  onChange={(e) => setEditForm({ ...editForm, manualAlk: e.target.value })}
-                  className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
-                />
+                <div className="pt-1.5 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק:</label>
+                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={editForm.noNumericAlk}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            noNumericAlk: e.target.checked,
+                            manualAlk: e.target.checked ? "" : editForm.manualAlk,
+                          })
+                        }
+                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                    </label>
+                  </div>
+                  {!editForm.noNumericAlk && (
+                    <input
+                      type="number"
+                      step="1"
+                      placeholder="הזן ערך מספרי מדויק"
+                      value={editForm.manualAlk}
+                      onChange={(e) => setEditForm({ ...editForm, manualAlk: e.target.value })}
+                      className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="space-y-1">
