@@ -365,6 +365,10 @@ ${JSON.stringify(data.inventory || [], null, 2)}
 4. **חובת פעולות המשך (followUpRequirements)**: מה חובה לעשות בעוד 12-24 שעות (שטיפת פילטר, בדיקה חוזרת).
 5. **הנחיות מניעה (preventionGuidelines)**: איך למנוע מהבעיה לחזור שוב.
 6. **התאמה לארון חומרים ורכישה ברשת**: עבור כל שלב בדוק האם קיים בארון (inInventory), ואם חסר ספק מילות חיפוש והמלצת רכישה.
+7. **בדיקת מים תקינה ומאוזנת (ללא צורך בטיפול)**:
+   - אם כל מדדי המים שנבדקו נמצאים בפרמטרים תקינים (pH תקין, חיטוי תקין, בסיסיות תקינה, וצלילות צלולה):
+   - אין צורך בתוכנית טיפול ולא נדרשות משימות או פעולות המשך כלל!
+   - במקרה כזה הגדר: "rootCauseAnalysis": "המים נבדקו ונמצאו בפרמטרים תקינים.", "stepByStepPlan": [], "followUpRequirements": [].
 
 החזר אך ורק תשובת JSON תקנית במבנה:
 {
@@ -859,26 +863,21 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
 
   // Formulate accurate waterStatusSummary
   let statusSummary = "";
-  if (phIsIdeal && clIsIdeal && issuesFound.length === 0) {
-    statusSummary = "המים במצב מעולה, מאוזנים וצלולים לחלוטין! ✨";
+  const isHealthyWater = issuesFound.length === 0;
+
+  if (isHealthyWater) {
+    statusSummary = "המים נבדקו ונמצאו בפרמטרים תקינים ומאוזנים.";
+    rootCauseExplanation = "המים נבדקו ונמצאו בפרמטרים תקינים.";
+    severity = "GOOD";
+    safeToBathe = true;
+    needsFullDrain = false;
+    estimatedRecoveryTime = "זמין לרחצה מיידית";
   } else if (phIsIdeal && clIsIdeal && issuesFound.length > 0) {
     statusSummary = `רמת ה-pH והחיטוי מעולים ומאוזנים! נדרש טיפול נקודתי בנושא: ${issuesFound.join(", ")}.`;
   } else if (issuesFound.length > 0) {
     statusSummary = `נמצאו מדדים הדורשים התייחסות: ${issuesFound.join(", ")}.`;
   } else {
-    statusSummary = "המים במצב תקין. המשך בשגרת הבדיקות והתחזוקה.";
-  }
-
-  if (steps.length === 0) {
-    steps.push({
-      stepNumber: 1,
-      stepType: "ROOT_CAUSE",
-      title: "תחזוקה שוטפת ושימור",
-      chemical: "תחזוקה רגילה",
-      amount: "לפי שגרה",
-      instructions: "המים שלך במצב תקין ומאוזנים! המשך בבדיקה שבועית רגילה ושטיפת פילטר.",
-      inInventory: true,
-    });
+    statusSummary = "המים נבדקו ונמצאו בפרמטרים תקינים.";
   }
 
   // Factor in pending / unexecuted previous recommendations
@@ -897,7 +896,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     safeToBathe,
     needsFullDrain,
     estimatedRecoveryTime,
-    followUpRequirements: followUpRequirements.length > 0 ? followUpRequirements : ["המשך בבדיקת מקלון שבועית רגילה."],
+    followUpRequirements: isHealthyWater ? [] : followUpRequirements,
     preventionGuidelines: preventionGuidelines.length > 0 ? preventionGuidelines : [
       "הקפד על מקלחת קלה לפני כניסה למים.",
       "שטוף את מסנן הג'קוזי בזרם מים אחת לשבוע.",
@@ -905,7 +904,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     recentAdditionsAnalysis,
     historicalInsights,
     missingTestsAlerts,
-    stepByStepPlan: steps,
+    stepByStepPlan: isHealthyWater ? [] : steps,
     generalTips: [
       "זכור תמיד לשטוף את הפילטר אחת לשבוע כדי לאפשר סירקולציה וחיטוי יעיל.",
       "מומלץ להיכנס לג'קוזי ללא קרמים או שמנים למניעת קצף.",
