@@ -640,7 +640,7 @@ export default function WaterTestsPage() {
                     </div>
 
                     {/* Alkalinity Badge */}
-                    <div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1 text-center">
+<div className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1 text-center">
                       <div className="text-[11px] text-slate-400 font-semibold">בסיסיות כוללת (TA)</div>
                       <div className={`text-sm sm:text-base font-bold ${alkDomain.badgeClass.includes("text-emerald") ? "text-emerald-400" : alkDomain.badgeClass.includes("text-amber") ? "text-amber-400" : alkDomain.badgeClass.includes("text-rose") ? "text-rose-400" : "text-slate-400"}`}>
                         {alkDomain.label}
@@ -662,8 +662,16 @@ export default function WaterTestsPage() {
                     </div>
                   </div>
 
-                  {/* Free text & AI Diagnosis & Recommendations if available */}
-                  {(test.description || test.aiDiagnosis || test.aiRecommendations) && (() => {
+                  {/* Optional user description for historical tests */}
+                  {!isLatestTest && test.description && (
+                    <div className="pt-3 border-t border-slate-800/80 text-xs text-slate-300">
+                      <span className="text-slate-500 font-semibold">תיאור והערות: </span>
+                      {test.description}
+                    </div>
+                  )}
+
+                  {/* AI Diagnosis & Actionable Recommendations - ONLY FOR LATEST TEST */}
+                  {isLatestTest && (test.description || test.aiDiagnosis || test.aiRecommendations) && (() => {
                     let recs: any = null;
                     if (test.aiRecommendations) {
                       try {
@@ -771,17 +779,14 @@ export default function WaterTestsPage() {
                               </div>
                             )}
 
-                            {/* Step By Step Treatment Plan with Inventory Matching & Web Search - ONLY ON LATEST TEST */}
-                            {actionableSteps.length > 0 && isLatestTest && (
+                            {/* Step By Step Treatment Plan with Inventory Matching & Web Search */}
+                            {actionableSteps.length > 0 && (
                               <div className="space-y-2.5 bg-slate-950 p-4 rounded-2xl border border-cyan-800/40 shadow-inner">
                                 <div className="flex items-center justify-between gap-2 text-xs font-bold text-slate-200">
                                   <div className="flex items-center gap-2">
                                     <Zap className="w-4 h-4 text-cyan-400" />
-                                    <span>תוכנית טיפול פעילה ומומלצת (על פי בדיקה עדכנית):</span>
+                                    <span>תוכנית טיפול פעילה ומומלצת:</span>
                                   </div>
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-medium">
-                                    מצב מים אמיתי
-                                  </span>
                                 </div>
 
                                 <div className="space-y-2.5">
@@ -816,126 +821,104 @@ export default function WaterTestsPage() {
                                       )}
 
                                       {/* Chemical match badge */}
-                                      {step.chemical && step.chemical !== "ללא חומר" && step.chemical !== "תחזוקה רגילה" && !step.chemical.includes("שטיפת פילטר") && (
-                                        <div className="mr-7">
+                                      {step.chemical && step.chemical !== "ללא חומר" && (
+                                        <div className="mr-7 flex items-center gap-2 text-[11px]">
                                           {step.inInventory ? (
-                                            <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-[11px] flex items-center justify-between">
-                                              <div className="flex items-center gap-1.5">
-                                                <Package className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                                                <span>
-                                                  <strong>קיים בארון החומרים:</strong> {step.inventoryItemName || step.chemical} (נותרו: {step.inventoryRemaining || "במלאי"})
-                                                </span>
-                                              </div>
-                                              <span className="text-[10px] bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded font-bold text-cyan-300">
-                                                זמין לשימוש
-                                              </span>
+                                            <div className="px-2 py-1 rounded-lg bg-emerald-950/60 border border-emerald-800 text-emerald-300 flex items-center gap-1.5 font-medium">
+                                              <Package className="w-3.5 h-3.5" />
+                                              <span>קיים בארון החומרים: {step.matchedInventoryName || step.chemical}</span>
                                             </div>
                                           ) : (
-                                            <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-[11px] space-y-1">
-                                              <div className="flex items-center justify-between gap-2 flex-wrap">
-                                                <div className="flex items-center gap-1.5">
-                                                  <ShoppingCart className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                                  <span className="font-bold text-slate-200">חסר בארון החומרים</span>
-                                                </div>
-                                                <a
-                                                  href={`https://www.google.com/search?q=${encodeURIComponent(step.searchKeywords || step.chemical + " לג'קוזי")}`}
-                                                  target="_blank"
-                                                  rel="noreferrer"
-                                                  className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[10px] rounded flex items-center gap-1 transition-all"
-                                                >
-                                                  <Search className="w-3 h-3" />
-                                                  <span>חפש ברשת לרכישה</span>
-                                                  <ExternalLink className="w-2.5 h-2.5" />
-                                                </a>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <div className="px-2 py-1 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 flex items-center gap-1.5 font-medium">
+                                                <ShoppingCart className="w-3.5 h-3.5" />
+                                                <span className="font-bold text-slate-200">חסר בארון החומרים</span>
                                               </div>
+                                              <a
+                                                href={`https://www.google.com/search?q=${encodeURIComponent(step.searchKeywords || step.chemical + " לג'קוזי")}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[10px] rounded flex items-center gap-1 transition-all"
+                                              >
+                                                <Search className="w-3.5 h-3.5" />
+                                                <span>חפש ברשת לרכישה</span>
+                                                <ExternalLink className="w-2.5 h-2.5" />
+                                              </a>
                                             </div>
                                           )}
                                         </div>
                                       )}
 
-                                      {/* Action Button: Schedule Future Task vs Immediate Done */}
-                                      <div className="mr-7 pt-1 border-t border-slate-800 flex items-center justify-between gap-2 flex-wrap">
-                                        {step.isExecuted ? (
-                                          <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-                                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                            <span>
-                                              בוצע ותועד ביומן {step.executedAt ? `(${new Date(step.executedAt).toLocaleDateString("he-IL")})` : "✓"}
-                                            </span>
-                                          </div>
-                                        ) : step.isScheduled ? (
-                                          <div className="flex items-center justify-between gap-2 w-full flex-wrap">
-                                            <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-[11px] bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-                                              <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                                        {/* Action Button: Schedule Future Task vs Immediate Done */}
+                                        <div className="mr-7 pt-1 border-t border-slate-800 flex items-center justify-between gap-2 flex-wrap">
+                                          {step.isExecuted ? (
+                                            <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px] bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                                               <span>
-                                                תוזמן ליומן {step.scheduledFor ? `ל-${new Date(step.scheduledFor).toLocaleDateString("he-IL")}` : ""}
+                                                בוצע ותועד ביומן {step.executedAt ? `(${new Date(step.executedAt).toLocaleDateString("he-IL")})` : "✓"}
                                               </span>
                                             </div>
+                                          ) : step.isScheduled ? (
+                                            <div className="flex items-center justify-between gap-2 w-full flex-wrap">
+                                              <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-[11px] bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                                                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                                                <span>
+                                                  תוזמן ליומן {step.scheduledFor ? `ל-${new Date(step.scheduledFor).toLocaleDateString("he-IL")}` : ""}
+                                                </span>
+                                              </div>
 
-                                            {step.scheduledFor && new Date(step.scheduledFor).getTime() > Date.now() ? (
-                                              <button
-                                                type="button"
-                                                disabled
-                                                className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-bold text-[11px] cursor-not-allowed opacity-75 flex items-center gap-1 select-none"
-                                                title={`משימה עתידית - תיפתח לסימון ביצוע ב-${new Date(step.scheduledFor).toLocaleDateString("he-IL")}`}
-                                              >
-                                                <Clock className="w-3.5 h-3.5 text-slate-500" />
-                                                <span>ייפתח לביצוע במועד</span>
-                                              </button>
-                                            ) : (
-                                              <button
-                                                type="button"
-                                                disabled={executingStep === `${test.id}-${step.stepNumber}`}
-                                                onClick={() => handleExecuteStep(test.id, step, recs, false)}
-                                                className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] shadow flex items-center gap-1 transition-all"
-                                              >
-                                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                                <span>סמן כבוצע כעת</span>
-                                              </button>
-                                            )}
-                                          </div>
-                                        ) : step.stepType === "FOLLOW_UP" || step.title.includes("בעוד") || step.title.includes("להמשך") ? (
-                                          <button
-                                            type="button"
-                                            disabled={executingStep === `${test.id}-${step.stepNumber}`}
-                                            onClick={() => handleExecuteStep(test.id, step, recs, true)}
-                                            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[11px] shadow-sm flex items-center gap-1.5 transition-all disabled:opacity-50"
-                                          >
-                                            <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-                                            <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתזמן ליומן..." : "תזמן ליומן"}</span>
-                                          </button>
-                                        ) : (
-                                          <button
-                                            type="button"
-                                            disabled={executingStep === `${test.id}-${step.stepNumber}`}
-                                            onClick={() => handleExecuteStep(test.id, step, recs, false)}
-                                            className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
-                                          >
-                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                            <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתעד ביומן..." : "סמן כבוצע כעת"}</span>
-                                          </button>
-                                        )}
-                                      </div>
+                                              {step.scheduledFor && new Date(step.scheduledFor).getTime() > Date.now() ? (
+                                                <button
+                                                  type="button"
+                                                  disabled
+                                                  className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-bold text-[11px] cursor-not-allowed opacity-75 flex items-center gap-1 select-none"
+                                                  title={`משימה עתידית - תיפתח לסימון ביצוע ב-${new Date(step.scheduledFor).toLocaleDateString("he-IL")}`}
+                                                >
+                                                  <Clock className="w-3.5 h-3.5 text-slate-500" />
+                                                  <span>ייפתח לביצוע במועד</span>
+                                                </button>
+                                              ) : (
+                                                <button
+                                                  type="button"
+                                                  disabled={executingStep === `${test.id}-${step.stepNumber}`}
+                                                  onClick={() => handleExecuteStep(test.id, step, recs, false)}
+                                                  className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] shadow flex items-center gap-1 transition-all"
+                                                >
+                                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                                  <span>סמן כבוצע כעת</span>
+                                                </button>
+                                              )}
+                                            </div>
+                                          ) : step.stepType === "FOLLOW_UP" || step.title.includes("בעוד") || step.title.includes("להמשך") ? (
+                                            <button
+                                              type="button"
+                                              disabled={executingStep === `${test.id}-${step.stepNumber}`}
+                                              onClick={() => handleExecuteStep(test.id, step, recs, true)}
+                                              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[11px] shadow-sm flex items-center gap-1.5 transition-all disabled:opacity-50"
+                                            >
+                                              <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                                              <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתזמן ליומן..." : "תזמן ליומן"}</span>
+                                            </button>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              disabled={executingStep === `${test.id}-${step.stepNumber}`}
+                                              onClick={() => handleExecuteStep(test.id, step, recs, false)}
+                                              className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
+                                            >
+                                              <CheckCircle2 className="w-3.5 h-3.5" />
+                                              <span>{executingStep === `${test.id}-${step.stepNumber}` ? "מתעד ביומן..." : "סמן כבוצע כעת"}</span>
+                                            </button>
+                                          )}
+                                        </div>
                                     </div>
                                   ))}
                                 </div>
                               </div>
                             )}
 
-                            {/* Closed Treatment Notice for Older Tests */}
-                            {actionableSteps.length > 0 && !isLatestTest && (
-                              <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 text-slate-400 flex items-center justify-between gap-3 text-xs">
-                                <div className="flex items-center gap-2.5">
-                                  <CheckCircle2 className="w-4 h-4 text-slate-500 shrink-0" />
-                                  <span>תוכנית טיפול זו נסגרה – רק תוצאות הבדיקה העדכנית ביותר מייצגות את מצב המים האמיתי.</span>
-                                </div>
-                                <span className="text-[10px] text-slate-500 font-semibold bg-slate-900 px-2 py-0.5 rounded-full shrink-0">
-                                  היסטורי
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Follow up actions & Prevention guidelines - ONLY ON LATEST TEST */}
-                            {isLatestTest && ((recs?.followUpRequirements && recs.followUpRequirements.length > 0) || (recs?.preventionGuidelines && recs.preventionGuidelines.length > 0)) && (
+                            {/* Follow up actions & Prevention guidelines */}
+                            {((recs?.followUpRequirements && recs.followUpRequirements.length > 0) || (recs?.preventionGuidelines && recs.preventionGuidelines.length > 0)) && (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                                 {recs.followUpRequirements?.length > 0 && (
                                   <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
