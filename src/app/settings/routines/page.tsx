@@ -51,13 +51,6 @@ const ICON_MAP: Record<string, any> = {
   RotateCcw: RotateCcw,
 };
 
-const PRIORITY_LABELS: Record<string, string> = {
-  LOW: "נמוכה",
-  MEDIUM: "בינונית",
-  HIGH: "גבוהה",
-  URGENT: "דחופה",
-};
-
 export default function RoutinesSettingsPage() {
   const router = useRouter();
   const [routines, setRoutines] = useState<RoutineItem[]>([]);
@@ -90,12 +83,6 @@ export default function RoutinesSettingsPage() {
     );
   };
 
-  const handlePriorityChange = (key: string, priority: string) => {
-    setRoutines((prev) =>
-      prev.map((r) => (r.key === key ? { ...r, currentPriority: priority } : r))
-    );
-  };
-
   const handleResetToDefaults = () => {
     if (!confirm("האם לשחזר את כל תדירויות השגרה להגדרות ברירת המחדל המומלצות של המערכת?")) {
       return;
@@ -104,7 +91,6 @@ export default function RoutinesSettingsPage() {
       prev.map((r) => ({
         ...r,
         currentFrequencyDays: r.defaultFrequencyDays,
-        currentPriority: r.priority,
       }))
     );
   };
@@ -327,31 +313,22 @@ export default function RoutinesSettingsPage() {
                   </div>
                 </div>
 
-                {/* Bottom details & Priority Selection */}
-                <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1 text-slate-400">
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium text-slate-500">עדיפות משימה ביומן:</span>
-                    <select
-                      value={routine.currentPriority}
-                      onChange={(e) => handlePriorityChange(routine.key, e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1 text-xs text-white font-medium outline-none"
-                    >
-                      <option value="LOW">נמוכה (Low)</option>
-                      <option value="MEDIUM">בינונית (Medium)</option>
-                      <option value="HIGH">גבוהה (High)</option>
-                      <option value="URGENT">דחופה (Urgent)</option>
-                    </select>
-                  </div>
-
-                  {routine.nextDueDate && (
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                {/* Bottom details */}
+                {routine.nextDueDate && (
+                  <div className="flex items-center justify-between text-xs pt-1 text-slate-500 border-t border-slate-800/40">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                       <Clock className="w-3.5 h-3.5 text-cyan-400" />
                       <span>
-                        מועד יעד נוכחי ביומן: {new Date(routine.nextDueDate).toLocaleDateString("he-IL")}
+                        מועד יעד נוכחי ביומן: <strong className="text-slate-200">{new Date(routine.nextDueDate).toLocaleDateString("he-IL")}</strong>
                       </span>
                     </div>
-                  )}
-                </div>
+                    {routine.lastDoneDate && (
+                      <div className="text-[11px] text-slate-500">
+                        בוצע לאחרונה: {new Date(routine.lastDoneDate).toLocaleDateString("he-IL")}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

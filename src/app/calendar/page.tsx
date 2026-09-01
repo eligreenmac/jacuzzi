@@ -1004,17 +1004,6 @@ export default function CalendarPage() {
                             <span className="font-bold text-white leading-tight">
                               {t.title}
                             </span>
-                            <span
-                              className={`text-[8px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
-                                t.priority === "URGENT"
-                                  ? "bg-rose-950 text-rose-300 border border-rose-800"
-                                  : t.priority === "HIGH"
-                                  ? "bg-amber-950 text-amber-300 border border-amber-800"
-                                  : "bg-slate-900 text-slate-400 border border-slate-700"
-                              }`}
-                            >
-                              {t.priority === "URGENT" ? "דחוף" : t.priority === "HIGH" ? "גבוה" : "שגרתי"}
-                            </span>
                           </div>
 
                           {/* Complete / Lock Button */}
@@ -1895,31 +1884,15 @@ export default function CalendarPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">תדירות (ימים)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={editTaskForm.frequencyDays}
-                    onChange={(e) => setEditTaskForm({ ...editTaskForm, frequencyDays: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">עדיפות</label>
-                  <select
-                    value={editTaskForm.priority}
-                    onChange={(e) => setEditTaskForm({ ...editTaskForm, priority: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                  >
-                    <option value="LOW">רגילה</option>
-                    <option value="MEDIUM">בינונית</option>
-                    <option value="HIGH">גבוהה</option>
-                    <option value="URGENT">דחופה</option>
-                  </select>
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">תדירות (ימים)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editTaskForm.frequencyDays}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, frequencyDays: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
+                />
               </div>
 
               <div className="space-y-1">
@@ -1987,31 +1960,15 @@ export default function CalendarPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">תדירות (ימים)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={taskForm.frequencyDays}
-                    onChange={(e) => setTaskForm({ ...taskForm, frequencyDays: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">עדיפות</label>
-                  <select
-                    value={taskForm.priority}
-                    onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                  >
-                    <option value="LOW">רגילה</option>
-                    <option value="MEDIUM">בינונית</option>
-                    <option value="HIGH">גבוהה</option>
-                    <option value="URGENT">דחופה</option>
-                  </select>
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300">תדירות (ימים)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={taskForm.frequencyDays}
+                  onChange={(e) => setTaskForm({ ...taskForm, frequencyDays: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs"
+                />
               </div>
 
               <div className="space-y-1">
