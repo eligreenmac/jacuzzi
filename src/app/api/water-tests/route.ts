@@ -252,31 +252,6 @@ export async function POST(req: NextRequest) {
             },
           });
         }
-
-        await prisma.diaryEntry.create({
-          data: {
-            userId: user.id,
-            title: `בוצע: ${task.title}`,
-            content: `בוצעה בדיקת מים דרך לשונית בדיקות מים וסונכרנה אוטומטית ליומן המשימות.\n• תוצאות: ${valAfter}\n• צלילות: ${waterClarity || "צלול"}${description ? `\n• הערות: ${description}` : ""}`,
-            entryDate: new Date(testedAt || Date.now()),
-            valueAfter: valAfter,
-            waterQualityRating: 5,
-          },
-        });
-      }
-
-      if (openWaterTasks.length === 0) {
-        const valAfter = `pH: ${phRange || (parsedPh ? `pH ${parsedPh}` : "נבדק")}, חיטוי: ${chlorineRange || (parsedCl ? `${parsedCl} ppm` : "נבדק")}, TA: ${alkalinityRange || (parsedAlk ? `${parsedAlk} ppm` : "נבדק")}`;
-        await prisma.diaryEntry.create({
-          data: {
-            userId: user.id,
-            title: "בדיקת איכות מים (מקלון)",
-            content: `בוצעה בדיקת מים דרך לשונית בדיקות מים.\n• תוצאות: ${valAfter}\n• צלילות: ${waterClarity || "צלול"}${description ? `\n• הערות: ${description}` : ""}`,
-            entryDate: new Date(testedAt || Date.now()),
-            valueAfter: valAfter,
-            waterQualityRating: 5,
-          },
-        });
       }
 
       // 🌟 Close all previous open treatment/follow-up tasks from older tests

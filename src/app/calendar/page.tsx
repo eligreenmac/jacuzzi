@@ -1458,11 +1458,6 @@ export default function CalendarPage() {
                                 <div className="font-bold text-cyan-300">{alkStr || "—"}</div>
                               </div>
                             </div>
-                            {w.aiDiagnosis && (
-                              <div className="text-[11px] text-slate-300 bg-slate-900/60 p-2 rounded-xl border border-slate-800">
-                                {w.aiDiagnosis}
-                              </div>
-                            )}
                           </div>
                         );
                       })}
