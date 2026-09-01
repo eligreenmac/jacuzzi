@@ -1043,10 +1043,10 @@ export default function CalendarPage() {
                                 e.stopPropagation();
                                 handleDeleteTask(t.id);
                               }}
-                              className="text-slate-500 hover:text-rose-400 p-0.5 rounded transition-colors shrink-0"
+                              className="p-1.5 text-rose-400/90 hover:text-white bg-rose-950/40 hover:bg-rose-900 rounded-lg border border-rose-900/60 transition-colors shrink-0 flex items-center justify-center min-w-[28px] min-h-[28px]"
                               title="מחק משימה"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
 
@@ -1351,11 +1351,16 @@ export default function CalendarPage() {
                                   </button>
 
                                   <button
-                                    onClick={() => handleDeleteTask(task.id)}
-                                    className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition-colors"
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteTask(task.id);
+                                    }}
+                                    className="px-2.5 py-1.5 text-rose-400 hover:text-white bg-rose-950/50 hover:bg-rose-900 rounded-xl border border-rose-900/60 transition-colors flex items-center gap-1 text-xs font-bold shrink-0 min-h-[32px]"
                                     title="מחק משימה"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
+                                    <span>מחק</span>
                                   </button>
                                 </div>
                               </div>
@@ -2007,21 +2012,36 @@ export default function CalendarPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setEditingTask(null)}
-                  className="px-4 py-2 text-xs text-slate-400"
+                  onClick={() => {
+                    const idToDelete = editingTask.id;
+                    setEditingTask(null);
+                    handleDeleteTask(idToDelete);
+                  }}
+                  className="px-3.5 py-2 bg-rose-950/70 hover:bg-rose-900 text-rose-300 hover:text-white rounded-xl text-xs font-bold border border-rose-800 flex items-center gap-1.5 transition-colors"
                 >
-                  ביטול
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>מחק משימה</span>
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>שמור שינויים</span>
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingTask(null)}
+                    className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                  >
+                    ביטול
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>שמור שינויים</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
