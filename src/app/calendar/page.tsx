@@ -689,12 +689,7 @@ export default function CalendarPage() {
 
   const handleDeleteTask = async (id: string) => {
     const task = tasks.find((t) => t.id === id);
-    if (task && !task.isCompleted && isTaskFuture(task)) {
-      alert(`לא ניתן למחוק משימה עתידית מתוכננת (${task.title}). משימות עתידיות נעולות למחיקה.`);
-      return;
-    }
-
-    if (!confirm("האם למחוק משימה זו? המלאי בארון יוחזר אוטומטית.")) return;
+    if (!confirm(`האם למחוק את המשימה "${task?.title || "משימה זו"}"?`)) return;
     try {
       const res = await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
       const data = await res.json();
@@ -1366,23 +1361,13 @@ export default function CalendarPage() {
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
 
-                                  {/* Delete button: DISABLED/BLOCKED for future tasks */}
-                                  {!isFuture ? (
-                                    <button
-                                      onClick={() => handleDeleteTask(task.id)}
-                                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition-colors"
-                                      title="מחק משימה"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  ) : (
-                                    <span
-                                      className="p-1.5 text-slate-600 cursor-not-allowed opacity-50 flex items-center gap-0.5"
-                                      title="לא ניתן למחוק משימות עתידיות מתוכננות"
-                                    >
-                                      <Lock className="w-3.5 h-3.5" />
-                                    </span>
-                                  )}
+                                  <button
+                                    onClick={() => handleDeleteTask(task.id)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition-colors"
+                                    title="מחק משימה"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
                               <h4 className="font-bold text-white text-sm pt-1">{task.title}</h4>
