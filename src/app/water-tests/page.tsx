@@ -130,6 +130,7 @@ export default function WaterTestsPage() {
 
   // Edit Test Modal
   const [editingTest, setEditingTest] = useState<any | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [executingStep, setExecutingStep] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
@@ -328,6 +329,7 @@ export default function WaterTestsPage() {
   const handleSaveEditTest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTest) return;
+    setSavingEdit(true);
 
     const phObj = PH_RANGES.find((r) => r.id === editForm.phRangeId);
     const clObj = CHLORINE_RANGES.find((r) => r.id === editForm.clRangeId);
@@ -359,6 +361,8 @@ export default function WaterTestsPage() {
       loadTests();
     } catch (err) {
       console.error(err);
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -1140,9 +1144,16 @@ export default function WaterTestsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2"
+                  className="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2 transition-all cursor-pointer select-none"
                 >
-                  {saving ? "שומר..." : "שמור תוצאות בדיקה"}
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>מאבחן ושומר תוצאות בדיקה...</span>
+                    </>
+                  ) : (
+                    <span>שמור תוצאות בדיקה</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -1346,9 +1357,17 @@ export default function WaterTestsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold"
+                  disabled={savingEdit}
+                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer select-none"
                 >
-                  שמור שינויים
+                  {savingEdit ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>מאבחן ושומר שינויים...</span>
+                    </>
+                  ) : (
+                    <span>שמור שינויים</span>
+                  )}
                 </button>
               </div>
             </form>

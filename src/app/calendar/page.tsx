@@ -1852,9 +1852,16 @@ export default function CalendarPage() {
                 <button
                   type="submit"
                   disabled={isSubmittingCompletion}
-                  className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2"
+                  className="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2 transition-all cursor-pointer select-none"
                 >
-                  {isSubmittingCompletion ? "שומר..." : "שמור ביצוע משימה"}
+                  {isSubmittingCompletion ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>שומר ומעדכן יומן...</span>
+                    </>
+                  ) : (
+                    <span>שמור ביצוע משימה</span>
+                  )}
                 </button>
               </div>
             </form>
