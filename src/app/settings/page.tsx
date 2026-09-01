@@ -240,6 +240,7 @@ export default function SettingsPage() {
                   onChange={(e) => setFormData({ ...formData, lastRefillDate: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white text-xs"
                 />
+                <span className="text-[10px] text-slate-400 block">מחזור רענון מים מומלץ: כל 3 חודשים (90 יום).</span>
               </div>
 
               <div className="space-y-1.5">
@@ -250,6 +251,7 @@ export default function SettingsPage() {
                   onChange={(e) => setFormData({ ...formData, lastDeepCleanDate: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white text-xs"
                 />
+                <span className="text-[10px] text-cyan-400/90 block">⚡ עדכון תאריך זה ישבץ אוטומטית ביומן את שטיפת הצנרת הבאה בעוד 3 חודשים.</span>
               </div>
             </div>
           </div>

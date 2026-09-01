@@ -249,6 +249,21 @@ export async function PUT(req: NextRequest) {
           waterQualityRating: 5,
         },
       });
+
+      // If this was a pipe flush / deep clean task, update jacuzzi.lastDeepCleanDate and lastRefillDate
+      if (
+        existing.title.includes("שטיפת צנרת") ||
+        existing.title.includes("ניקוי צנרת") ||
+        existing.title.includes("Flush")
+      ) {
+        await prisma.jacuzzi.updateMany({
+          where: { userId: user.id },
+          data: {
+            lastDeepCleanDate: now,
+            lastRefillDate: now,
+          },
+        });
+      }
     } else {
       // General task editing
       if (isCompleted !== undefined) updateData.isCompleted = isCompleted;

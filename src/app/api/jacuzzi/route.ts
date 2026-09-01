@@ -84,6 +84,54 @@ export async function PUT(req: NextRequest) {
       },
     });
 
+    // Automatically synchronize & schedule the 90-day (3 months) Pipe Flush task in Calendar
+    if (lastDeepCleanDate) {
+      const cleanDate = new Date(lastDeepCleanDate);
+      const nextCleanDate = new Date(cleanDate.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+      const existingDeepCleanTask = await prisma.maintenanceTask.findFirst({
+        where: {
+          userId: user.id,
+          OR: [
+            { title: { contains: "שטיפת צנרת" } },
+            { title: { contains: "ניקוי צנרת" } },
+            { title: { contains: "Flush" } },
+            { category: "QUARTERLY" },
+          ],
+        },
+      });
+
+      if (existingDeepCleanTask) {
+        await prisma.maintenanceTask.update({
+          where: { id: existingDeepCleanTask.id },
+          data: {
+            title: "שטיפת צנרת (Biofilm Flush), ריקון ומילוי מים חדשים",
+            description: "הוספת חומר שטיפת צנרת, הפעלת ג'טים, ריקון מלא, ניקוי דפנות ומילוי מים חדשים ורעננים (מחזור של 3 חודשים).",
+            frequencyDays: 90,
+            lastDoneDate: cleanDate,
+            nextDueDate: nextCleanDate,
+            isCompleted: false,
+            category: "QUARTERLY",
+            priority: "URGENT",
+          },
+        });
+      } else {
+        await prisma.maintenanceTask.create({
+          data: {
+            userId: user.id,
+            title: "שטיפת צנרת (Biofilm Flush), ריקון ומילוי מים חדשים",
+            description: "הוספת חומר שטיפת צנרת, הפעלת ג'טים, ריקון מלא, ניקוי דפנות ומילוי מים חדשים ורעננים (מחזור של 3 חודשים).",
+            frequencyDays: 90,
+            lastDoneDate: cleanDate,
+            nextDueDate: nextCleanDate,
+            isCompleted: false,
+            category: "QUARTERLY",
+            priority: "URGENT",
+          },
+        });
+      }
+    }
+
     return NextResponse.json({ success: true, jacuzzi: updatedJacuzzi });
   } catch (error: any) {
     console.error("Jacuzzi update error:", error);
