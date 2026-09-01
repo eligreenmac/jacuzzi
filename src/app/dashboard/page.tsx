@@ -193,92 +193,98 @@ export default function DashboardPage() {
 
         {/* 4 Quick Metrics Cards (Unified & Clean) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Card 1: גיל המים */}
-          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium">
-              גיל המים
+          {/* Card 1: גיל המים + החלפת מים חלקית */}
+          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1.5 flex flex-col justify-between">
+            <div>
+              <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
+                <span>גיל המים</span>
+                {lastPartialRefillDate && (
+                  <span className="text-[9px] font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-800/60 px-1.5 py-0.5 rounded">
+                    משוקלל
+                  </span>
+                )}
+              </div>
+              <div className="text-xl font-black text-white pt-0.5">{daysSinceRefill} ימים</div>
             </div>
-            <div className="text-xl font-black text-white">{daysSinceRefill} ימים</div>
-            <div className="text-[10px] text-slate-400 truncate">
-              החלפה בעוד {daysUntilNextRefill} יום ({nextRefillDate.toLocaleDateString("he-IL")})
+
+            <div className="text-[10px] text-slate-400 space-y-1 pt-1.5 border-t border-slate-800/80">
+              <div className="truncate">
+                ריקון מלא בעוד {daysUntilNextRefill} יום ({nextRefillDate.toLocaleDateString("he-IL")})
+              </div>
+              <div className="text-[10px] text-cyan-300 font-medium truncate flex items-center gap-1">
+                <Waves className="w-3 h-3 text-cyan-400 shrink-0" />
+                <span>החלפה חלקית:</span>
+                <span className="text-slate-300">
+                  {lastPartialRefillDate ? `לפני ${daysSincePartialRefill} ימים` : "טרם בוצעה"}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Card 2: תאריך ניקוי צנרת */}
-          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium">
-              ניקוי צנרת ושטיפה
+          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1 flex flex-col justify-between">
+            <div>
+              <div className="text-[11px] text-slate-400 font-medium">
+                ניקוי צנרת ושטיפה
+              </div>
+              <div className="text-xl font-black text-white pt-0.5">
+                {daysSinceDeepClean !== null ? `${daysSinceDeepClean} ימים` : "טרם עודכן"}
+              </div>
             </div>
-            <div className="text-xl font-black text-white">
-              {daysSinceDeepClean !== null ? `${daysSinceDeepClean} ימים` : "טרם עודכן"}
-            </div>
-            <div className="text-[10px] text-slate-400 truncate">
+            <div className="text-[10px] text-slate-400 truncate pt-1.5 border-t border-slate-800/80">
               ניקוי הבא בעוד {daysUntilNextDeepClean} יום ({nextDeepCleanDate.toLocaleDateString("he-IL")})
             </div>
           </div>
 
           {/* Card 3: משימות פתוחות */}
-          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium">
-              משימות פתוחות
+          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1 flex flex-col justify-between">
+            <div>
+              <div className="text-[11px] text-slate-400 font-medium">
+                משימות פתוחות
+              </div>
+              <div className="text-xl font-black text-white pt-0.5">{pendingTasks.length}</div>
             </div>
-            <div className="text-xl font-black text-white">{pendingTasks.length}</div>
-            <div className="text-[10px] text-slate-400 truncate">
+            <div className="text-[10px] text-slate-400 truncate pt-1.5 border-t border-slate-800/80">
               {completedTasks.length > 0 ? `${completedTasks.length} בוצעו השבוע` : "לשבוע הקרוב"}
             </div>
           </div>
 
           {/* Card 4: ארון חומרים */}
-          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1">
-            <div className="text-[11px] text-slate-400 font-medium">
-              ארון חומרים
+          <div className="bg-[#0a0f13] border border-slate-800/80 p-3.5 rounded-2xl space-y-1 flex flex-col justify-between">
+            <div>
+              <div className="text-[11px] text-slate-400 font-medium">
+                ארון חומרים
+              </div>
+              <div className="text-xl font-black text-white pt-0.5">{chemicals.length} פריטים</div>
             </div>
-            <div className="text-xl font-black text-white">{chemicals.length} פריטים</div>
-            <div className="text-[10px] text-slate-400 truncate">
+            <div className="text-[10px] text-slate-400 truncate pt-1.5 border-t border-slate-800/80">
               {lowStockChemicals.length > 0 ? `⚠️ ${lowStockChemicals.length} במלאי נמוך` : "מלאי תקין ✓"}
             </div>
           </div>
         </div>
 
-        {/* Secondary Maintenance Status Strip: תוספת אנזימים אחרונה & החלפת מים חלקית */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-[#0a0f13]/80 border border-slate-800/60 p-3 rounded-2xl flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-teal-950/60 border border-teal-800/40 flex items-center justify-center shrink-0">
-                <Sparkles className="w-3.5 h-3.5 text-teal-300" />
-              </div>
-              <div>
-                <span className="font-semibold text-slate-300 block text-[11px]">הוספת אנזימים אחרונה</span>
-                <span className="text-[10px] text-slate-400">
-                  {lastEnzymeDate ? `לפני ${daysSinceEnzyme} ימים (${lastEnzymeDate.toLocaleDateString("he-IL")})` : "טרם תועדה הוספה (שגרה מומלצת שבועית)"}
-                </span>
-              </div>
+        {/* Secondary Maintenance Status Strip: תוספת אנזימים שבועית */}
+        <div className="bg-[#0a0f13]/80 border border-slate-800/60 p-3 rounded-2xl flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-xl bg-teal-950/60 border border-teal-800/40 flex items-center justify-center shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-teal-300" />
             </div>
-            {lastEnzymeDate && daysSinceEnzyme !== null && daysSinceEnzyme <= 7 && (
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shrink-0 font-medium">
-                פעיל ✓
+            <div>
+              <span className="font-semibold text-slate-300 block text-[11px]">תוספת אנזימים שבועית (פירוק שומנים אורגניים)</span>
+              <span className="text-[10px] text-slate-400">
+                {lastEnzymeDate ? `הוספה אחרונה לפני ${daysSinceEnzyme} ימים (${lastEnzymeDate.toLocaleDateString("he-IL")})` : "טרם תועדה הוספה (שגרה מומלצת כל 7 ימים)"}
               </span>
-            )}
-          </div>
-
-          <div className="bg-[#0a0f13]/80 border border-slate-800/60 p-3 rounded-2xl flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center shrink-0">
-                <Waves className="w-3.5 h-3.5 text-cyan-300" />
-              </div>
-              <div>
-                <span className="font-semibold text-slate-300 block text-[11px]">החלפת מים חלקית אחרונה</span>
-                <span className="text-[10px] text-slate-400">
-                  {lastPartialRefillDate ? `לפני ${daysSincePartialRefill} ימים (${lastPartialRefillDate.toLocaleDateString("he-IL")})` : "טרם תועדה החלפה חלקית (ריענון 20%-30%)"}
-                </span>
-              </div>
             </div>
-            {lastPartialRefillDate && daysSincePartialRefill !== null && daysSincePartialRefill <= 30 && (
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 shrink-0 font-medium">
-                רענן ✓
-              </span>
-            )}
           </div>
+          {lastEnzymeDate && daysSinceEnzyme !== null && daysSinceEnzyme <= 7 ? (
+            <span className="text-[9px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shrink-0 font-bold">
+              פעיל ✓
+            </span>
+          ) : (
+            <span className="text-[9px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700 shrink-0 font-medium">
+              שגרה שבועית
+            </span>
+          )}
         </div>
 
         {/* Integrated Water Test Section inside Master Board */}
