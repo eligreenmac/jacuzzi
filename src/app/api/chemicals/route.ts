@@ -63,7 +63,7 @@ export async function PUT(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
 
     const body = await req.json();
-    const { id, name, category, quantity, unit, minThreshold, imageUrl, notes, addedDate } = body;
+    const { id, name, category, quantity, unit, minThreshold, imageUrl, notes, addedDate, lastUsedDate, lastUsedAmount } = body;
 
     if (!id) {
       return NextResponse.json({ error: "מזהה פריט חסר" }, { status: 400 });
@@ -88,6 +88,8 @@ export async function PUT(req: NextRequest) {
         imageUrl: imageUrl !== undefined ? imageUrl : undefined,
         notes: notes !== undefined ? notes : undefined,
         addedDate: addedDate ? new Date(addedDate) : undefined,
+        lastUsedDate: lastUsedDate !== undefined ? (lastUsedDate ? new Date(lastUsedDate) : null) : undefined,
+        lastUsedAmount: lastUsedAmount !== undefined ? (lastUsedAmount !== null ? parseFloat(lastUsedAmount) : null) : undefined,
       },
     });
 

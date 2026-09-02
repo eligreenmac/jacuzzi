@@ -112,71 +112,73 @@ export async function DELETE(req: NextRequest) {
       where: { id, userId: user.id },
     });
 
+    const userChems = await prisma.chemicalInventory.findMany({
+      where: { userId: user.id },
+    });
+
     if (entry) {
       // 🌟 Restore deducted chemicals to inventory
       const fullText = `${entry.title || ""} ${entry.content || ""} ${entry.chemicalsAdded || ""}`;
-      const userChems = await prisma.chemicalInventory.findMany({
-        where: { userId: user.id },
-      });
 
       for (const chem of userChems) {
-        if (fullText.includes(chem.name)) {
-          // Extract the quantity associated with this chemical in the text
-          // Example formats: "מוריד קצף (30 ML)" or "כלור גרגרים: 50 גרם" or "הוספת 30 ML מוריד קצף"
+        if (fullText.includes(chem.name) || (entry.chemicalsAdded && entry.chemicalsAdded.includes(chem.name))) {
           const chemEscaped = chem.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           const regexPatterns = [
-            new RegExp(`${chemEscaped}[^0-9]*(\\d+(\\.\\d+)?)`, "i"),
-            new RegExp(`(\\d+(\\.\\d+)?)[^0-9]*${chemEscaped}`, "i"),
+            new RegExp(`(?:הוספת|שימוש ב-?|מינון:?)\\s*(\\d+(?:\\.\\d+)?)\\s*(?:מ"?ל|גרם|גר'?|טבליות|יחידות)?\\s*(?:של)?\\s*${chemEscaped}`, "i"),
+            new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(?:מ"?ל|גרם|גר'?|טבליות|יחידות)?\\s*(?:של)?\\s*${chemEscaped}`, "i"),
+            new RegExp(`${chemEscaped}[^0-9]*(\\d+(?:\\.\\d+)?)`, "i"),
           ];
 
           let amountToRestore = 0;
           for (const regex of regexPatterns) {
             const match = fullText.match(regex);
             if (match) {
-              const num = parseFloat(match[1] || match[2] || "0");
-              if (num > 0 && num <= 5000) {
+              const num = parseFloat(match[1] || "0");
+              if (num > 0 && num <= 10000) {
                 amountToRestore = num;
                 break;
               }
             }
           }
 
+          if (amountToRestore === 0 && chem.lastUsedAmount && chem.lastUsedDate) {
+            const entryTime = new Date(entry.entryDate || entry.createdAt).getTime();
+            const chemTime = new Date(chem.lastUsedDate).getTime();
+            if (Math.abs(entryTime - chemTime) < 24 * 3600 * 1000) {
+              amountToRestore = chem.lastUsedAmount;
+            }
+          }
+
           if (amountToRestore > 0) {
             await prisma.chemicalInventory.update({
               where: { id: chem.id },
-              data: { quantity: chem.quantity + amountToRestore },
+              data: {
+                quantity: chem.quantity + amountToRestore,
+                lastUsedDate: null,
+                lastUsedAmount: null,
+              },
             });
           }
         }
       }
 
-      // 🌟 Delete corresponding recurring maintenance tasks
-      const taskOrConditions: any[] = [];
-      const cleanTitle = (entry.title || "").replace("בוצע: ", "").replace("פעולת אחזקה יזומה: ", "").trim();
-      if (cleanTitle.length > 2) {
-        taskOrConditions.push({ title: { contains: cleanTitle } });
-        taskOrConditions.push({ description: { contains: cleanTitle } });
-      }
-
-      for (const chem of userChems) {
-        if (fullText.includes(chem.name)) {
-          taskOrConditions.push({ title: { contains: chem.name } });
-          taskOrConditions.push({ description: { contains: chem.name } });
-        }
-      }
-
-      if (taskOrConditions.length > 0) {
-        await prisma.maintenanceTask.deleteMany({
-          where: {
-            userId: user.id,
-            OR: taskOrConditions,
-          },
-        });
-      }
-
       await prisma.diaryEntry.delete({
         where: { id: entry.id },
       });
+    } else {
+      // Check if id is a chemical ID (direct chemical addition cancellation)
+      const matchingChem = userChems.find((c) => id.includes(c.id));
+      if (matchingChem) {
+        const usedAmount = matchingChem.lastUsedAmount || 0;
+        await prisma.chemicalInventory.update({
+          where: { id: matchingChem.id },
+          data: {
+            quantity: matchingChem.quantity + usedAmount,
+            lastUsedDate: null,
+            lastUsedAmount: null,
+          },
+        });
+      }
     }
 
     return NextResponse.json({ success: true, restocked: true });

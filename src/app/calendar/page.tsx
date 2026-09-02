@@ -835,24 +835,53 @@ export default function CalendarPage() {
     }
   };
 
-  const handleDeleteDiaryEntry = async (id: string) => {
+  const handleDeleteDiaryEntry = async (entryOrId: any) => {
+    const entryId = typeof entryOrId === "string" ? entryOrId : entryOrId?.id;
+    if (!entryId) return;
     if (!confirm("האם למחוק רשומה זו מהיומן?")) return;
+
     try {
-      if (id.startsWith("chem-used-")) {
-        const chemId = id.split("-")[2];
-        if (chemId) {
-          await fetch("/api/chemicals", {
+      if (entryId.startsWith("chem-used-")) {
+        // Find matching chemical from synthetic entry
+        const chemId =
+          typeof entryOrId === "object" && entryOrId.chemicalId
+            ? entryOrId.chemicalId
+            : chemicals.find((c) => entryId.includes(c.id))?.id;
+
+        const chem = chemicals.find((c) => c.id === chemId);
+        if (chem) {
+          const usedAmount = chem.lastUsedAmount || 0;
+          const restoredQty = chem.quantity + usedAmount;
+
+          const res = await fetch("/api/chemicals", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: chemId, lastUsedDate: null, lastUsedAmount: null }),
+            body: JSON.stringify({
+              id: chem.id,
+              quantity: restoredQty,
+              lastUsedDate: null,
+              lastUsedAmount: null,
+            }),
           });
+
+          if (!res.ok) {
+            const d = await res.json();
+            throw new Error(d.error || "שגיאה בעדכון החומר");
+          }
         }
       } else {
-        await fetch(`/api/log?id=${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/log?id=${entryId}`, { method: "DELETE" });
+        if (!res.ok) {
+          const d = await res.json();
+          throw new Error(d.error || "שגיאה במחיקת הרשומה");
+        }
       }
-      loadData();
-    } catch (err) {
-      console.error(err);
+
+      setActionNotice("הרשומה נמחקה מהיומן והמלאי הוחזר בהצלחה!");
+      setTimeout(() => setActionNotice(null), 4000);
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || "שגיאה במחיקה");
     }
   };
 
@@ -1202,7 +1231,7 @@ export default function CalendarPage() {
                             type="button"
                             onClick={(evt) => {
                               evt.stopPropagation();
-                              handleDeleteDiaryEntry(e.id);
+                              handleDeleteDiaryEntry(e);
                             }}
                             className="text-slate-500 hover:text-rose-400 p-1 shrink-0"
                             title="מחק רשומה"
