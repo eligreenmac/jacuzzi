@@ -715,35 +715,20 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              {/* Chemical Inventory with Last Addition Dates */}
-              <div className="space-y-2 pt-0.5">
+              {/* Chemical Inventory Stock Levels */}
+              <div className="space-y-1 pt-0.5">
                 {chemicals.map((chem: any) => {
                   const isLow = chem.minThreshold && chem.quantity <= chem.minThreshold;
                   const unitLabel = chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit === "TABLETS" ? "טבליות" : chem.unit;
-                  const lastDate = chem.lastUsedDate ? new Date(chem.lastUsedDate) : null;
 
                   return (
-                    <div key={chem.id} className="p-2 rounded-xl bg-slate-950/70 border border-slate-800/60 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-300 font-bold truncate max-w-[150px]" title={chem.name}>
-                          {chem.name}
-                        </span>
-                        <span className={`font-black text-xs ${isLow ? "text-amber-400" : "text-slate-100"}`}>
-                          {chem.quantity} {unitLabel} {isLow ? "(נמוך)" : ""}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span>תאריך הוספה אחרון:</span>
-                        {lastDate ? (
-                          <span className="text-cyan-300 font-semibold">
-                            {lastDate.toLocaleDateString("he-IL")} ({formatRelativeDays(lastDate)})
-                            {chem.lastUsedAmount ? ` • ${chem.lastUsedAmount} ${unitLabel}` : ""}
-                          </span>
-                        ) : (
-                          <span className="text-slate-500">טרם הוסף לג'קוזי</span>
-                        )}
-                      </div>
+                    <div key={chem.id} className="flex items-center justify-between py-1 border-b border-slate-800/40 last:border-b-0">
+                      <span className="text-slate-300 truncate max-w-[160px]" title={chem.name}>
+                        {chem.name}:
+                      </span>
+                      <span className={`font-semibold ${isLow ? "text-amber-400 font-bold" : "text-slate-200"}`}>
+                        {chem.quantity} {unitLabel} {isLow ? "(נמוך)" : ""}
+                      </span>
                     </div>
                   );
                 })}
