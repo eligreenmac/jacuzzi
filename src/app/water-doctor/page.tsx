@@ -758,15 +758,15 @@ export default function WaterDoctorPage() {
                 </div>
               </div>
 
-              {/* Root Cause Analysis & Dangers */}
+              {/* Risks of Abnormal Parameters */}
               {diagnosis.rootCauseAnalysis && (
-                <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-900/60 space-y-1.5">
-                  <div className="text-xs font-bold text-purple-300 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-purple-400" />
-                    <span>סכנות וניתוח שורש הבעיה הכימי:</span>
+                <div className="p-4 rounded-2xl bg-rose-950/20 border border-rose-900/40 space-y-1.5">
+                  <div className="text-xs font-bold text-rose-300 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                    <span>סכנות והשלכות של מדדים שאינם תקינים:</span>
                   </div>
-                  <p className="text-xs text-purple-200/90 leading-relaxed">
-                    {diagnosis.rootCauseAnalysis}
+                  <p className="text-xs text-slate-200 leading-relaxed">
+                    {diagnosis.rootCauseAnalysis.replace(/^(שורש הבעיה:\s*|ניתוח שורש הבעיה:\s*)+/gi, "")}
                   </p>
                 </div>
               )}
@@ -797,7 +797,9 @@ export default function WaterDoctorPage() {
                 </h4>
 
                 <div className="space-y-3">
-                  {diagnosis.stepByStepPlan?.map((step: any) => (
+                  {diagnosis.stepByStepPlan?.map((step: any) => {
+                    const cleanTitle = (step.title || "").replace(/^(טיפול שורש \d*:\s*|טיפול שורש:\s*)+/gi, "");
+                    return (
                     <div
                       key={step.stepNumber}
                       className="p-4 rounded-2xl bg-slate-950 border border-slate-850 space-y-3 hover:border-slate-700 transition-all shadow-md"
@@ -808,7 +810,7 @@ export default function WaterDoctorPage() {
                             {step.stepNumber}
                           </span>
                           <div>
-                            <h5 className="font-bold text-white text-sm">{step.title}</h5>
+                            <h5 className="font-bold text-white text-sm">{cleanTitle}</h5>
                             <div className="text-xs text-cyan-300 font-semibold mt-0.5">
                               חומר: {step.chemical} • מינון מומלץ: <span className="text-white font-bold">{step.amount}</span>
                             </div>
@@ -886,7 +888,8 @@ export default function WaterDoctorPage() {
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               </div>
 

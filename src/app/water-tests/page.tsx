@@ -716,26 +716,57 @@ export default function WaterTestsPage() {
                       }
                     }
 
-                    const displayDiagnosis =
-                      !allParamsAreOk && test.aiDiagnosis && test.aiDiagnosis.includes("תקינים")
-                        ? `נמצאו מדדים הדורשים טיפול: ${[
-                            phDomain.id !== "OK" && `חומציות ${phDomain.label}`,
-                            clDomain.id !== "OK" && `חיטוי ${clDomain.label}`,
-                            !alkIsOk && `בסיסיות TA ${alkDomain.label}`,
-                            !clarityIsOk && `צלילות ${clarityInfo.label}`,
-                          ].filter(Boolean).join(", ")}.`
-                        : test.aiDiagnosis;
+                    // Collect only the dangers and risks of abnormal parameters
+                    const abnormalRisks: Array<{ name: string; risk: string }> = [];
 
-                    const displayRootCause =
-                      !allParamsAreOk && (!recs?.rootCauseAnalysis || recs.rootCauseAnalysis.includes("תקינים"))
-                        ? (alkDomain.id === "VERY_LOW" || alkDomain.id === "LOW"
-                            ? "שורש הבעיה: רמת בסיסיות (Total Alkalinity) נמוכה פוגעת ב'כרית האוויר' של המים וגורמת לתנודות חריפות ב-pH (pH Bounce), קורוזיה של רכיבי מתכת ואי נוחות במים. יש להעלות את הבסיסיות לטווח היעד של 80-120 ppm לפני כל כיוונון של ה-pH."
-                            : phDomain.id !== "OK"
-                            ? "שורש הבעיה: רמת החומציות (pH) אינה מאוזנת ודורשת תיקון."
-                            : clDomain.id !== "OK"
-                            ? "שורש הבעיה: רמת חומר החיטוי אינה בטווח היעד הנדרש (2.0-4.0 ppm)."
-                            : "שורש הבעיה: נדרש טיפול נקודתי לאיזון המים.")
-                        : recs?.rootCauseAnalysis;
+                    if (!alkIsOk) {
+                      if (alkDomain.id === "VERY_LOW" || alkDomain.id === "LOW") {
+                        abnormalRisks.push({
+                          name: "בסיסיות (TA) נמוכה",
+                          risk: "תנודות חריפות ברמת החומציות (pH Bounce), קורוזיה ושחיקה של גופי חימום ורכיבי מתכת, פגיעה במתח הפנים של המים וצריבה בעור ובעיניים.",
+                        });
+                      } else {
+                        abnormalRisks.push({
+                          name: "בסיסיות (TA) גבוהה",
+                          risk: "קושי וכבדות באיזון ה-pH, נטייה להיווצרות אבנית, עכירות מים והפחתת יעילות חומר החיטוי.",
+                        });
+                      }
+                    }
+
+                    if (phDomain.id !== "OK") {
+                      if (phDomain.id === "VERY_LOW" || phDomain.id === "LOW") {
+                        abnormalRisks.push({
+                          name: "חומציות (pH) נמוכה",
+                          risk: "מים חומציים קורוזיביים הגורמים לשחיקת גופי חימום, התנדפות מהירה של חומר החיטוי וצריבה חריפה בעיניים.",
+                        });
+                      } else {
+                        abnormalRisks.push({
+                          name: "חומציות (pH) גבוהה",
+                          risk: "היווצרות אבנית על גופי חימום, מים עכורים, אובדן של עד 80% מיעילות החיטוי וגירוי בעור.",
+                        });
+                      }
+                    }
+
+                    if (clDomain.id !== "OK") {
+                      if (clDomain.id === "VERY_LOW" || clDomain.id === "LOW") {
+                        abnormalRisks.push({
+                          name: "חומר חיטוי נמוך",
+                          risk: "התרבות מהירה של חיידקים ואצות, עכירות מים וסכנה בריאותית למתרחצים.",
+                        });
+                      } else {
+                        abnormalRisks.push({
+                          name: "חומר חיטוי גבוה מדי",
+                          risk: "ריח חריף, גירוי חזק בעור ובעיניים, פגיעה בכיסוי התרמי ובאטמי הגומי.",
+                        });
+                      }
+                    }
+
+                    if (!clarityIsOk) {
+                      abnormalRisks.push({
+                        name: `צלילות מים (${clarityInfo.label})`,
+                        risk: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר ופגיעה בסירקולציה.",
+                      });
+                    }
 
                     return (
                       <div className="space-y-3 pt-3 border-t border-slate-800/80 text-xs">
@@ -756,25 +787,20 @@ export default function WaterTestsPage() {
                           </div>
                         ) : (
                           <>
-                            {displayDiagnosis && (
-                              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 flex items-start gap-2.5">
-                                <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                                <div className="space-y-1">
-                                  <span className="font-bold text-cyan-300">אבחון ומצב המים: </span>
-                                  <span>{displayDiagnosis}</span>
+                            {/* Direct Risks of Abnormal Parameters Only */}
+                            {abnormalRisks.length > 0 && (
+                              <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-900/40 text-slate-300 space-y-2">
+                                <div className="flex items-center gap-2 font-bold text-rose-300 text-xs">
+                                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                                  <span>סכנות של מדדים שאינם תקינים:</span>
                                 </div>
-                              </div>
-                            )}
-
-                            {/* Root Cause Analysis & Dangers */}
-                            {displayRootCause && (
-                              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
-                                <div className="flex items-center gap-2 font-bold text-slate-200 text-xs">
-                                  <Info className="w-4 h-4 text-cyan-400" />
-                                  <span>סכנות וניתוח שורש הבעיה:</span>
-                                </div>
-                                <div className="text-[11px] leading-relaxed text-slate-300 pr-6">
-                                  {displayRootCause}
+                                <div className="space-y-1.5 pr-2">
+                                  {abnormalRisks.map((item, idx) => (
+                                    <div key={idx} className="text-[11px] leading-relaxed flex items-start gap-1.5">
+                                      <span className="text-rose-400 font-bold shrink-0">• {item.name}:</span>
+                                      <span className="text-slate-200">{item.risk}</span>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             )}
@@ -790,24 +816,26 @@ export default function WaterTestsPage() {
                                 </div>
 
                                 <div className="space-y-2.5">
-                                  {actionableSteps.map((step: any, sIdx: number) => (
-                                    <div
-                                      key={sIdx}
-                                      className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2"
-                                    >
-                                      <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2 font-bold text-white text-xs">
-                                          <span className="w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-bold bg-slate-800 text-cyan-300 border border-slate-700">
-                                            {step.stepNumber || sIdx + 1}
-                                          </span>
-                                          <span>{step.title}</span>
+                                  {actionableSteps.map((step: any, sIdx: number) => {
+                                    const cleanTitle = (step.title || "").replace(/^(טיפול שורש \d*:\s*|טיפול שורש:\s*)+/gi, "");
+                                    return (
+                                      <div
+                                        key={sIdx}
+                                        className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2"
+                                      >
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="flex items-center gap-2 font-bold text-white text-xs">
+                                            <span className="w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-bold bg-slate-800 text-cyan-300 border border-slate-700">
+                                              {step.stepNumber || sIdx + 1}
+                                            </span>
+                                            <span>{cleanTitle}</span>
+                                          </div>
+                                          {step.amount && step.amount !== "לפי שגרה" && (
+                                            <span className="px-2 py-0.5 rounded-md bg-slate-950 text-cyan-300 font-bold text-[11px] border border-slate-800">
+                                              מינון: {step.amount}
+                                            </span>
+                                          )}
                                         </div>
-                                        {step.amount && step.amount !== "לפי שגרה" && (
-                                          <span className="px-2 py-0.5 rounded-md bg-slate-950 text-cyan-300 font-bold text-[11px] border border-slate-800">
-                                            מינון: {step.amount}
-                                          </span>
-                                        )}
-                                      </div>
 
                                       <div className="text-[11px] text-slate-300 leading-relaxed pr-7">
                                         {step.instructions}
@@ -911,8 +939,9 @@ export default function WaterTestsPage() {
                                             </button>
                                           )}
                                         </div>
-                                    </div>
-                                  ))}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}

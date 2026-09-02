@@ -355,28 +355,27 @@ ${JSON.stringify(data.pendingUnexecutedRecommendations || [], null, 2)}
 ${JSON.stringify(data.inventory || [], null, 2)}
 
 הנחיות חובה לבניית האבחון:
-1. **התחשבות בפעולות קודמות שלא בוצעו (Pending Actions)**:
-   - אם מופיעות המלצות/משימות מבדיקות קודמות שטרם סומנו כבוצעו (למשל: לא היה חומר במלאי או טרם בוצע):
-   - אסור בשום אופן להניח שהבעיה נפתרה! עליך להתייחס לכך מפורשות באבחון, בתובנות ההיסטוריות (historicalInsights) ובשורש הבעיה: ציין שהטיפול הקודם עדיין חסר ולכן הבעיה עדיין קיימת, הדגש את החומר שחסר לרכישה, והתאם את ההמלצות החדשות.
-2. **הצגת סכנות וניתוח שורש הבעיה (rootCauseAnalysis)**:
-   - **חוק ברזל מוחלט**: הצג אך ורק את הסכנות, הסיכונים וההשלכות של המדדים שאינם במצב תקין!
-   - אם מדד מסוים תקין (למשל ה-pH תקין או החיטוי תקין), חל איסור מוחלט לציין סכנות או אזהרות לגביו.
-   - פרט אך ורק את הסכנות וההשלכות של המדדים החריגים (למשל: אם רק הבסיסיות נמוכה, פרט רק את סכנות הבסיסיות הנמוכה: פגיעה ביציבות המים, תנודות pH חריפות, שחיקת גופי חימום וקורוזיה מתכתית, וצריבה בעור).
-3. **תוכנית פעולה משולבת (stepByStepPlan)**:
-   - כלול שלב ל**טיפול בשורש הבעיה** (כגון שוק MPS לפירוק שומנים, העלאת בסיסיות לייצוב ה-pH, שטיפת פילטר).
-   - אם ממליץ על טיפול נקודתי (כמו מסיר קצף או מצליל), ציין את תופעות הלוואי (סיליקון מצטבר / סתימת פילטר) וחייב שטיפת פילטר בהמשך!
-4. **חובת פעולות המשך (followUpRequirements)**: מה חובה לעשות בעוד 12-24 שעות (שטיפת פילטר, בדיקה חוזרת).
-5. **הנחיות מניעה (preventionGuidelines)**: איך למנוע מהבעיה לחזור שוב.
-6. **התאמה לארון חומרים ורכישה ברשת**: עבור כל שלב בדוק האם קיים בארון (inInventory), ואם חסר ספק מילות חיפוש והמלצת רכישה.
-7. **בדיקת מים תקינה ומאוזנת (ללא צורך בטיפול)**:
+1. **ללא כותרות חוזרות וללא מלל מיותר**: אל תכלול פתיחות חוזרות כמו "אבחון ומצב המים:", "שורש הבעיה:", או "טיפול שורש 1:". ספק תוכן ישיר, חד ותמציתי.
+2. **הצגת סכנות והשלכות של מדדים לא תקינים בלבד (rootCauseAnalysis)**:
+   - הצג באופן ממוקד אך ורק את הסכנות וההשלכות המעשיות של הפרמטרים שאינם בטווח התקין (למשל: בסיסיות נמוכה גורמת לקורוזיה של גופי חימום, תנודות חריפות ב-pH וצריבה; חומציות גבוהה גורמת לאבנית ופגיעה ביעילות החיטוי).
+   - אל תפרט על מדדים שהם תקינים.
+3. **התחשבות בפעולות קודמות שלא בוצעו (Pending Actions)**:
+   - אם מופיעות המלצות/משימות מבדיקות קודמות שטרם סומנו כבוצעו, ציין שהטיפול הקודם עדיין חסר ולכן הבעיה עדיין קיימת.
+4. **תוכנית פעולה משולבת (stepByStepPlan)**:
+   - כותרות שלבים נקיות וישירות (למשל: "העלאת וייצוב בסיסיות המים (Total Alkalinity)").
+   - אם ממליץ על טיפול נקודתי (כמו מסיר קצף או מצליל), ציין תופעות לוואי וחייב שטיפת פילטר בהמשך.
+5. **חובת פעולות המשך (followUpRequirements)**: מה חובה לעשות בעוד 12-24 שעות (שטיפת פילטר, בדיקה חוזרת).
+6. **הנחיות מניעה (preventionGuidelines)**: איך למנוע מהבעיה לחזור שוב.
+7. **התאמה לארון חומרים ורכישה ברשת**: עבור כל שלב בדוק האם קיים בארון (inInventory), ואם חסר ספק מילות חיפוש והמלצת רכישה.
+8. **בדיקת מים תקינה ומאוזנת (ללא צורך בטיפול)**:
    - אם כל מדדי המים שנבדקו נמצאים בפרמטרים תקינים (pH תקין, חיטוי תקין, בסיסיות תקינה, וצלילות צלולה):
    - אין צורך בתוכנית טיפול ולא נדרשות משימות או פעולות המשך כלל!
    - במקרה כזה הגדר: "rootCauseAnalysis": "המים נבדקו ונמצאו בפרמטרים תקינים.", "stepByStepPlan": [], "followUpRequirements": [].
 
 החזר אך ורק תשובת JSON תקנית במבנה:
 {
-  "waterStatusSummary": "סיכום תמציתי ומדויק של מצב המים",
-  "rootCauseAnalysis": "הסבר מקצועי ומפורט על שורש הבעיה האמיתי",
+  "waterStatusSummary": "סיכום תמציתי ומדויק של המדדים הלא תקינים (ללא כותרת חוזרת)",
+  "rootCauseAnalysis": "הסכנות וההשלכות הישירות של המדדים שאינם תקינים בלבד",
   "severity": "GOOD" | "ATTENTION" | "WARNING" | "CRITICAL",
   "safeToBathe": true | false,
   "needsFullDrain": true | false,
@@ -603,7 +602,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
       steps.push({
         stepNumber: stepCount++,
         stepType: "ROOT_CAUSE",
-        title: "טיפול שורש 1: העלאת וייצוב בסיסיות המים (Total Alkalinity)",
+        title: "העלאת וייצוב בסיסיות המים (Total Alkalinity)",
         chemical: "מעלה בסיסיות (Alkalinity Increaser / סודיום ביקרבונט)",
         amount: `${alkGrams} גרם`,
         instructions: `הבסיסיות (TA) היא "כרית האוויר" של המים. הוסף כ-${alkGrams} גרם מעלה בסיסיות מומסים בדלי מים עם ג'טים פועלים. זה ימנע תנודות חומציות (pH Bounce) ויחזק את מתח הפנים של המים.`,
@@ -767,7 +766,7 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     steps.push({
       stepNumber: stepCount++,
       stepType: "ROOT_CAUSE",
-      title: "טיפול שורש 1: קשירת נחושת ומניעת הכתמות (Metal Sequestrant)",
+      title: "קשירת נחושת ומניעת הכתמות (Metal Sequestrant)",
       chemical: "חומר קושר מתכות (Metal Sequestrant / Metal Out)",
       amount: `${Math.round((data.volumeLiters / 1000) * 30)} מ\"ל`,
       instructions: "הוסף חומר קושר מתכות כשהג'טים פועלים למשך 30 דקות. החומר עוטף את יוני הנחושת ומונע הכתמת דפנות אקריל ושיער.",
@@ -786,13 +785,13 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     safeToBathe = false;
     estimatedRecoveryTime = "12-24 שעות";
     issuesFound.push("נוכחות ברזל וחלודה במים");
-    rootCauseExplanation = "שורש הבעיה: נוכחות יוני ברזל במי המילוי או קורוזיה מתכתית שהתחמצנה במגע עם הכלור.";
+    rootCauseExplanation = "נוכחות יוני ברזל במי המילוי או קורוזיה מתכתית שהתחמצנה במגע עם הכלור.";
 
     const inStockItem = findInInventory("OTHER", "מתכות") || findInInventory("OTHER", "iron");
     steps.push({
       stepNumber: stepCount++,
       stepType: "ROOT_CAUSE",
-      title: "טיפול שורש: מסיר וקושר ברזל וחלודה (Metal Free / Iron Out)",
+      title: "מסיר וקושר ברזל וחלודה (Metal Free / Iron Out)",
       chemical: "מסיר וקושר מתכות וברזל (Metal Free / Iron Out)",
       amount: `${Math.round((data.volumeLiters / 1000) * 30)} מ\"ל`,
       instructions: "הוסף מסיר מתכות, הפעל סירקולציה למשך 2-3 שעות ולאחר מכן שטוף את הפילטר.",
@@ -881,27 +880,6 @@ function generateRuleBasedDiagnosis(data: DiagnoseRequest): DiagnosisResponse {
     statusSummary = `נמצאו מדדים הדורשים התייחסות: ${issuesFound.join(", ")}.`;
   } else {
     statusSummary = "המים נבדקו ונמצאו בפרמטרים תקינים.";
-  }
-
-  // If rootCauseExplanation not set yet, formulate danger analysis strictly for abnormal metrics
-  if (!rootCauseExplanation && issuesFound.length > 0) {
-    const dangerNotes: string[] = [];
-    if (alkIsLow) {
-      dangerNotes.push("סכנות ומשמעות בסיסיות (TA) נמוכה: רמת בסיסיות נמוכה פוגעת ב'כרית האוויר' של המים וגורמת לתנודות חריפות ב-pH (pH Bounce), קורוזיה ושחיקת רכיבי מתכת וגופי חימום, ואי נוחות ברחצה. יש להעלות את הבסיסיות לטווח היעד של 80-120 ppm.");
-    }
-    if (issuesFound.some((i) => i.includes("pH גבוה"))) {
-      dangerNotes.push("סכנות pH גבוה: גורם להיווצרות אבנית, עכירות וירידה דרסטית ביעילות חומר החיטוי.");
-    }
-    if (issuesFound.some((i) => i.includes("pH נמוך"))) {
-      dangerNotes.push("סכנות pH נמוך: חומציות גבוהה הגורמת לצריבה בעיניים וגירוי בעור, ושחיקת מתכות ומשאבות.");
-    }
-    if (issuesFound.some((i) => i.includes("חיטוי נמוך") || i.includes("כלור נמוך") || i.includes("ברום נמוך"))) {
-      dangerNotes.push("סכנות חוסר חיטוי: התרבות מואצת של חיידקים ופתוגנים והיווצרות ביופילם מזיק בצנרת.");
-    }
-    if (issuesFound.some((i) => i.includes("חיטוי גבוה") || i.includes("כלור גבוה") || i.includes("ברום גבוה"))) {
-      dangerNotes.push("סכנות עודף חיטוי: גירוי נשימתי, צריבה בעור ושחיקת רכיבי גומי וכיסוי.");
-    }
-    rootCauseExplanation = dangerNotes.join(" ");
   }
 
   // Factor in pending / unexecuted previous recommendations
