@@ -667,26 +667,25 @@ export default function DashboardPage() {
 
               {/* 🧪 Recent Chemical Additions Log inside Maintenance Card */}
               {recentChemicalAdditions.length > 0 && (
-                <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-teal-300">
-                    <span>🧪 תיעוד הוספת חומרים לאחרונה:</span>
+                <div className="pt-2 border-t border-slate-800/60 space-y-1.5">
+                  <div className="flex items-center justify-between pb-0.5">
+                    <span className="text-slate-400 font-bold text-[11px]">תיעוד הוספת חומרים לאחרונה:</span>
                   </div>
 
-                  <div className="space-y-1">
-                    {recentChemicalAdditions.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-1.5 rounded-lg bg-teal-950/30 border border-teal-900/40 text-[10px] flex items-center justify-between gap-1.5"
-                      >
-                        <span className="text-teal-200 font-medium truncate max-w-[160px]" title={item.text}>
-                          • {item.text}
+                  {recentChemicalAdditions.map((item) => {
+                    let label = item.text.trim();
+                    if (!label.endsWith(":")) label += ":";
+                    return (
+                      <div key={item.id} className="flex items-center justify-between">
+                        <span className="text-slate-400 truncate max-w-[170px]" title={item.text}>
+                          {label}
                         </span>
-                        <span className="text-cyan-300 font-bold shrink-0">
+                        <span className="font-semibold text-slate-200 shrink-0">
                           {item.formattedDate} ({item.relative})
                         </span>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
