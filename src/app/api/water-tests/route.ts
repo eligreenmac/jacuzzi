@@ -76,40 +76,52 @@ export async function POST(req: NextRequest) {
       saltRange,
       waterTemp,
       waterTempRange,
+      carbonate,
+      carbonateRange,
+      bromine,
+      bromineRange,
+      nitrate,
+      nitrateRange,
+      nitrite,
+      nitriteRange,
+      iron,
+      ironRange,
+      copper,
+      copperRange,
+      chromium,
+      chromiumRange,
+      lead,
+      leadRange,
+      mercury,
+      mercuryRange,
+      fluoride,
+      fluorideRange,
+      extendedMetrics,
       testedParams,
       description,
       imageUrl,
     } = body;
 
-    const parsedPh = ph === "UNKNOWN" || ph === "" || ph === undefined || ph === null ? null : parseFloat(ph);
-    const parsedCl =
-      freeChlorine === "UNKNOWN" || freeChlorine === "" || freeChlorine === undefined || freeChlorine === null
-        ? null
-        : parseFloat(freeChlorine);
-    const parsedAlk =
-      alkalinity === "UNKNOWN" || alkalinity === "" || alkalinity === undefined || alkalinity === null
-        ? null
-        : parseFloat(alkalinity);
-    const parsedCalcium =
-      calcium === "UNKNOWN" || calcium === "" || calcium === undefined || calcium === null
-        ? null
-        : parseFloat(calcium);
-    const parsedTotalCl =
-      totalChlorine === "UNKNOWN" || totalChlorine === "" || totalChlorine === undefined || totalChlorine === null
-        ? null
-        : parseFloat(totalChlorine);
-    const parsedCya =
-      cya === "UNKNOWN" || cya === "" || cya === undefined || cya === null
-        ? null
-        : parseFloat(cya);
-    const parsedSalt =
-      salt === "UNKNOWN" || salt === "" || salt === undefined || salt === null
-        ? null
-        : parseFloat(salt);
-    const parsedWaterTemp =
-      waterTemp === "UNKNOWN" || waterTemp === "" || waterTemp === undefined || waterTemp === null
-        ? null
-        : parseFloat(waterTemp);
+    const parseNum = (val: any) => (val === "UNKNOWN" || val === "" || val === undefined || val === null ? null : parseFloat(val));
+
+    const parsedPh = parseNum(ph);
+    const parsedCl = parseNum(freeChlorine);
+    const parsedAlk = parseNum(alkalinity);
+    const parsedCalcium = parseNum(calcium);
+    const parsedTotalCl = parseNum(totalChlorine);
+    const parsedCya = parseNum(cya);
+    const parsedSalt = parseNum(salt);
+    const parsedWaterTemp = parseNum(waterTemp);
+    const parsedCarbonate = parseNum(carbonate);
+    const parsedBromine = parseNum(bromine);
+    const parsedNitrate = parseNum(nitrate);
+    const parsedNitrite = parseNum(nitrite);
+    const parsedIron = parseNum(iron);
+    const parsedCopper = parseNum(copper);
+    const parsedChromium = parseNum(chromium);
+    const parsedLead = parseNum(lead);
+    const parsedMercury = parseNum(mercury);
+    const parsedFluoride = parseNum(fluoride);
 
     const effectivePh = resolveNumericValue(parsedPh, phRange, "PH");
     const effectiveCl = resolveNumericValue(parsedCl, chlorineRange, "CL");
@@ -246,6 +258,27 @@ export async function POST(req: NextRequest) {
         saltRange: saltRange || null,
         waterTemp: parsedWaterTemp,
         waterTempRange: waterTempRange || null,
+        carbonate: parsedCarbonate,
+        carbonateRange: carbonateRange || null,
+        bromine: parsedBromine,
+        bromineRange: bromineRange || null,
+        nitrate: parsedNitrate,
+        nitrateRange: nitrateRange || null,
+        nitrite: parsedNitrite,
+        nitriteRange: nitriteRange || null,
+        iron: parsedIron,
+        ironRange: ironRange || null,
+        copper: parsedCopper,
+        copperRange: copperRange || null,
+        chromium: parsedChromium,
+        chromiumRange: chromiumRange || null,
+        lead: parsedLead,
+        leadRange: leadRange || null,
+        mercury: parsedMercury,
+        mercuryRange: mercuryRange || null,
+        fluoride: parsedFluoride,
+        fluorideRange: fluorideRange || null,
+        extendedMetrics: extendedMetrics ? (typeof extendedMetrics === "string" ? extendedMetrics : JSON.stringify(extendedMetrics)) : null,
         testedParams: activeTestedParamsStr,
         description: description || null,
         imageUrl: imageUrl || null,

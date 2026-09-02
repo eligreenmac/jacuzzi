@@ -24,6 +24,7 @@ import {
 import {
   ALL_TEST_STRIP_PARAMS,
   DEFAULT_TEST_STRIP_PARAM_IDS,
+  PARAM_CATEGORIES,
   parseTestStripParams,
 } from "@/lib/test-strip-params";
 
@@ -335,7 +336,7 @@ export default function SettingsPage() {
                 }
                 className="text-[11px] px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold rounded-lg border border-slate-700 transition-colors"
               >
-                בחר הכל
+                בחר הכל ({ALL_TEST_STRIP_PARAMS.length})
               </button>
               <button
                 type="button"
@@ -355,58 +356,79 @@ export default function SettingsPage() {
           <div className="p-3 rounded-2xl bg-cyan-950/30 border border-cyan-800/40 text-xs text-cyan-200/90 flex items-start gap-2.5">
             <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
             <div className="leading-relaxed">
-              סמן את המדדים הנמדדים במקלון הבדיקה שברשותך. המדדים המסומנים יופיעו בטופס הזנת הבדיקות ובדוחות מצב איכות המים כולל התראות הסכנה הרלוונטיות.
+              סמן את המדדים הנמדדים במקלון או בערכת הבדיקה שברשותך. המדדים המסומנים יופיעו בטופס הזנת הבדיקות ובדוחות איכות המים כולל התראות הסכנה הישירות של המדדים החורגים.
               <span className="block text-slate-400 text-[11px] mt-0.5">
-                * שינוי הגדרות זה חל על בדיקות חדשות ואינו משנה את נתוני הבדיקות ההיסטוריות שנשמרו בעבר.
+                * שינוי הגדרות זה חל על בדיקות חדשות ואינו משנה היסטוריית בדיקות עבר.
               </span>
             </div>
           </div>
 
-          {/* Parameters Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {ALL_TEST_STRIP_PARAMS.map((param) => {
-              const isSelected = (formData.testStripParams || []).includes(param.id);
+          {/* Categorized Parameters List */}
+          <div className="space-y-6">
+            {PARAM_CATEGORIES.map((catName) => {
+              const catParams = ALL_TEST_STRIP_PARAMS.filter((p) => p.category === catName);
+              const selectedInCat = catParams.filter((p) => (formData.testStripParams || []).includes(p.id)).length;
 
               return (
-                <div
-                  key={param.id}
-                  onClick={() => {
-                    setFormData((prev) => {
-                      const current = prev.testStripParams || [];
-                      const next = current.includes(param.id)
-                        ? current.filter((p) => p !== param.id)
-                        : [...current, param.id];
-                      if (next.length === 0) return prev;
-                      return { ...prev, testStripParams: next };
-                    });
-                  }}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all select-none flex items-start gap-3.5 ${
-                    isSelected
-                      ? "bg-cyan-950/20 border-cyan-500/50 shadow-sm"
-                      : "bg-slate-950/40 border-slate-800/80 hover:border-slate-700 opacity-60 hover:opacity-85"
-                  }`}
-                >
-                  <div className="pt-0.5">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => {}}
-                      className="w-4 h-4 accent-cyan-500 rounded cursor-pointer pointer-events-none"
-                    />
+                <div key={catName} className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                    <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                      <span>{catName}</span>
+                    </h3>
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-semibold border border-slate-700">
+                      {selectedInCat} / {catParams.length} פעילים
+                    </span>
                   </div>
 
-                  <div className="space-y-1 flex-1">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className={`font-bold text-sm ${isSelected ? "text-white" : "text-slate-400"}`}>
-                        {param.nameHe} ({param.enName})
-                      </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-cyan-300 font-semibold shrink-0">
-                        יעד: {param.idealRange}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      {param.description}
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {catParams.map((param) => {
+                      const isSelected = (formData.testStripParams || []).includes(param.id);
+
+                      return (
+                        <div
+                          key={param.id}
+                          onClick={() => {
+                            setFormData((prev) => {
+                              const current = prev.testStripParams || [];
+                              const next = current.includes(param.id)
+                                ? current.filter((p) => p !== param.id)
+                                : [...current, param.id];
+                              if (next.length === 0) return prev;
+                              return { ...prev, testStripParams: next };
+                            });
+                          }}
+                          className={`p-3.5 rounded-2xl border cursor-pointer transition-all select-none flex items-start gap-3.5 ${
+                            isSelected
+                              ? "bg-cyan-950/20 border-cyan-500/50 shadow-sm"
+                              : "bg-slate-950/40 border-slate-800/80 hover:border-slate-700 opacity-60 hover:opacity-85"
+                          }`}
+                        >
+                          <div className="pt-0.5">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="w-4 h-4 accent-cyan-500 rounded cursor-pointer pointer-events-none"
+                            />
+                          </div>
+
+                          <div className="space-y-1 flex-1">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className={`font-bold text-sm ${isSelected ? "text-white" : "text-slate-400"}`}>
+                                {param.nameHe} ({param.enName})
+                              </span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-cyan-300 font-semibold shrink-0">
+                                יעד: {param.idealRange}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 leading-relaxed">
+                              {param.description}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );

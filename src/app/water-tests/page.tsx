@@ -9,87 +9,21 @@ import {
   Edit2,
   Calendar,
   Clock,
-  Sparkles,
   Droplets,
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
   X,
   Activity,
-  ChevronRight,
   TrendingUp,
-  Info,
-  Package,
-  ShoppingCart,
-  Search,
-  ExternalLink,
-  Zap,
 } from "lucide-react";
 
 import {
   ALL_TEST_STRIP_PARAMS,
   DEFAULT_TEST_STRIP_PARAM_IDS,
+  PARAM_CATEGORIES,
   parseTestStripParams,
-  TestStripParamDef,
 } from "@/lib/test-strip-params";
-
-// Standard Test Strip Range Scales
-const PH_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (< 6.8)", defaultVal: 6.5, badge: "Very Low" },
-  { id: "LOW", label: "Low (6.8 - 7.1)", defaultVal: 7.0, badge: "Low" },
-  { id: "OK", label: "OK (7.2 - 7.6)", defaultVal: 7.4, badge: "OK" },
-  { id: "HIGH", label: "High (7.7 - 8.0)", defaultVal: 7.8, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 8.0)", defaultVal: 8.3, badge: "Very High" },
-  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
-];
-
-const CHLORINE_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (0 - 0.5 ppm)", defaultVal: 0.0, badge: "Very Low" },
-  { id: "LOW", label: "Low (0.5 - 1.5 ppm)", defaultVal: 1.0, badge: "Low" },
-  { id: "OK", label: "OK (2.0 - 4.0 ppm)", defaultVal: 3.0, badge: "OK" },
-  { id: "HIGH", label: "High (5.0 - 8.0 ppm)", defaultVal: 6.0, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 8.0 ppm)", defaultVal: 10.0, badge: "Very High" },
-  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
-];
-
-const ALKALINITY_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (< 40 ppm)", defaultVal: 30, badge: "Very Low" },
-  { id: "LOW", label: "Low (40 - 70 ppm)", defaultVal: 60, badge: "Low" },
-  { id: "OK", label: "OK (80 - 120 ppm)", defaultVal: 100, badge: "OK" },
-  { id: "HIGH", label: "High (130 - 180 ppm)", defaultVal: 150, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 180 ppm)", defaultVal: 200, badge: "Very High" },
-  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
-];
-
-const CALCIUM_RANGES = [
-  { id: "VERY_LOW", label: "Very Low (< 100 ppm)", defaultVal: 80, badge: "Very Low" },
-  { id: "LOW", label: "Low (100 - 140 ppm)", defaultVal: 120, badge: "Low" },
-  { id: "OK", label: "OK (150 - 250 ppm)", defaultVal: 200, badge: "OK" },
-  { id: "HIGH", label: "High (260 - 400 ppm)", defaultVal: 300, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High (> 400 ppm)", defaultVal: 450, badge: "Very High" },
-  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
-];
-
-const TOTAL_CL_RANGES = [
-  { id: "OK", label: "OK (אידיאלי - שווה לחופשי)", defaultVal: 3.0, badge: "OK" },
-  { id: "HIGH", label: "High (כלורמינים מעל 0.5 ppm)", defaultVal: 5.0, badge: "High" },
-  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
-];
-
-const CYA_RANGES = [
-  { id: "LOW", label: "Low (< 20 ppm)", defaultVal: 10, badge: "Low" },
-  { id: "OK", label: "OK (20 - 50 ppm)", defaultVal: 35, badge: "OK" },
-  { id: "HIGH", label: "High (50 - 100 ppm)", defaultVal: 75, badge: "High" },
-  { id: "VERY_HIGH", label: "Very High / נעילת כלור (> 100 ppm)", defaultVal: 120, badge: "Very High" },
-  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
-];
-
-const SALT_RANGES = [
-  { id: "LOW", label: "Low (< 1500 ppm)", defaultVal: 1200, badge: "Low" },
-  { id: "OK", label: "OK (1500 - 2500 ppm)", defaultVal: 2000, badge: "OK" },
-  { id: "HIGH", label: "High (> 2500 ppm)", defaultVal: 3000, badge: "High" },
-  { id: "UNKNOWN", label: "לא נבדק", defaultVal: null, badge: "לא נבדק" },
-];
 
 export function getGenericDomain(
   paramId: string,
@@ -98,77 +32,139 @@ export function getGenericDomain(
 ) {
   if (rangeStr) {
     const s = rangeStr.toUpperCase();
-    if (s.includes("VERY_LOW") || s.includes("VERY LOW") || s.includes("חומצי מאוד") || s.includes("ללא חיטוי") || s.includes("נמוכה מאוד") || s.includes("נמוך מאוד")) {
-      return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
+    if (
+      s.includes("VERY_LOW") ||
+      s.includes("VERY LOW") ||
+      s.includes("חומצי מאוד") ||
+      s.includes("ללא חיטוי") ||
+      s.includes("נמוכה מאוד") ||
+      s.includes("נמוך מאוד")
+    ) {
+      return { id: "VERY_LOW", label: "נמוך מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
     }
-    if (s.includes("VERY_HIGH") || s.includes("VERY HIGH") || s.includes("בסיסי מאוד") || s.includes("שוק") || s.includes("עודף") || s.includes("גבוהה מאוד") || s.includes("גבוה מאוד") || s.includes("נעילת כלור")) {
-      return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (
+      s.includes("VERY_HIGH") ||
+      s.includes("VERY HIGH") ||
+      s.includes("בסיסי מאוד") ||
+      s.includes("שוק") ||
+      s.includes("עודף") ||
+      s.includes("גבוהה מאוד") ||
+      s.includes("גבוה מאוד") ||
+      s.includes("נעילת כלור") ||
+      s.includes("מסוכן") ||
+      s.includes("זיהום חמור")
+    ) {
+      return { id: "VERY_HIGH", label: "חריג / מסוכן", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
     }
-    if (s.includes("LOW") || s.includes("נמוך") || s.includes("נמוכה")) {
-      return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
+    if (s.includes("LOW") || s.includes("נמוך") || s.includes("נמוכה") || s.includes("רכים")) {
+      return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     }
-    if (s.includes("HIGH") || s.includes("גבוה") || s.includes("גבוהה") || s.includes("כלורמינים")) {
-      return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    if (s.includes("HIGH") || s.includes("גבוה") || s.includes("גבוהה") || s.includes("קשים") || s.includes("כלורמינים") || s.includes("נוכחות")) {
+      return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     }
-    if (s.includes("OK") || s.includes("תקין") || s.includes("אידיאלי") || s.includes("תקינה")) {
-      return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
+    if (s.includes("OK") || s.includes("תקין") || s.includes("אידיאלי") || s.includes("תקינה") || s.includes("נקי")) {
+      return { id: "OK", label: "תקין / אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
     }
   }
 
   if (val === null || val === undefined || isNaN(val)) {
-    return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700", shortLabel: "לא נבדק" };
+    return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700" };
   }
 
   if (paramId === "ph") {
-    if (val < 6.8) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
-    if (val < 7.2) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 7.6) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
-    if (val <= 8.0) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
-    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (val < 6.8) return { id: "VERY_LOW", label: "חומצי מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 7.2) return { id: "LOW", label: "חומצי / נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 7.6) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 8.0) return { id: "HIGH", label: "בסיסי / גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "בסיסי מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "chlorine") {
-    if (val < 0.5) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
-    if (val < 2.0) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 4.0) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
-    if (val <= 8.0) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
-    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (val < 0.5) return { id: "VERY_LOW", label: "ללא חיטוי", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 2.0) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 4.0) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 8.0) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "שוק / עודף", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "alkalinity") {
-    if (val < 40) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
-    if (val < 80) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 120) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
-    if (val <= 180) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
-    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (val < 40) return { id: "VERY_LOW", label: "נמוכה מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 80) return { id: "LOW", label: "נמוכה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 120) return { id: "OK", label: "אידיאלית", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 180) return { id: "HIGH", label: "גבוהה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "גבוהה מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "calcium") {
-    if (val < 100) return { id: "VERY_LOW", label: "Very Low", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very Low" };
-    if (val < 150) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 250) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
-    if (val <= 400) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
-    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (val < 100) return { id: "VERY_LOW", label: "רכים מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 150) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 250) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 400) return { id: "HIGH", label: "קשים", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "קשים מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "carbonate") {
+    if (val <= 10) return { id: "OK", label: "תקין / נמוך", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 25) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "גבוה מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "totalChlorine") {
-    if (val <= 4.0) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
-    return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    if (val <= 4.0) return { id: "OK", label: "תקין", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "HIGH", label: "גבוה / כלור קשור", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+  }
+  if (paramId === "bromine") {
+    if (val < 1.0) return { id: "VERY_LOW", label: "ללא חיטוי", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 3.0) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 5.0) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 9.0) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "גבוה מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "cya") {
-    if (val < 20) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 50) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
-    if (val <= 100) return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
-    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (val < 20) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 50) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 100) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "נעילת כלור", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "salt") {
-    if (val < 1500) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 2500) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
-    return { id: "HIGH", label: "High", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "High" };
+    if (val < 1500) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 2500) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
   }
   if (paramId === "waterTemp") {
-    if (val < 35) return { id: "LOW", label: "Low", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20", shortLabel: "Low" };
-    if (val <= 39) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", shortLabel: "OK" };
-    return { id: "VERY_HIGH", label: "Very High", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20", shortLabel: "Very High" };
+    if (val < 35) return { id: "LOW", label: "נמוך / קר", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 39) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "VERY_HIGH", label: "חם מאוד / מסוכן", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "nitrate") {
+    if (val <= 10) return { id: "OK", label: "תקין / נקי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 50) return { id: "HIGH", label: "בינוני-גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "עומס חריג", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "nitrite") {
+    if (val <= 0.1) return { id: "OK", label: "תקין / ללא נוכחות", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 1.0) return { id: "HIGH", label: "נוכחות ניטריט", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "זיהום חמור", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "iron" || paramId === "copper") {
+    if (val <= 0.2) return { id: "OK", label: "תקין / נקי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 1.0) return { id: "HIGH", label: "נוכחות מתכת", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "גבוה / כתמים", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "chromium") {
+    if (val <= 0.05) return { id: "OK", label: "תקין", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "VERY_HIGH", label: "נוכחות כרום", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "lead") {
+    if (val <= 0.01) return { id: "OK", label: "תקין / אפס", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "VERY_HIGH", label: "עופרת (מסוכן!)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "mercury") {
+    if (val <= 0.002) return { id: "OK", label: "תקין / אפס", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "VERY_HIGH", label: "כספית (רעלן!)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "fluoride") {
+    if (val <= 1.5) return { id: "OK", label: "תקין", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 4.0) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "חריג מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
 
-  return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700", shortLabel: "לא נבדק" };
+  return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700" };
 }
 
 // Backward compatibility helper
@@ -181,129 +177,71 @@ export function getParamDomain(
   return getGenericDomain(map[type] || "ph", val, rangeStr);
 }
 
+export function extractParamValue(test: any, paramId: string): { val: number | null; rangeStr: string | null } {
+  if (paramId === "ph") return { val: test.ph, rangeStr: test.phRange };
+  if (paramId === "chlorine") return { val: test.freeChlorine, rangeStr: test.chlorineRange };
+  if (paramId === "alkalinity") return { val: test.alkalinity, rangeStr: test.alkalinityRange };
+  if (paramId === "calcium") return { val: test.calcium, rangeStr: test.calciumRange };
+  if (paramId === "totalChlorine") return { val: test.totalChlorine, rangeStr: test.totalChlorineRange };
+  if (paramId === "cya") return { val: test.cya, rangeStr: test.cyaRange };
+  if (paramId === "salt") return { val: test.salt, rangeStr: test.saltRange };
+  if (paramId === "waterTemp") return { val: test.waterTemp, rangeStr: test.waterTempRange };
+  if (paramId === "carbonate") return { val: test.carbonate, rangeStr: test.carbonateRange };
+  if (paramId === "bromine") return { val: test.bromine, rangeStr: test.bromineRange };
+  if (paramId === "nitrate") return { val: test.nitrate, rangeStr: test.nitrateRange };
+  if (paramId === "nitrite") return { val: test.nitrite, rangeStr: test.nitriteRange };
+  if (paramId === "iron") return { val: test.iron, rangeStr: test.ironRange };
+  if (paramId === "copper") return { val: test.copper, rangeStr: test.copperRange };
+  if (paramId === "chromium") return { val: test.chromium, rangeStr: test.chromiumRange };
+  if (paramId === "lead") return { val: test.lead, rangeStr: test.leadRange };
+  if (paramId === "mercury") return { val: test.mercury, rangeStr: test.mercuryRange };
+  if (paramId === "fluoride") return { val: test.fluoride, rangeStr: test.fluorideRange };
+
+  if (test.extendedMetrics) {
+    try {
+      const ext = typeof test.extendedMetrics === "string" ? JSON.parse(test.extendedMetrics) : test.extendedMetrics;
+      if (ext && ext[paramId]) {
+        return {
+          val: typeof ext[paramId].val === "number" ? ext[paramId].val : null,
+          rangeStr: ext[paramId].range || null,
+        };
+      }
+    } catch {}
+  }
+  return { val: null, rangeStr: null };
+}
+
 export default function WaterTestsPage() {
   const [tests, setTests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeParams, setActiveParams] = useState<string[]>(DEFAULT_TEST_STRIP_PARAM_IDS);
 
-  // Add Test Modal State (Range Domains + Optional Manual Values)
+  // Add Test Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [testDate, setTestDate] = useState(new Date().toISOString().slice(0, 16));
-
-  // 1. pH
-  const [selectedPhRange, setSelectedPhRange] = useState("OK");
-  const [noNumericPh, setNoNumericPh] = useState(true);
-  const [manualPh, setManualPh] = useState("");
-
-  // 2. Chlorine
-  const [selectedClRange, setSelectedClRange] = useState("OK");
-  const [noNumericCl, setNoNumericCl] = useState(true);
-  const [manualCl, setManualCl] = useState("");
-
-  // 3. Alkalinity
-  const [selectedAlkRange, setSelectedAlkRange] = useState("OK");
-  const [noNumericAlk, setNoNumericAlk] = useState(true);
-  const [manualAlk, setManualAlk] = useState("");
-
-  // 4. Clarity
   const [clarity, setClarity] = useState("CLEAR");
-
-  // 5. Calcium Hardness
-  const [selectedCalciumRange, setSelectedCalciumRange] = useState("OK");
-  const [noNumericCalcium, setNoNumericCalcium] = useState(true);
-  const [manualCalcium, setManualCalcium] = useState("");
-
-  // 6. Total Chlorine
-  const [selectedTotalClRange, setSelectedTotalClRange] = useState("OK");
-  const [noNumericTotalCl, setNoNumericTotalCl] = useState(true);
-  const [manualTotalCl, setManualTotalCl] = useState("");
-
-  // 7. CYA
-  const [selectedCyaRange, setSelectedCyaRange] = useState("OK");
-  const [noNumericCya, setNoNumericCya] = useState(true);
-  const [manualCya, setManualCya] = useState("");
-
-  // 8. Salt
-  const [selectedSaltRange, setSelectedSaltRange] = useState("OK");
-  const [noNumericSalt, setNoNumericSalt] = useState(true);
-  const [manualSalt, setManualSalt] = useState("");
-
-  // 9. Water Temp
-  const [manualWaterTemp, setManualWaterTemp] = useState("");
-
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Edit Test Modal
+  // Generic dynamic parameter selections for Add Modal
+  const [paramSelections, setParamSelections] = useState<Record<string, { rangeId: string; noNumeric: boolean; manualVal: string }>>({});
+
+  // Edit Test Modal State
   const [editingTest, setEditingTest] = useState<any | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
-  const [executingStep, setExecutingStep] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<{
+    testedAt: string;
+    waterClarity: string;
+    description: string;
+    params: Record<string, { rangeId: string; noNumeric: boolean; manualVal: string }>;
+  }>({
     testedAt: "",
-    phRangeId: "OK",
-    noNumericPh: true,
-    manualPh: "",
-    clRangeId: "OK",
-    noNumericCl: true,
-    manualCl: "",
-    alkRangeId: "OK",
-    noNumericAlk: true,
-    manualAlk: "",
-    calciumRangeId: "OK",
-    noNumericCalcium: true,
-    manualCalcium: "",
-    totalClRangeId: "OK",
-    noNumericTotalCl: true,
-    manualTotalCl: "",
-    cyaRangeId: "OK",
-    noNumericCya: true,
-    manualCya: "",
-    saltRangeId: "OK",
-    noNumericSalt: true,
-    manualSalt: "",
-    manualWaterTemp: "",
     waterClarity: "CLEAR",
     description: "",
+    params: {},
   });
-
-  const handleExecuteStep = async (testId: string, step: any, recs: any, isScheduleAction = false) => {
-    setExecutingStep(`${testId}-${step.stepNumber}`);
-    setActionNotice(null);
-
-    let hoursAhead = 24;
-    if (step.title.includes("12 שעות") || step.instructions?.includes("12 שעות")) hoursAhead = 12;
-    else if (step.title.includes("6 שעות") || step.instructions?.includes("6 שעות")) hoursAhead = 6;
-    else if (step.title.includes("48 שעות") || step.instructions?.includes("48 שעות")) hoursAhead = 48;
-
-    try {
-      const res = await fetch("/api/log/execute-recommendation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          testId,
-          stepNumber: step.stepNumber,
-          title: step.title,
-          chemical: step.chemical,
-          amount: step.amount,
-          instructions: step.instructions,
-          actionType: isScheduleAction ? "SCHEDULE_FUTURE" : "EXECUTE_NOW",
-          hoursAhead,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "שגיאה בביצוע הפעולה");
-
-      setActionNotice(data.message || (isScheduleAction ? "המשימה תוזמנה בהצלחה ללוח השנה!" : "הפעולה בוצעה ותועדה בהצלחה ביומן!"));
-      loadTests();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setExecutingStep(null);
-    }
-  };
 
   const loadTests = async () => {
     try {
@@ -320,6 +258,13 @@ export default function WaterTestsPage() {
         const authData = await authRes.json();
         const configuredParams = parseTestStripParams(authData?.user?.jacuzzi?.testStripParams);
         setActiveParams(configuredParams);
+
+        // Initialize state for active parameters
+        const initialSelections: Record<string, { rangeId: string; noNumeric: boolean; manualVal: string }> = {};
+        for (const pId of configuredParams) {
+          initialSelections[pId] = { rangeId: "OK", noNumeric: true, manualVal: "" };
+        }
+        setParamSelections(initialSelections);
       }
     } catch (err) {
       console.error(err);
@@ -337,49 +282,46 @@ export default function WaterTestsPage() {
     setSaving(true);
     setErrorMsg("");
 
-    const phObj = PH_RANGES.find((r) => r.id === selectedPhRange);
-    const clObj = CHLORINE_RANGES.find((r) => r.id === selectedClRange);
-    const alkObj = ALKALINITY_RANGES.find((r) => r.id === selectedAlkRange);
-    const calciumObj = CALCIUM_RANGES.find((r) => r.id === selectedCalciumRange);
-    const totalClObj = TOTAL_CL_RANGES.find((r) => r.id === selectedTotalClRange);
-    const cyaObj = CYA_RANGES.find((r) => r.id === selectedCyaRange);
-    const saltObj = SALT_RANGES.find((r) => r.id === selectedSaltRange);
+    const payload: any = {
+      testedAt: new Date(testDate).toISOString(),
+      testedParams: activeParams,
+      description: description || null,
+      waterClarity: activeParams.includes("clarity") ? clarity : "CLEAR",
+    };
 
-    const parsedPh = activeParams.includes("ph") && !noNumericPh && manualPh.trim() ? parseFloat(manualPh) : null;
-    const parsedCl = activeParams.includes("chlorine") && !noNumericCl && manualCl.trim() ? parseFloat(manualCl) : null;
-    const parsedAlk = activeParams.includes("alkalinity") && !noNumericAlk && manualAlk.trim() ? parseFloat(manualAlk) : null;
-    const parsedCalcium = activeParams.includes("calcium") && !noNumericCalcium && manualCalcium.trim() ? parseFloat(manualCalcium) : null;
-    const parsedTotalCl = activeParams.includes("totalChlorine") && !noNumericTotalCl && manualTotalCl.trim() ? parseFloat(manualTotalCl) : null;
-    const parsedCya = activeParams.includes("cya") && !noNumericCya && manualCya.trim() ? parseFloat(manualCya) : null;
-    const parsedSalt = activeParams.includes("salt") && !noNumericSalt && manualSalt.trim() ? parseFloat(manualSalt) : null;
-    const parsedWaterTemp = activeParams.includes("waterTemp") && manualWaterTemp.trim() ? parseFloat(manualWaterTemp) : null;
+    for (const pId of activeParams) {
+      if (pId === "clarity") continue;
+      const sel = paramSelections[pId] || { rangeId: "OK", noNumeric: true, manualVal: "" };
+      const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
+      const parsedNum = !sel.noNumeric && sel.manualVal.trim() ? parseFloat(sel.manualVal) : null;
+      const matchedRange = pDef?.defaultRanges?.find((r) => r.id === sel.rangeId);
+      const rangeLabel = matchedRange?.label || (parsedNum ? `${parsedNum} ${pDef?.unit || ""}` : sel.rangeId);
+
+      if (pId === "ph") { payload.ph = parsedNum; payload.phRange = rangeLabel; }
+      else if (pId === "chlorine") { payload.freeChlorine = parsedNum; payload.chlorineRange = rangeLabel; }
+      else if (pId === "alkalinity") { payload.alkalinity = parsedNum; payload.alkalinityRange = rangeLabel; }
+      else if (pId === "calcium") { payload.calcium = parsedNum; payload.calciumRange = rangeLabel; }
+      else if (pId === "totalChlorine") { payload.totalChlorine = parsedNum; payload.totalChlorineRange = rangeLabel; }
+      else if (pId === "cya") { payload.cya = parsedNum; payload.cyaRange = rangeLabel; }
+      else if (pId === "salt") { payload.salt = parsedNum; payload.saltRange = rangeLabel; }
+      else if (pId === "waterTemp") { payload.waterTemp = parsedNum; payload.waterTempRange = rangeLabel; }
+      else if (pId === "carbonate") { payload.carbonate = parsedNum; payload.carbonateRange = rangeLabel; }
+      else if (pId === "bromine") { payload.bromine = parsedNum; payload.bromineRange = rangeLabel; }
+      else if (pId === "nitrate") { payload.nitrate = parsedNum; payload.nitrateRange = rangeLabel; }
+      else if (pId === "nitrite") { payload.nitrite = parsedNum; payload.nitriteRange = rangeLabel; }
+      else if (pId === "iron") { payload.iron = parsedNum; payload.ironRange = rangeLabel; }
+      else if (pId === "copper") { payload.copper = parsedNum; payload.copperRange = rangeLabel; }
+      else if (pId === "chromium") { payload.chromium = parsedNum; payload.chromiumRange = rangeLabel; }
+      else if (pId === "lead") { payload.lead = parsedNum; payload.leadRange = rangeLabel; }
+      else if (pId === "mercury") { payload.mercury = parsedNum; payload.mercuryRange = rangeLabel; }
+      else if (pId === "fluoride") { payload.fluoride = parsedNum; payload.fluorideRange = rangeLabel; }
+    }
 
     try {
       const res = await fetch("/api/water-tests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          testedAt: new Date(testDate).toISOString(),
-          testedParams: activeParams,
-          ph: parsedPh,
-          phRange: activeParams.includes("ph") ? (phObj?.label || selectedPhRange) : null,
-          freeChlorine: parsedCl,
-          chlorineRange: activeParams.includes("chlorine") ? (clObj?.label || selectedClRange) : null,
-          alkalinity: parsedAlk,
-          alkalinityRange: activeParams.includes("alkalinity") ? (alkObj?.label || selectedAlkRange) : null,
-          waterClarity: activeParams.includes("clarity") ? clarity : "CLEAR",
-          calcium: parsedCalcium,
-          calciumRange: activeParams.includes("calcium") ? (calciumObj?.label || selectedCalciumRange) : null,
-          totalChlorine: parsedTotalCl,
-          totalChlorineRange: activeParams.includes("totalChlorine") ? (totalClObj?.label || selectedTotalClRange) : null,
-          cya: parsedCya,
-          cyaRange: activeParams.includes("cya") ? (cyaObj?.label || selectedCyaRange) : null,
-          salt: parsedSalt,
-          saltRange: activeParams.includes("salt") ? (saltObj?.label || selectedSaltRange) : null,
-          waterTemp: parsedWaterTemp,
-          waterTempRange: activeParams.includes("waterTemp") && parsedWaterTemp ? `${parsedWaterTemp}°C` : null,
-          description: description || null,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -389,21 +331,6 @@ export default function WaterTestsPage() {
 
       setIsAddModalOpen(false);
       setDescription("");
-      setManualPh("");
-      setNoNumericPh(true);
-      setManualCl("");
-      setNoNumericCl(true);
-      setManualAlk("");
-      setNoNumericAlk(true);
-      setManualCalcium("");
-      setNoNumericCalcium(true);
-      setManualTotalCl("");
-      setNoNumericTotalCl(true);
-      setManualCya("");
-      setNoNumericCya(true);
-      setManualSalt("");
-      setNoNumericSalt(true);
-      setManualWaterTemp("");
       loadTests();
     } catch (err: any) {
       setErrorMsg(err.message);
@@ -415,64 +342,6 @@ export default function WaterTestsPage() {
   const openEditModal = (test: any) => {
     setEditingTest(test);
 
-    // Match 5 domains
-    let phId = "UNKNOWN";
-    if (typeof test.ph === "number") {
-      if (test.ph < 6.8) phId = "VERY_LOW";
-      else if (test.ph <= 7.1) phId = "LOW";
-      else if (test.ph <= 7.6) phId = "OK";
-      else if (test.ph <= 8.0) phId = "HIGH";
-      else phId = "VERY_HIGH";
-    } else if (test.phRange) {
-      const upper = test.phRange.toUpperCase();
-      if (upper.includes("VERY_LOW") || upper.includes("חומצי מאוד")) phId = "VERY_LOW";
-      else if (upper.includes("LOW") || upper.includes("נמוך")) phId = "LOW";
-      else if (upper.includes("OK") || upper.includes("תקין")) phId = "OK";
-      else if (upper.includes("VERY_HIGH") || upper.includes("בסיסי מאוד")) phId = "VERY_HIGH";
-      else if (upper.includes("HIGH") || upper.includes("גבוה")) phId = "HIGH";
-    }
-
-    let clId = "UNKNOWN";
-    if (typeof test.freeChlorine === "number") {
-      if (test.freeChlorine < 0.5) clId = "VERY_LOW";
-      else if (test.freeChlorine < 2.0) clId = "LOW";
-      else if (test.freeChlorine <= 4.0) clId = "OK";
-      else if (test.freeChlorine <= 8.0) clId = "HIGH";
-      else clId = "VERY_HIGH";
-    } else if (test.chlorineRange) {
-      const upper = test.chlorineRange.toUpperCase();
-      if (upper.includes("VERY_LOW") || upper.includes("ללא חיטוי")) clId = "VERY_LOW";
-      else if (upper.includes("LOW") || upper.includes("נמוך")) clId = "LOW";
-      else if (upper.includes("OK") || upper.includes("תקין")) clId = "OK";
-      else if (upper.includes("VERY_HIGH") || upper.includes("שוק") || upper.includes("עודף")) clId = "VERY_HIGH";
-      else if (upper.includes("HIGH") || upper.includes("גבוה")) clId = "HIGH";
-    }
-
-    let alkId = "UNKNOWN";
-    if (typeof test.alkalinity === "number") {
-      if (test.alkalinity < 40) alkId = "VERY_LOW";
-      else if (test.alkalinity < 80) alkId = "LOW";
-      else if (test.alkalinity <= 120) alkId = "OK";
-      else if (test.alkalinity <= 180) alkId = "HIGH";
-      else alkId = "VERY_HIGH";
-    } else if (test.alkalinityRange) {
-      const upper = test.alkalinityRange.toUpperCase();
-      if (upper.includes("VERY_LOW") || upper.includes("נמוכה מאוד")) alkId = "VERY_LOW";
-      else if (upper.includes("LOW") || upper.includes("נמוכה")) alkId = "LOW";
-      else if (upper.includes("OK") || upper.includes("תקינה")) alkId = "OK";
-      else if (upper.includes("VERY_HIGH") || upper.includes("גבוהה מאוד")) alkId = "VERY_HIGH";
-      else if (upper.includes("HIGH") || upper.includes("גבוהה")) alkId = "HIGH";
-    }
-
-    const hasPhNum = typeof test.ph === "number" && !isNaN(test.ph);
-    const hasClNum = typeof test.freeChlorine === "number" && !isNaN(test.freeChlorine);
-    const hasAlkNum = typeof test.alkalinity === "number" && !isNaN(test.alkalinity);
-    const hasCalciumNum = typeof test.calcium === "number" && !isNaN(test.calcium);
-    const hasTotalClNum = typeof test.totalChlorine === "number" && !isNaN(test.totalChlorine);
-    const hasCyaNum = typeof test.cya === "number" && !isNaN(test.cya);
-    const hasSaltNum = typeof test.salt === "number" && !isNaN(test.salt);
-    const hasWaterTempNum = typeof test.waterTemp === "number" && !isNaN(test.waterTemp);
-
     let formattedDate = "";
     if (test.testedAt) {
       const d = new Date(test.testedAt);
@@ -481,38 +350,26 @@ export default function WaterTestsPage() {
         formattedDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       }
     }
-    if (!formattedDate) {
-      const d = new Date();
-      const pad = (n: number) => n.toString().padStart(2, "0");
-      formattedDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    }
+
+    const editParamMap: Record<string, { rangeId: string; noNumeric: boolean; manualVal: string }> = {};
+
+    ALL_TEST_STRIP_PARAMS.forEach((param) => {
+      const { val, rangeStr } = extractParamValue(test, param.id);
+      const hasNum = typeof val === "number" && !isNaN(val);
+      const domain = getGenericDomain(param.id, val, rangeStr);
+
+      editParamMap[param.id] = {
+        rangeId: domain.id === "UNKNOWN" ? "OK" : domain.id,
+        noNumeric: !hasNum,
+        manualVal: hasNum ? `${val}` : "",
+      };
+    });
 
     setEditForm({
-      testedAt: formattedDate,
-      phRangeId: phId,
-      noNumericPh: !hasPhNum,
-      manualPh: hasPhNum ? `${test.ph}` : "",
-      clRangeId: clId,
-      noNumericCl: !hasClNum,
-      manualCl: hasClNum ? `${test.freeChlorine}` : "",
-      alkRangeId: alkId,
-      noNumericAlk: !hasAlkNum,
-      manualAlk: hasAlkNum ? `${test.alkalinity}` : "",
-      calciumRangeId: "OK",
-      noNumericCalcium: !hasCalciumNum,
-      manualCalcium: hasCalciumNum ? `${test.calcium}` : "",
-      totalClRangeId: "OK",
-      noNumericTotalCl: !hasTotalClNum,
-      manualTotalCl: hasTotalClNum ? `${test.totalChlorine}` : "",
-      cyaRangeId: "OK",
-      noNumericCya: !hasCyaNum,
-      manualCya: hasCyaNum ? `${test.cya}` : "",
-      saltRangeId: "OK",
-      noNumericSalt: !hasSaltNum,
-      manualSalt: hasSaltNum ? `${test.salt}` : "",
-      manualWaterTemp: hasWaterTempNum ? `${test.waterTemp}` : "",
+      testedAt: formattedDate || new Date().toISOString().slice(0, 16),
       waterClarity: test.waterClarity || "CLEAR",
       description: test.description || "",
+      params: editParamMap,
     });
   };
 
@@ -521,70 +378,54 @@ export default function WaterTestsPage() {
     if (!editingTest) return;
     setSavingEdit(true);
 
-    const phObj = PH_RANGES.find((r) => r.id === editForm.phRangeId);
-    const clObj = CHLORINE_RANGES.find((r) => r.id === editForm.clRangeId);
-    const alkObj = ALKALINITY_RANGES.find((r) => r.id === editForm.alkRangeId);
-    const calciumObj = CALCIUM_RANGES.find((r) => r.id === editForm.calciumRangeId);
-    const totalClObj = TOTAL_CL_RANGES.find((r) => r.id === editForm.totalClRangeId);
-    const cyaObj = CYA_RANGES.find((r) => r.id === editForm.cyaRangeId);
-    const saltObj = SALT_RANGES.find((r) => r.id === editForm.saltRangeId);
+    const payload: any = {
+      id: editingTest.id,
+      testedAt: editForm.testedAt ? new Date(editForm.testedAt).toISOString() : editingTest.testedAt,
+      waterClarity: editForm.waterClarity,
+      description: editForm.description,
+    };
 
-    const parsedPh = (!editForm.noNumericPh && editForm.manualPh?.trim()) ? parseFloat(editForm.manualPh) : null;
-    const parsedCl = (!editForm.noNumericCl && editForm.manualCl?.trim()) ? parseFloat(editForm.manualCl) : null;
-    const parsedAlk = (!editForm.noNumericAlk && editForm.manualAlk?.trim()) ? parseFloat(editForm.manualAlk) : null;
-    const parsedCalcium = (!editForm.noNumericCalcium && editForm.manualCalcium?.trim()) ? parseFloat(editForm.manualCalcium) : null;
-    const parsedTotalCl = (!editForm.noNumericTotalCl && editForm.manualTotalCl?.trim()) ? parseFloat(editForm.manualTotalCl) : null;
-    const parsedCya = (!editForm.noNumericCya && editForm.manualCya?.trim()) ? parseFloat(editForm.manualCya) : null;
-    const parsedSalt = (!editForm.noNumericSalt && editForm.manualSalt?.trim()) ? parseFloat(editForm.manualSalt) : null;
-    const parsedWaterTemp = editForm.manualWaterTemp?.trim() ? parseFloat(editForm.manualWaterTemp) : null;
+    Object.entries(editForm.params).forEach(([pId, sel]) => {
+      const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
+      const parsedNum = !sel.noNumeric && sel.manualVal.trim() ? parseFloat(sel.manualVal) : null;
+      const matchedRange = pDef?.defaultRanges?.find((r) => r.id === sel.rangeId);
+      const rangeLabel = matchedRange?.label || (parsedNum ? `${parsedNum} ${pDef?.unit || ""}` : sel.rangeId);
+
+      if (pId === "ph") { payload.ph = parsedNum; payload.phRange = rangeLabel; }
+      else if (pId === "chlorine") { payload.freeChlorine = parsedNum; payload.chlorineRange = rangeLabel; }
+      else if (pId === "alkalinity") { payload.alkalinity = parsedNum; payload.alkalinityRange = rangeLabel; }
+      else if (pId === "calcium") { payload.calcium = parsedNum; payload.calciumRange = rangeLabel; }
+      else if (pId === "totalChlorine") { payload.totalChlorine = parsedNum; payload.totalChlorineRange = rangeLabel; }
+      else if (pId === "cya") { payload.cya = parsedNum; payload.cyaRange = rangeLabel; }
+      else if (pId === "salt") { payload.salt = parsedNum; payload.saltRange = rangeLabel; }
+      else if (pId === "waterTemp") { payload.waterTemp = parsedNum; payload.waterTempRange = rangeLabel; }
+      else if (pId === "carbonate") { payload.carbonate = parsedNum; payload.carbonateRange = rangeLabel; }
+      else if (pId === "bromine") { payload.bromine = parsedNum; payload.bromineRange = rangeLabel; }
+      else if (pId === "nitrate") { payload.nitrate = parsedNum; payload.nitrateRange = rangeLabel; }
+      else if (pId === "nitrite") { payload.nitrite = parsedNum; payload.nitriteRange = rangeLabel; }
+      else if (pId === "iron") { payload.iron = parsedNum; payload.ironRange = rangeLabel; }
+      else if (pId === "copper") { payload.copper = parsedNum; payload.copperRange = rangeLabel; }
+      else if (pId === "chromium") { payload.chromium = parsedNum; payload.chromiumRange = rangeLabel; }
+      else if (pId === "lead") { payload.lead = parsedNum; payload.leadRange = rangeLabel; }
+      else if (pId === "mercury") { payload.mercury = parsedNum; payload.mercuryRange = rangeLabel; }
+      else if (pId === "fluoride") { payload.fluoride = parsedNum; payload.fluorideRange = rangeLabel; }
+    });
 
     try {
-      let validIsoDate = new Date().toISOString();
-      if (editForm.testedAt) {
-        const d = new Date(editForm.testedAt);
-        if (!isNaN(d.getTime())) {
-          validIsoDate = d.toISOString();
-        } else if (editingTest.testedAt) {
-          validIsoDate = new Date(editingTest.testedAt).toISOString();
-        }
-      }
-
       const res = await fetch("/api/water-tests", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editingTest.id,
-          testedAt: validIsoDate,
-          ph: parsedPh,
-          phRange: phObj?.label || editForm.phRangeId,
-          freeChlorine: parsedCl,
-          chlorineRange: clObj?.label || editForm.clRangeId,
-          alkalinity: parsedAlk,
-          alkalinityRange: alkObj?.label || editForm.alkRangeId,
-          calcium: parsedCalcium,
-          calciumRange: calciumObj?.label || editForm.calciumRangeId,
-          totalChlorine: parsedTotalCl,
-          totalChlorineRange: totalClObj?.label || editForm.totalClRangeId,
-          cya: parsedCya,
-          cyaRange: cyaObj?.label || editForm.cyaRangeId,
-          salt: parsedSalt,
-          saltRange: saltObj?.label || editForm.saltRangeId,
-          waterTemp: parsedWaterTemp,
-          waterTempRange: parsedWaterTemp ? `${parsedWaterTemp}°C` : null,
-          waterClarity: editForm.waterClarity,
-          description: editForm.description,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(d.error || "שגיאה בשמירת שינויים");
+        throw new Error(d.error || "שגיאה בעדכון בדיקה");
       }
 
       setEditingTest(null);
-      await loadTests();
+      loadTests();
     } catch (err: any) {
-      console.error(err);
       alert(err.message || "שגיאה בעדכון בדיקה");
     } finally {
       setSavingEdit(false);
@@ -601,18 +442,18 @@ export default function WaterTestsPage() {
     }
   };
 
-  const clarityLabels: Record<string, { label: string; color: string }> = {
-    CLEAR: { label: "מים צלולים", color: "text-slate-200 border-slate-750 bg-slate-950" },
-    SLIGHTLY_CLOUDY: { label: "מעט עכורים", color: "text-slate-200 border-slate-750 bg-slate-950" },
-    VERY_CLOUDY: { label: "עכורים מאוד / חלביים", color: "text-slate-200 border-slate-750 bg-slate-950" },
-    FOAMY: { label: "מקציפים", color: "text-slate-200 border-slate-750 bg-slate-950" },
-    GREEN: { label: "ירוקים / אצות", color: "text-rose-300 border-rose-900/40 bg-slate-950" },
-    BAD_ODOR: { label: "ריח חריף", color: "text-rose-300 border-rose-900/40 bg-slate-950" },
-    METALLIC_COPPER: { label: "ירוק-טורקיז (נחושת)", color: "text-teal-300 border-teal-900/40 bg-slate-950" },
-    METALLIC_RUST: { label: "חלודה / ברזל", color: "text-orange-300 border-orange-900/40 bg-slate-950" },
+  const clarityLabels: Record<string, { label: string }> = {
+    CLEAR: { label: "מים צלולים" },
+    SLIGHTLY_CLOUDY: { label: "מעט עכורים" },
+    VERY_CLOUDY: { label: "עכורים מאוד / חלביים" },
+    FOAMY: { label: "מקציפים" },
+    GREEN: { label: "ירוקים / אצות" },
+    BAD_ODOR: { label: "ריח חריף" },
+    METALLIC_COPPER: { label: "גוון ירוק-טורקיז (נחושת)" },
+    METALLIC_RUST: { label: "חלודה / ברזל" },
   };
 
-  // Metrics calculation
+  // Metrics summary
   const totalTests = tests.length;
   const testsWithPh = tests.filter((t) => typeof t.ph === "number");
   const avgPh = testsWithPh.length > 0 ? (testsWithPh.reduce((acc, t) => acc + t.ph, 0) / testsWithPh.length).toFixed(2) : "--";
@@ -635,17 +476,16 @@ export default function WaterTestsPage() {
             <span>יומן בדיקות איכות מים</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            תיעוד כרונולוגי של בדיקות מקלונים, איזון מים ותוכניות טיפול.
+            תיעוד כרונולוגי של בדיקות מקלונים, איזון מים ומעקב מדדים.
           </p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
           <Link
-            href="/water-doctor"
+            href="/settings"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs sm:text-sm transition-all"
           >
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span>אבחון מקיף ברופא המים AI</span>
+            <span>⚙️ הגדרות מקלון ({activeParams.length} פעילים)</span>
           </Link>
 
           <button
@@ -756,19 +596,15 @@ export default function WaterTestsPage() {
                   } catch {}
                 }
                 const list: string[] = [];
-                if (test.ph !== null || test.phRange) list.push("ph");
-                if (test.freeChlorine !== null || test.chlorineRange) list.push("chlorine");
-                if (test.alkalinity !== null || test.alkalinityRange) list.push("alkalinity");
+                ALL_TEST_STRIP_PARAMS.forEach((param) => {
+                  const { val, rangeStr } = extractParamValue(test, param.id);
+                  if (val !== null || rangeStr) list.push(param.id);
+                });
                 if (test.waterClarity) list.push("clarity");
-                if (test.calcium !== null || test.calciumRange) list.push("calcium");
-                if (test.totalChlorine !== null || test.totalChlorineRange) list.push("totalChlorine");
-                if (test.cya !== null || test.cyaRange) list.push("cya");
-                if (test.salt !== null || test.saltRange) list.push("salt");
-                if (test.waterTemp !== null || test.waterTempRange) list.push("waterTemp");
                 return list.length > 0 ? list : DEFAULT_TEST_STRIP_PARAM_IDS;
               })();
 
-              // Calculate Abnormal Risks dynamically for whichever parameters were tested
+              // Calculate Abnormal Risks dynamically
               const abnormalRisks: Array<{ name: string; risk: string }> = [];
 
               for (const pId of testedParamIds) {
@@ -786,20 +622,10 @@ export default function WaterTestsPage() {
                   continue;
                 }
 
-                let val: number | null = null;
-                let rangeStr: string | null = null;
-                if (pId === "ph") { val = test.ph; rangeStr = test.phRange; }
-                else if (pId === "chlorine") { val = test.freeChlorine; rangeStr = test.chlorineRange; }
-                else if (pId === "alkalinity") { val = test.alkalinity; rangeStr = test.alkalinityRange; }
-                else if (pId === "calcium") { val = test.calcium; rangeStr = test.calciumRange; }
-                else if (pId === "totalChlorine") { val = test.totalChlorine; rangeStr = test.totalChlorineRange; }
-                else if (pId === "cya") { val = test.cya; rangeStr = test.cyaRange; }
-                else if (pId === "salt") { val = test.salt; rangeStr = test.saltRange; }
-                else if (pId === "waterTemp") { val = test.waterTemp; rangeStr = test.waterTempRange; }
-
+                const { val, rangeStr } = extractParamValue(test, pId);
                 const domain = getGenericDomain(pId, val, rangeStr);
                 if (domain.id !== "OK" && domain.id !== "UNKNOWN") {
-                  const riskText = (domain.id === "VERY_LOW" || domain.id === "LOW") ? pDef.dangerLow : pDef.dangerHigh;
+                  const riskText = domain.id === "VERY_LOW" || domain.id === "LOW" ? pDef.dangerLow : pDef.dangerHigh;
                   abnormalRisks.push({
                     name: `${pDef.nameHe} (${domain.label})`,
                     risk: riskText,
@@ -812,7 +638,7 @@ export default function WaterTestsPage() {
                   key={test.id}
                   className={`bg-slate-900/90 border ${isLatestTest ? "border-cyan-800/80 ring-1 ring-cyan-500/20 shadow-cyan-950/30" : "border-slate-800 hover:border-slate-700"} rounded-3xl p-5 sm:p-6 transition-all shadow-xl space-y-4`}
                 >
-                  {/* Top Bar: Date & Actions */}
+                  {/* Top Bar */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-2xl ${isLatestTest ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/60" : "bg-slate-800 text-teal-300 border-slate-700"} flex items-center justify-center font-bold text-sm border`}>
@@ -885,19 +711,7 @@ export default function WaterTestsPage() {
                         );
                       }
 
-                      let val: number | null = null;
-                      let rangeStr: string | null = null;
-                      let displayUnit = pDef.unit;
-
-                      if (pId === "ph") { val = test.ph; rangeStr = test.phRange; }
-                      else if (pId === "chlorine") { val = test.freeChlorine; rangeStr = test.chlorineRange; }
-                      else if (pId === "alkalinity") { val = test.alkalinity; rangeStr = test.alkalinityRange; }
-                      else if (pId === "calcium") { val = test.calcium; rangeStr = test.calciumRange; }
-                      else if (pId === "totalChlorine") { val = test.totalChlorine; rangeStr = test.totalChlorineRange; }
-                      else if (pId === "cya") { val = test.cya; rangeStr = test.cyaRange; }
-                      else if (pId === "salt") { val = test.salt; rangeStr = test.saltRange; }
-                      else if (pId === "waterTemp") { val = test.waterTemp; rangeStr = test.waterTempRange; }
-
+                      const { val, rangeStr } = extractParamValue(test, pId);
                       const domain = getGenericDomain(pId, val, rangeStr);
 
                       return (
@@ -915,7 +729,7 @@ export default function WaterTestsPage() {
                             {domain.label}
                           </div>
                           <div className="text-[11px] text-slate-400 font-medium pt-0.5">
-                            {typeof val === "number" ? `${val} ${displayUnit}` : "—"}
+                            {typeof val === "number" ? `${val} ${pDef.unit}` : "—"}
                           </div>
                         </div>
                       );
@@ -964,7 +778,7 @@ export default function WaterTestsPage() {
         </div>
       )}
 
-      {/* Modal: Add New Test (Dynamic to activeParams) */}
+      {/* Modal: Add New Test */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -975,7 +789,7 @@ export default function WaterTestsPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-white">הזנת תוצאות בדיקת מקלון</h2>
-                  <p className="text-[11px] text-slate-400">מוצגים {activeParams.length} מדדים פעילים בהתאם להגדרות שלך</p>
+                  <p className="text-[11px] text-slate-400">מוצגים {activeParams.length} מדדים פעילים לפי הגדרות המקלון שלך</p>
                 </div>
               </div>
 
@@ -999,7 +813,7 @@ export default function WaterTestsPage() {
               </div>
             )}
 
-            <form onSubmit={handleSaveNewTest} className="space-y-5">
+            <form onSubmit={handleSaveNewTest} className="space-y-6">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-300">תאריך ושעת הבדיקה</label>
                 <input
@@ -1011,415 +825,129 @@ export default function WaterTestsPage() {
                 />
               </div>
 
-              {/* 1. pH */}
-              {activeParams.includes("ph") && (
-                <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-200">רמת חומציות (pH):</span>
-                    <span className="text-[11px] text-slate-400">אידיאלי: 7.2 - 7.6</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {PH_RANGES.map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedPhRange(r.id)}
-                        className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
-                          selectedPhRange === r.id
-                            ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
-                            : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] text-slate-400 font-medium">הזנת ערך מספרי מדויק:</label>
-                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={noNumericPh}
-                          onChange={(e) => {
-                            setNoNumericPh(e.target.checked);
-                            if (e.target.checked) setManualPh("");
-                          }}
-                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                      </label>
+              {/* Categorized Active Parameters */}
+              <div className="space-y-6">
+                {PARAM_CATEGORIES.map((catName) => {
+                  const catActiveParams = ALL_TEST_STRIP_PARAMS.filter(
+                    (p) => p.category === catName && activeParams.includes(p.id)
+                  );
+                  if (catActiveParams.length === 0) return null;
+
+                  return (
+                    <div key={catName} className="space-y-3">
+                      <div className="text-xs font-bold text-cyan-300 flex items-center gap-2 border-b border-slate-800/80 pb-1.5">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                        <span>{catName}</span>
+                      </div>
+
+                      <div className="space-y-3.5">
+                        {catActiveParams.map((param) => {
+                          if (param.id === "clarity") {
+                            return (
+                              <div key={param.id} className="space-y-1.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                                <label className="text-xs font-semibold text-slate-300">{param.nameHe} ({param.enName})</label>
+                                <select
+                                  value={clarity}
+                                  onChange={(e) => setClarity(e.target.value)}
+                                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-medium"
+                                >
+                                  <option value="CLEAR">מים צלולים לחלוטין</option>
+                                  <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
+                                  <option value="VERY_CLOUDY">עכורים מאוד / חלביים</option>
+                                  <option value="FOAMY">מקציפים בהפעלת ג'טים</option>
+                                  <option value="GREEN">ירוקים / אצות</option>
+                                  <option value="METALLIC_COPPER">גוון ירוק-טורקיז / נחושת (Copper)</option>
+                                  <option value="METALLIC_RUST">גוון חלודה / ברזל (Iron / Rust)</option>
+                                  <option value="BAD_ODOR">ריח חריף</option>
+                                </select>
+                              </div>
+                            );
+                          }
+
+                          const sel = paramSelections[param.id] || { rangeId: "OK", noNumeric: true, manualVal: "" };
+
+                          return (
+                            <div key={param.id} className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                              <div className="flex items-center justify-between text-xs flex-wrap gap-1">
+                                <span className="font-bold text-slate-200">
+                                  {param.nameHe} ({param.enName}):
+                                </span>
+                                <span className="text-[11px] text-slate-400">אידיאלי: {param.idealRange}</span>
+                              </div>
+
+                              {param.defaultRanges && param.defaultRanges.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                  {param.defaultRanges.map((r) => (
+                                    <button
+                                      key={r.id}
+                                      type="button"
+                                      onClick={() =>
+                                        setParamSelections((prev) => ({
+                                          ...prev,
+                                          [param.id]: { ...(prev[param.id] || { noNumeric: true, manualVal: "" }), rangeId: r.id },
+                                        }))
+                                      }
+                                      className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
+                                        sel.rangeId === r.id
+                                          ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
+                                          : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
+                                      }`}
+                                    >
+                                      {r.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null}
+
+                              <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ({param.unit}):</label>
+                                  <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={sel.noNumeric}
+                                      onChange={(e) =>
+                                        setParamSelections((prev) => ({
+                                          ...prev,
+                                          [param.id]: {
+                                            ...(prev[param.id] || { rangeId: "OK" }),
+                                            noNumeric: e.target.checked,
+                                            manualVal: e.target.checked ? "" : prev[param.id]?.manualVal || "",
+                                          },
+                                        }))
+                                      }
+                                      className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                                    />
+                                    <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                                  </label>
+                                </div>
+                                {!sel.noNumeric && (
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    placeholder={`הזן ערך ב-${param.unit}`}
+                                    value={sel.manualVal}
+                                    onChange={(e) =>
+                                      setParamSelections((prev) => ({
+                                        ...prev,
+                                        [param.id]: {
+                                          ...(prev[param.id] || { rangeId: "OK", noNumeric: false }),
+                                          manualVal: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                    {!noNumericPh && (
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="הזן ערך מספרי (למשל: 7.4)"
-                        value={manualPh}
-                        onChange={(e) => setManualPh(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 2. Chlorine */}
-              {activeParams.includes("chlorine") && (
-                <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-200">כלור חופשי / ברום (חיטוי):</span>
-                    <span className="text-[11px] text-slate-400">אידיאלי: 2.0 - 4.0 ppm</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {CHLORINE_RANGES.map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedClRange(r.id)}
-                        className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
-                          selectedClRange === r.id
-                            ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
-                            : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
-                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={noNumericCl}
-                          onChange={(e) => {
-                            setNoNumericCl(e.target.checked);
-                            if (e.target.checked) setManualCl("");
-                          }}
-                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                      </label>
-                    </div>
-                    {!noNumericCl && (
-                      <input
-                        type="number"
-                        step="0.1"
-                        placeholder="הזן ערך מספרי (למשל: 3.0)"
-                        value={manualCl}
-                        onChange={(e) => setManualCl(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 3. Alkalinity */}
-              {activeParams.includes("alkalinity") && (
-                <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-200">בסיסיות כוללת (TA):</span>
-                    <span className="text-[11px] text-slate-400">אידיאלי: 80 - 120 ppm</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {ALKALINITY_RANGES.map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedAlkRange(r.id)}
-                        className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
-                          selectedAlkRange === r.id
-                            ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
-                            : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
-                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={noNumericAlk}
-                          onChange={(e) => {
-                            setNoNumericAlk(e.target.checked);
-                            if (e.target.checked) setManualAlk("");
-                          }}
-                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                      </label>
-                    </div>
-                    {!noNumericAlk && (
-                      <input
-                        type="number"
-                        step="1"
-                        placeholder="הזן ערך מספרי (למשל: 90)"
-                        value={manualAlk}
-                        onChange={(e) => setManualAlk(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 4. Clarity */}
-              {activeParams.includes("clarity") && (
-                <div className="space-y-1.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <label className="text-xs font-semibold text-slate-300">מראה וצלילות המים</label>
-                  <select
-                    value={clarity}
-                    onChange={(e) => setClarity(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-medium"
-                  >
-                    <option value="CLEAR">מים צלולים לחלוטין</option>
-                    <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
-                    <option value="VERY_CLOUDY">עכורים מאוד / חלביים</option>
-                    <option value="FOAMY">מקציפים בהפעלת ג'טים</option>
-                    <option value="GREEN">ירוקים / אצות</option>
-                    <option value="METALLIC_COPPER">גוון ירוק-טורקיז / נחושת (Copper)</option>
-                    <option value="METALLIC_RUST">גוון חלודה / ברזל (Iron / Rust)</option>
-                    <option value="BAD_ODOR">ריח חריף</option>
-                  </select>
-                </div>
-              )}
-
-              {/* 5. Calcium Hardness */}
-              {activeParams.includes("calcium") && (
-                <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-200">קשיות סידן (Calcium Hardness):</span>
-                    <span className="text-[11px] text-slate-400">אידיאלי: 150 - 250 ppm</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {CALCIUM_RANGES.map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedCalciumRange(r.id)}
-                        className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
-                          selectedCalciumRange === r.id
-                            ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
-                            : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
-                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={noNumericCalcium}
-                          onChange={(e) => {
-                            setNoNumericCalcium(e.target.checked);
-                            if (e.target.checked) setManualCalcium("");
-                          }}
-                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                      </label>
-                    </div>
-                    {!noNumericCalcium && (
-                      <input
-                        type="number"
-                        step="5"
-                        placeholder="הזן ערך מספרי (למשל: 200)"
-                        value={manualCalcium}
-                        onChange={(e) => setManualCalcium(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 6. Total Chlorine */}
-              {activeParams.includes("totalChlorine") && (
-                <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-200">כלור כולל (Total Chlorine):</span>
-                    <span className="text-[11px] text-slate-400">אידיאלי: שווה לכלור חופשי</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {TOTAL_CL_RANGES.map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedTotalClRange(r.id)}
-                        className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
-                          selectedTotalClRange === r.id
-                            ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
-                            : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
-                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={noNumericTotalCl}
-                          onChange={(e) => {
-                            setNoNumericTotalCl(e.target.checked);
-                            if (e.target.checked) setManualTotalCl("");
-                          }}
-                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                      </label>
-                    </div>
-                    {!noNumericTotalCl && (
-                      <input
-                        type="number"
-                        step="0.1"
-                        placeholder="הזן ערך מספרי (למשל: 3.2)"
-                        value={manualTotalCl}
-                        onChange={(e) => setManualTotalCl(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 7. CYA */}
-              {activeParams.includes("cya") && (
-                <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-200">מייצב / חומצה ציאנורית (CYA):</span>
-                    <span className="text-[11px] text-slate-400">אידיאלי: 20 - 50 ppm</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {CYA_RANGES.map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedCyaRange(r.id)}
-                        className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
-                          selectedCyaRange === r.id
-                            ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
-                            : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
-                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={noNumericCya}
-                          onChange={(e) => {
-                            setNoNumericCya(e.target.checked);
-                            if (e.target.checked) setManualCya("");
-                          }}
-                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                      </label>
-                    </div>
-                    {!noNumericCya && (
-                      <input
-                        type="number"
-                        step="5"
-                        placeholder="הזן ערך מספרי (למשל: 30)"
-                        value={manualCya}
-                        onChange={(e) => setManualCya(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 8. Salt */}
-              {activeParams.includes("salt") && (
-                <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-200">רמת מלח (למערכות מלח):</span>
-                    <span className="text-[11px] text-slate-400">אידיאלי: 1500 - 2500 ppm</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {SALT_RANGES.map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedSaltRange(r.id)}
-                        className={`px-3 py-2 rounded-xl text-right text-xs font-medium border transition-all ${
-                          selectedSaltRange === r.id
-                            ? "border-cyan-500 bg-cyan-950/60 text-cyan-200 font-bold shadow"
-                            : "border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700"
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק ב-ppm:</label>
-                      <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={noNumericSalt}
-                          onChange={(e) => {
-                            setNoNumericSalt(e.target.checked);
-                            if (e.target.checked) setManualSalt("");
-                          }}
-                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                      </label>
-                    </div>
-                    {!noNumericSalt && (
-                      <input
-                        type="number"
-                        step="50"
-                        placeholder="הזן ערך מספרי (למשל: 2100)"
-                        value={manualSalt}
-                        onChange={(e) => setManualSalt(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white text-xs placeholder:text-slate-500"
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 9. Water Temp */}
-              {activeParams.includes("waterTemp") && (
-                <div className="space-y-1.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <label className="text-xs font-semibold text-slate-300">טמפרטורת מים (°C)</label>
-                    <span className="text-[11px] text-slate-400">אידיאלי: 36°C - 39°C</span>
-                  </div>
-                  <input
-                    type="number"
-                    step="0.5"
-                    placeholder="הזן טמפרטורה (למשל: 38.0)"
-                    value={manualWaterTemp}
-                    onChange={(e) => setManualWaterTemp(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-medium"
-                  />
-                </div>
-              )}
+                  );
+                })}
+              </div>
 
               {/* Free text */}
               <div className="space-y-1">
@@ -1464,7 +992,7 @@ export default function WaterTestsPage() {
       {/* Modal: Edit Test */}
       {editingTest && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Edit2 className="w-4 h-4 text-cyan-400" />
@@ -1487,154 +1015,106 @@ export default function WaterTestsPage() {
                 />
               </div>
 
-              {/* 1. pH */}
-              <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
-                <label className="text-xs font-semibold text-slate-300">טווח pH</label>
-                <select
-                  value={editForm.phRangeId}
-                  onChange={(e) => setEditForm({ ...editForm, phRangeId: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                >
-                  {PH_RANGES.map((r) => (
-                    <option key={r.id} value={r.id}>{r.label}</option>
-                  ))}
-                </select>
-                <div className="pt-1.5 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק:</label>
-                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={editForm.noNumericPh}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            noNumericPh: e.target.checked,
-                            manualPh: e.target.checked ? "" : editForm.manualPh,
-                          })
-                        }
-                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                      />
-                      <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                    </label>
-                  </div>
-                  {!editForm.noNumericPh && (
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="הזן ערך מספרי מדויק"
-                      value={editForm.manualPh}
-                      onChange={(e) => setEditForm({ ...editForm, manualPh: e.target.value })}
-                      className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
-                    />
-                  )}
-                </div>
-              </div>
+              <div className="space-y-4">
+                {ALL_TEST_STRIP_PARAMS.map((param) => {
+                  if (param.id === "clarity") {
+                    return (
+                      <div key={param.id} className="space-y-1">
+                        <label className="text-xs font-semibold text-slate-300">צלילות מים</label>
+                        <select
+                          value={editForm.waterClarity}
+                          onChange={(e) => setEditForm({ ...editForm, waterClarity: e.target.value })}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                        >
+                          <option value="CLEAR">מים צלולים</option>
+                          <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
+                          <option value="VERY_CLOUDY">עכורים מאוד</option>
+                          <option value="FOAMY">מקציפים</option>
+                          <option value="GREEN">ירוקים / אצות</option>
+                          <option value="METALLIC_COPPER">גוון ירוק-טורקיז (נחושת)</option>
+                          <option value="METALLIC_RUST">חלודה / ברזל</option>
+                          <option value="BAD_ODOR">ריח חריף</option>
+                        </select>
+                      </div>
+                    );
+                  }
 
-              {/* 2. Chlorine */}
-              <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
-                <label className="text-xs font-semibold text-slate-300">טווח כלור/ברום</label>
-                <select
-                  value={editForm.clRangeId}
-                  onChange={(e) => setEditForm({ ...editForm, clRangeId: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                >
-                  {CHLORINE_RANGES.map((r) => (
-                    <option key={r.id} value={r.id}>{r.label}</option>
-                  ))}
-                </select>
-                <div className="pt-1.5 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק:</label>
-                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={editForm.noNumericCl}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            noNumericCl: e.target.checked,
-                            manualCl: e.target.checked ? "" : editForm.manualCl,
-                          })
-                        }
-                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                      />
-                      <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                    </label>
-                  </div>
-                  {!editForm.noNumericCl && (
-                    <input
-                      type="number"
-                      step="0.1"
-                      placeholder="הזן ערך מספרי מדויק"
-                      value={editForm.manualCl}
-                      onChange={(e) => setEditForm({ ...editForm, manualCl: e.target.value })}
-                      className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
-                    />
-                  )}
-                </div>
-              </div>
+                  const sel = editForm.params[param.id] || { rangeId: "OK", noNumeric: true, manualVal: "" };
 
-              {/* 3. Alkalinity */}
-              <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
-                <label className="text-xs font-semibold text-slate-300">טווח בסיסיות (TA)</label>
-                <select
-                  value={editForm.alkRangeId}
-                  onChange={(e) => setEditForm({ ...editForm, alkRangeId: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                >
-                  {ALKALINITY_RANGES.map((r) => (
-                    <option key={r.id} value={r.id}>{r.label}</option>
-                  ))}
-                </select>
-                <div className="pt-1.5 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] text-slate-400 font-medium">ערך מספרי מדויק:</label>
-                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={editForm.noNumericAlk}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            noNumericAlk: e.target.checked,
-                            manualAlk: e.target.checked ? "" : editForm.manualAlk,
-                          })
-                        }
-                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                      />
-                      <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
-                    </label>
-                  </div>
-                  {!editForm.noNumericAlk && (
-                    <input
-                      type="number"
-                      step="1"
-                      placeholder="הזן ערך מספרי מדויק"
-                      value={editForm.manualAlk}
-                      onChange={(e) => setEditForm({ ...editForm, manualAlk: e.target.value })}
-                      className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
-                    />
-                  )}
-                </div>
-              </div>
+                  return (
+                    <div key={param.id} className="space-y-1.5 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-200">{param.nameHe} ({param.enName})</span>
+                        <span className="text-[11px] text-slate-400">אידיאלי: {param.idealRange}</span>
+                      </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">צלילות מים</label>
-                <select
-                  value={editForm.waterClarity}
-                  onChange={(e) => setEditForm({ ...editForm, waterClarity: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                >
-                  <option value="CLEAR">מים צלולים</option>
-                  <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
-                  <option value="VERY_CLOUDY">עכורים מאוד</option>
-                  <option value="FOAMY">מקציפים</option>
-                  <option value="GREEN">ירוקים / אצות</option>
-                  <option value="METALLIC_COPPER">גוון ירוק-טורקיז (נחושת)</option>
-                  <option value="METALLIC_RUST">חלודה / ברזל</option>
-                  <option value="BAD_ODOR">ריח חריף</option>
-                </select>
+                      {param.defaultRanges && param.defaultRanges.length > 0 && (
+                        <select
+                          value={sel.rangeId}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              params: {
+                                ...editForm.params,
+                                [param.id]: { ...sel, rangeId: e.target.value },
+                              },
+                            })
+                          }
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                        >
+                          {param.defaultRanges.map((r) => (
+                            <option key={r.id} value={r.id}>{r.label}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      <div className="pt-1.5 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] text-slate-400 font-medium">ערך מספרי ({param.unit}):</label>
+                          <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={sel.noNumeric}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  params: {
+                                    ...editForm.params,
+                                    [param.id]: {
+                                      ...sel,
+                                      noNumeric: e.target.checked,
+                                      manualVal: e.target.checked ? "" : sel.manualVal,
+                                    },
+                                  },
+                                })
+                              }
+                              className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                            />
+                            <span className="text-[11px] font-semibold text-cyan-300">ללא ערך מספרי</span>
+                          </label>
+                        </div>
+                        {!sel.noNumeric && (
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="הזן ערך מספרי מדויק"
+                            value={sel.manualVal}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                params: {
+                                  ...editForm.params,
+                                  [param.id]: { ...sel, manualVal: e.target.value },
+                                },
+                              })
+                            }
+                            className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="space-y-1">

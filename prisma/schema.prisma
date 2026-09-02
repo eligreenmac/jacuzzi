@@ -87,6 +87,27 @@ model WaterLog {
   saltRange         String?  // e.g. "1500 - 2500 ppm"
   waterTemp         Float?
   waterTempRange    String?  // e.g. "36°C - 39°C"
+  carbonate         Float?
+  carbonateRange    String?
+  bromine           Float?
+  bromineRange      String?
+  nitrate           Float?
+  nitrateRange      String?
+  nitrite           Float?
+  nitriteRange      String?
+  iron              Float?
+  ironRange         String?
+  copper            Float?
+  copperRange       String?
+  chromium          Float?
+  chromiumRange     String?
+  lead              Float?
+  leadRange         String?
+  mercury           Float?
+  mercuryRange      String?
+  fluoride          Float?
+  fluorideRange     String?
+  extendedMetrics   String?  // JSON key-value store for any custom or future metrics
   testedParams      String?  // JSON list of active params during this test
   description       String?
   imageUrl          String?
