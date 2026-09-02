@@ -758,12 +758,12 @@ export default function WaterDoctorPage() {
                 </div>
               </div>
 
-              {/* Root Cause Analysis */}
+              {/* Root Cause Analysis & Dangers */}
               {diagnosis.rootCauseAnalysis && (
                 <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-900/60 space-y-1.5">
                   <div className="text-xs font-bold text-purple-300 flex items-center gap-2">
                     <Zap className="w-4 h-4 text-purple-400" />
-                    <span>ניתוח שורש הבעיה הכימי (Root Cause Analysis):</span>
+                    <span>סכנות וניתוח שורש הבעיה הכימי:</span>
                   </div>
                   <p className="text-xs text-purple-200/90 leading-relaxed">
                     {diagnosis.rootCauseAnalysis}

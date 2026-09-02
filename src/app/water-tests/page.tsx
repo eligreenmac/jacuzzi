@@ -766,12 +766,12 @@ export default function WaterTestsPage() {
                               </div>
                             )}
 
-                            {/* Root Cause Analysis */}
+                            {/* Root Cause Analysis & Dangers */}
                             {displayRootCause && (
                               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
                                 <div className="flex items-center gap-2 font-bold text-slate-200 text-xs">
                                   <Info className="w-4 h-4 text-cyan-400" />
-                                  <span>ניתוח שורש הבעיה:</span>
+                                  <span>סכנות וניתוח שורש הבעיה:</span>
                                 </div>
                                 <div className="text-[11px] leading-relaxed text-slate-300 pr-6">
                                   {displayRootCause}
