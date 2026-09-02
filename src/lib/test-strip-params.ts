@@ -95,18 +95,6 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     ],
   },
   {
-    id: "clarity",
-    nameHe: "צלילות ומראה המים",
-    enName: "Water Clarity",
-    category: "מדדי איזון מים בסיסיים",
-    unit: "מראה",
-    idealRange: "צלול ונקי",
-    isDefault: true,
-    description: "מראה המים ועומס חלקיקים/שומנים צפים.",
-    dangerLow: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
-    dangerHigh: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
-  },
-  {
     id: "waterTemp",
     nameHe: "טמפרטורת מים",
     enName: "Water Temperature",
@@ -117,6 +105,18 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     description: "בדיקת חום המים לבטיחות המתרחצים ומניעת מכת חום.",
     dangerLow: "מים קרים שאינם מתאימים לרחצה טיפולית ונוחות בספא.",
     dangerHigh: "סכנת מכת חום, התייבשות, ירידת לחץ דם חדה ועומס קיצוני על הלב (מעל 40°C אסור לשימוש).",
+  },
+  {
+    id: "clarity",
+    nameHe: "צלילות ומראה המים",
+    enName: "Water Clarity",
+    category: "מדדי איזון מים בסיסיים",
+    unit: "מראה",
+    idealRange: "צלול ונקי",
+    isDefault: true,
+    description: "מראה המים ועומס חלקיקים/שומנים צפים.",
+    dangerLow: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
+    dangerHigh: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
   },
 
   // 2. מדדי חיטוי וסניטציה

@@ -589,19 +589,27 @@ export default function WaterTestsPage() {
               const testDateObj = new Date(test.testedAt);
 
               const testedParamIds: string[] = (() => {
+                let list: string[] = [];
                 if (test.testedParams) {
                   try {
                     const p = JSON.parse(test.testedParams);
-                    if (Array.isArray(p) && p.length > 0) return p;
+                    if (Array.isArray(p) && p.length > 0) list = p;
                   } catch {}
                 }
-                const list: string[] = [];
-                ALL_TEST_STRIP_PARAMS.forEach((param) => {
-                  const { val, rangeStr } = extractParamValue(test, param.id);
-                  if (val !== null || rangeStr) list.push(param.id);
-                });
-                if (test.waterClarity) list.push("clarity");
-                return list.length > 0 ? list : DEFAULT_TEST_STRIP_PARAM_IDS;
+                if (list.length === 0) {
+                  ALL_TEST_STRIP_PARAMS.forEach((param) => {
+                    if (param.id === "clarity") return;
+                    const { val, rangeStr } = extractParamValue(test, param.id);
+                    if (val !== null || rangeStr) list.push(param.id);
+                  });
+                }
+                const hasClarity = list.includes("clarity") || !!test.waterClarity;
+                const withoutClarity = list.filter((id) => id !== "clarity");
+                return hasClarity
+                  ? [...withoutClarity, "clarity"]
+                  : withoutClarity.length > 0
+                  ? withoutClarity
+                  : DEFAULT_TEST_STRIP_PARAM_IDS;
               })();
 
               // Calculate Abnormal Risks dynamically
@@ -829,7 +837,7 @@ export default function WaterTestsPage() {
               <div className="space-y-6">
                 {PARAM_CATEGORIES.map((catName) => {
                   const catActiveParams = ALL_TEST_STRIP_PARAMS.filter(
-                    (p) => p.category === catName && activeParams.includes(p.id)
+                    (p) => p.category === catName && activeParams.includes(p.id) && p.id !== "clarity"
                   );
                   if (catActiveParams.length === 0) return null;
 
@@ -842,28 +850,6 @@ export default function WaterTestsPage() {
 
                       <div className="space-y-3.5">
                         {catActiveParams.map((param) => {
-                          if (param.id === "clarity") {
-                            return (
-                              <div key={param.id} className="space-y-1.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                                <label className="text-xs font-semibold text-slate-300">{param.nameHe} ({param.enName})</label>
-                                <select
-                                  value={clarity}
-                                  onChange={(e) => setClarity(e.target.value)}
-                                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-medium"
-                                >
-                                  <option value="CLEAR">מים צלולים לחלוטין</option>
-                                  <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
-                                  <option value="VERY_CLOUDY">עכורים מאוד / חלביים</option>
-                                  <option value="FOAMY">מקציפים בהפעלת ג'טים</option>
-                                  <option value="GREEN">ירוקים / אצות</option>
-                                  <option value="METALLIC_COPPER">גוון ירוק-טורקיז / נחושת (Copper)</option>
-                                  <option value="METALLIC_RUST">גוון חלודה / ברזל (Iron / Rust)</option>
-                                  <option value="BAD_ODOR">ריח חריף</option>
-                                </select>
-                              </div>
-                            );
-                          }
-
                           const sel = paramSelections[param.id] || { rangeId: "OK", noNumeric: true, manualVal: "" };
 
                           return (
@@ -947,6 +933,30 @@ export default function WaterTestsPage() {
                     </div>
                   );
                 })}
+
+                {/* Water Clarity - Always rendered last among metrics */}
+                {activeParams.includes("clarity") && (
+                  <div className="space-y-1.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                    <div className="flex items-center justify-between text-xs">
+                      <label className="text-xs font-semibold text-slate-300">צלילות ומראה המים (Water Clarity)</label>
+                      <span className="text-[11px] text-slate-400">אידיאלי: צלול ונקי</span>
+                    </div>
+                    <select
+                      value={clarity}
+                      onChange={(e) => setClarity(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-medium"
+                    >
+                      <option value="CLEAR">מים צלולים לחלוטין</option>
+                      <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
+                      <option value="VERY_CLOUDY">עכורים מאוד / חלביים</option>
+                      <option value="FOAMY">מקציפים בהפעלת ג'טים</option>
+                      <option value="GREEN">ירוקים / אצות</option>
+                      <option value="METALLIC_COPPER">גוון ירוק-טורקיז / נחושת (Copper)</option>
+                      <option value="METALLIC_RUST">גוון חלודה / ברזל (Iron / Rust)</option>
+                      <option value="BAD_ODOR">ריח חריף</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               {/* Free text */}
@@ -1016,29 +1026,7 @@ export default function WaterTestsPage() {
               </div>
 
               <div className="space-y-4">
-                {ALL_TEST_STRIP_PARAMS.map((param) => {
-                  if (param.id === "clarity") {
-                    return (
-                      <div key={param.id} className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-300">צלילות מים</label>
-                        <select
-                          value={editForm.waterClarity}
-                          onChange={(e) => setEditForm({ ...editForm, waterClarity: e.target.value })}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                        >
-                          <option value="CLEAR">מים צלולים</option>
-                          <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
-                          <option value="VERY_CLOUDY">עכורים מאוד</option>
-                          <option value="FOAMY">מקציפים</option>
-                          <option value="GREEN">ירוקים / אצות</option>
-                          <option value="METALLIC_COPPER">גוון ירוק-טורקיז (נחושת)</option>
-                          <option value="METALLIC_RUST">חלודה / ברזל</option>
-                          <option value="BAD_ODOR">ריח חריף</option>
-                        </select>
-                      </div>
-                    );
-                  }
-
+                {ALL_TEST_STRIP_PARAMS.filter((p) => p.id !== "clarity").map((param) => {
                   const sel = editForm.params[param.id] || { rangeId: "OK", noNumeric: true, manualVal: "" };
 
                   return (
@@ -1115,6 +1103,28 @@ export default function WaterTestsPage() {
                     </div>
                   );
                 })}
+
+                {/* Water Clarity in Edit Modal - always rendered last */}
+                <div className="space-y-1.5 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                  <div className="flex items-center justify-between text-xs">
+                    <label className="text-xs font-semibold text-slate-300">צלילות ומראה המים (Water Clarity)</label>
+                    <span className="text-[11px] text-slate-400">אידיאלי: צלול ונקי</span>
+                  </div>
+                  <select
+                    value={editForm.waterClarity}
+                    onChange={(e) => setEditForm({ ...editForm, waterClarity: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                  >
+                    <option value="CLEAR">מים צלולים</option>
+                    <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
+                    <option value="VERY_CLOUDY">עכורים מאוד</option>
+                    <option value="FOAMY">מקציפים</option>
+                    <option value="GREEN">ירוקים / אצות</option>
+                    <option value="METALLIC_COPPER">גוון ירוק-טורקיז (נחושת)</option>
+                    <option value="METALLIC_RUST">חלודה / ברזל</option>
+                    <option value="BAD_ODOR">ריח חריף</option>
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-1">
