@@ -190,15 +190,17 @@ export async function identifyChemicalFromImage(
   const apiKeyStr = (process.env.GEMINI_API_KEY || "").trim();
   const modelsToTry = [
     process.env.GEMINI_MODEL,
-    "gemini-2.5-flash",
+    "gemini-3.7-flash",
+    "gemini-3.7-flash-preview",
+    "gemini-3.1-pro-preview",
     "gemini-2.0-flash",
     "gemini-1.5-flash",
-    "gemini-2.5-pro",
+    "gemini-2.5-flash",
   ].filter((m, i, arr) => m && arr.indexOf(m) === i) as string[];
 
   let lastError: any = null;
 
-  // 1. Try via official Google GenAI SDK (Gemini 2.5 / 2.0 / 1.5 Flash)
+  // 1. Try via official Google GenAI SDK (Gemini 3.7 / 3.1 / 2.0 Flash)
   for (const model of modelsToTry) {
     try {
       const response = await ai.models.generateContent({

@@ -491,7 +491,7 @@ export default function InventoryPage() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Camera className="w-5 h-5 text-cyan-400" />
-                <span>זיהוי חומר לפי צילום (Gemini Vision)</span>
+                <span>זיהוי חומר לפי צילום (Gemini 3.7 Vision)</span>
               </h2>
               <button
                 onClick={() => {
