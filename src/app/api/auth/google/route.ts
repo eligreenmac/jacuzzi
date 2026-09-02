@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const redirectUri = `${origin}/api/auth/google/callback`;
 
   if (!clientId) {
-    return NextResponse.redirect(`${origin}/login?google_prompt=1`);
+    return NextResponse.redirect(`${origin}/login?error=google_not_configured`);
   }
 
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
