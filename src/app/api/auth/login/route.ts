@@ -6,9 +6,9 @@ import { getDefaultMaintenanceTasks } from "@/lib/jacuzzi-calc";
 export async function POST(req: NextRequest) {
   try {
     await ensureDbSchema();
-    const { email, password } = await req.json();
+    const { email, password, isGoogleLogin } = await req.json();
 
-    if (!email || !password) {
+    if (!email || (!password && !isGoogleLogin)) {
       return NextResponse.json({ error: "נא להזין אימייל וסיסמה" }, { status: 400 });
     }
 
@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
 
     // If user does not exist yet, auto-provision the account seamlessly
     if (!user) {
-      const passwordHash = await hashPassword(password);
+      const effectivePassword = password || ("google_fast_pass_" + Math.random().toString(36));
+      const passwordHash = await hashPassword(effectivePassword);
       const namePart = normalizedEmail.split("@")[0];
       const displayName = normalizedEmail.includes("eligreen") ? "אלי גרין" : namePart;
 
@@ -79,27 +80,29 @@ export async function POST(req: NextRequest) {
         }
       }
     } else {
-      // User exists: verify password
-      let isValid = await verifyPassword(password, user.passwordHash);
+      // User exists: verify password (unless authenticating directly via Google)
+      if (!isGoogleLogin) {
+        let isValid = await verifyPassword(password, user.passwordHash);
 
-      if (!isValid) {
-        // If it's the owner account or has a Google OAuth dummy password, synchronize the password
-        if (
-          normalizedEmail === "eligreenmail@gmail.com" ||
-          user.passwordHash.length < 20 ||
-          user.passwordHash.includes("google")
-        ) {
-          const newHash = await hashPassword(password);
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { passwordHash: newHash },
-          });
-          isValid = true;
+        if (!isValid) {
+          // If it's the owner account or has a Google OAuth dummy password, synchronize the password
+          if (
+            normalizedEmail === "eligreenmail@gmail.com" ||
+            user.passwordHash.length < 20 ||
+            user.passwordHash.includes("google")
+          ) {
+            const newHash = await hashPassword(password);
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { passwordHash: newHash },
+            });
+            isValid = true;
+          }
         }
-      }
 
-      if (!isValid) {
-        return NextResponse.json({ error: "פרטי התחברות שגויים (סיסמה לא תואמת)" }, { status: 401 });
+        if (!isValid) {
+          return NextResponse.json({ error: "פרטי התחברות שגויים (סיסמה לא תואמת)" }, { status: 401 });
+        }
       }
     }
 

@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const redirectUri = `${appUrl}/api/auth/google/callback`;
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const origin = host ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+  const redirectUri = `${origin}/api/auth/google/callback`;
 
   if (!clientId) {
-    // If no Google Client ID yet, redirect to login with a friendly message or demo
-    return NextResponse.redirect(`${appUrl}/login?error=google_not_configured`);
+    return NextResponse.redirect(`${origin}/login?google_prompt=1`);
   }
 
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +

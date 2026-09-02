@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { signToken } from "@/lib/auth";
+import { prisma, ensureDbSchema, withRetry } from "@/lib/prisma";
+import { signToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { getDefaultMaintenanceTasks } from "@/lib/jacuzzi-calc";
 import bcrypt from "bcryptjs";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const appUrl = host ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
 
   if (!code) {
     return NextResponse.redirect(`${appUrl}/login?error=missing_code`);
@@ -22,6 +24,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    await ensureDbSchema();
+
     // 1. Exchange authorization code for tokens
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -52,68 +56,88 @@ export async function GET(req: NextRequest) {
     }
 
     const email = googleUser.email.toLowerCase().trim();
-    const name = googleUser.name || googleUser.given_name || "משתמש Google";
+    const name = googleUser.name || googleUser.given_name || (email.includes("eligreen") ? "אלי גרין" : email.split("@")[0]);
 
-    // 3. Find or Create user in database
-    let user = await prisma.user.findUnique({
-      where: { email },
-      include: { jacuzzi: true },
+    // 3. Find or Create user in database with retry
+    let user = await withRetry(async () => {
+      return await prisma.user.findUnique({
+        where: { email },
+        include: { jacuzzi: true },
+      });
     });
 
     if (!user) {
       const dummyPassword = await bcrypt.hash(Math.random().toString(36) + "google_auth_random", 10);
-      user = await prisma.user.create({
-        data: {
-          email,
-          name,
-          passwordHash: dummyPassword,
-          notificationEmail: email,
-          emailNotificationsEnabled: true,
-          jacuzzi: {
-            create: {
-              name: "הג'קוזי של " + name,
-              volumeLiters: 1200,
-              sanitizationType: "CHLORINE",
-              location: "OUTDOOR",
-              usageFrequency: "MEDIUM",
+      user = await withRetry(async () => {
+        return await prisma.user.create({
+          data: {
+            email,
+            name,
+            passwordHash: dummyPassword,
+            notificationEmail: email,
+            emailNotificationsEnabled: true,
+            notifySameDayTasks: true,
+            notifyOverdueTasks: true,
+            jacuzzi: {
+              create: {
+                name: "הג'קוזי של " + name,
+                volumeLiters: 1200,
+                sanitizationType: "CHLORINE",
+                location: "OUTDOOR",
+                usageFrequency: "MEDIUM",
+                lastRefillDate: new Date(),
+                lastDeepCleanDate: new Date(),
+              },
             },
           },
-        },
-        include: { jacuzzi: true },
+          include: { jacuzzi: true },
+        });
       });
 
       // Initialize default tasks for new user
-      if (user.jacuzzi) {
+      if (user && user.jacuzzi) {
+        const userId = user.id;
         const defaultTasks = getDefaultMaintenanceTasks({
           volumeLiters: user.jacuzzi.volumeLiters,
           sanitizationType: user.jacuzzi.sanitizationType,
         });
 
         for (const task of defaultTasks) {
-          await prisma.maintenanceTask.create({
-            data: {
-              userId: user.id,
-              title: task.title,
-              description: task.description,
-              category: task.category,
-              frequencyDays: task.frequencyDays,
-              nextDueDate: task.nextDueDate,
-              priority: task.priority,
-            },
+          const dueDate = task.nextDueDate ? new Date(task.nextDueDate) : new Date();
+          if (!task.nextDueDate) {
+            dueDate.setDate(dueDate.getDate() + (task.frequencyDays || 7));
+          }
+
+          await withRetry(async () => {
+            await prisma.maintenanceTask.create({
+              data: {
+                userId,
+                title: task.title,
+                description: task.description,
+                category: task.category,
+                frequencyDays: task.frequencyDays,
+                nextDueDate: dueDate,
+                priority: task.priority,
+              },
+            });
           });
         }
       }
     }
 
+    if (!user) {
+      return NextResponse.redirect(`${appUrl}/login?error=user_creation_failed`);
+    }
+
     // 4. Create Session JWT & Set Cookie
-    const token = await signToken({
+    const token = signToken({
       userId: user.id,
       email: user.email,
       name: user.name || undefined,
     });
 
     const response = NextResponse.redirect(`${appUrl}/dashboard`);
-    response.cookies.set("jacuzzi_session", token, {
+    response.cookies.set(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
