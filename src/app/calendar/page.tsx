@@ -31,6 +31,7 @@ import {
   Camera,
   ImageIcon,
 } from "lucide-react";
+import { compressImageForAI } from "@/lib/image-utils";
 
 // Standard Test Strip Range Scales (5 Distinct Domains: Very Low, Low, OK, High, Very High)
 const PH_RANGES = [
@@ -726,14 +727,19 @@ export default function CalendarPage() {
     }
   };
 
-  const handleNoteImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNoteImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setNoteImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImageForAI(file, 1200, 0.8);
+      setNoteImage(compressed.base64);
+    } catch {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNoteImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleCreateNote = async (e: React.FormEvent) => {

@@ -27,6 +27,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { WATER_PARAMETERS_GUIDE, ParameterInfo } from "@/lib/water-parameters-guide";
+import { compressImageForAI } from "@/lib/image-utils";
 
 export default function WaterDoctorPage() {
   const [clarity, setClarity] = useState("CLEAR");
@@ -70,15 +71,21 @@ export default function WaterDoctorPage() {
   const [addedLedger, setAddedLedger] = useState<any[]>([]);
   const [error, setError] = useState("");
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setImageMimeType(file.type);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImageForAI(file, 1200, 0.8);
+        setImagePreview(compressed.base64);
+        setImageMimeType(compressed.mimeType);
+      } catch {
+        setImageMimeType(file.type);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 

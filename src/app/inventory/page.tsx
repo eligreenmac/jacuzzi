@@ -17,7 +17,10 @@ import {
   Info,
   Calendar,
   Clock,
+  Cpu,
+  Zap,
 } from "lucide-react";
+import { compressImageForAI } from "@/lib/image-utils";
 
 export default function InventoryPage() {
   const [chemicals, setChemicals] = useState<any[]>([]);
@@ -32,6 +35,9 @@ export default function InventoryPage() {
   const [imagePreview, setImagePreview] = useState("");
   const [imageMimeType, setImageMimeType] = useState("");
   const [isScanningPhoto, setIsScanningPhoto] = useState(false);
+  const [scanStage, setScanStage] = useState<"IDLE" | "COMPRESSING" | "SCANNING_AI" | "DECODING" | "DONE">("IDLE");
+  const [scanStats, setScanStats] = useState<{ original: string; compressed: string; reduction: number } | null>(null);
+  const [scanSeconds, setScanSeconds] = useState(0);
   const [identifiedData, setIdentifiedData] = useState<any>(null);
 
   // Editable fields (auto-filled by AI Vision OCR, with full manual override)
@@ -82,45 +88,63 @@ export default function InventoryPage() {
     if (!file) return;
 
     setErrorMsg("");
-    setImageMimeType(file.type);
     setIsScanningPhoto(true);
+    setScanStage("COMPRESSING");
+    setScanSeconds(0);
+    setScanStats(null);
+    setIdentifiedData(null);
 
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64 = reader.result as string;
-      setImagePreview(base64);
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+      setScanSeconds(parseFloat(((Date.now() - startTime) / 1000).toFixed(1)));
+    }, 100);
 
-      try {
-        const res = await fetch("/api/ai/identify-chemical", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageBase64: base64,
-            imageMimeType: file.type,
-          }),
-        });
+    try {
+      // 1. Client-side instant image compression & optimization (< 100ms)
+      const compressed = await compressImageForAI(file, 1200, 0.8);
+      setImagePreview(compressed.base64);
+      setImageMimeType(compressed.mimeType);
+      setScanStats({
+        original: compressed.originalSizeReadable,
+        compressed: compressed.compressedSizeReadable,
+        reduction: compressed.reductionPercentage,
+      });
 
-        const json = await res.json();
-        if (json.success && json.data) {
-          setIdentifiedData(json.data);
-          setCustomName(json.data.name || "");
-          setCustomCategory(json.data.category || "OTHER");
-          setCustomUnit(json.data.unit || "GRAMS");
-          setCustomActiveIngredients(json.data.activeIngredients || "");
-          if (json.data.defaultMinThreshold) {
-            setMinThreshold(json.data.defaultMinThreshold.toString());
-          }
-        } else {
-          setErrorMsg(json.error || "לא ניתן היה לפענח את התמונה. ניתן להזין את פרטי החומר ידנית.");
+      // 2. High-Speed AI Vision OCR & Chemical Extraction
+      setScanStage("SCANNING_AI");
+      const res = await fetch("/api/ai/identify-chemical", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: compressed.base64,
+          imageMimeType: compressed.mimeType,
+        }),
+      });
+
+      setScanStage("DECODING");
+      const json = await res.json();
+      if (json.success && json.data) {
+        setIdentifiedData(json.data);
+        setCustomName(json.data.name || "");
+        setCustomCategory(json.data.category || "OTHER");
+        setCustomUnit(json.data.unit || "GRAMS");
+        setCustomActiveIngredients(json.data.activeIngredients || "");
+        if (json.data.defaultMinThreshold) {
+          setMinThreshold(json.data.defaultMinThreshold.toString());
         }
-      } catch (err: any) {
-        console.error("Failed to identify photo:", err);
-        setErrorMsg(err.message || "שגיאה בפענוח התמונה. ניתן להזין את פרטי החומר ידנית.");
-      } finally {
-        setIsScanningPhoto(false);
+        setScanStage("DONE");
+      } else {
+        setErrorMsg(json.error || "לא ניתן היה לפענח את התמונה. ניתן להזין את פרטי החומר ידנית.");
+        setScanStage("IDLE");
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      console.error("Failed to identify photo:", err);
+      setErrorMsg(err.message || "שגיאה בפענוח התמונה. ניתן להזין את פרטי החומר ידנית.");
+      setScanStage("IDLE");
+    } finally {
+      clearInterval(timer);
+      setIsScanningPhoto(false);
+    }
   };
 
   const handleSaveChemical = async (e: React.FormEvent) => {
@@ -496,29 +520,83 @@ export default function InventoryPage() {
 
                 {!imagePreview ? (
                   <label className="border-2 border-dashed border-cyan-800/60 hover:border-cyan-500 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer bg-slate-950/50 hover:bg-slate-950 transition-all group">
-                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
                       <Camera className="w-7 h-7" />
                     </div>
-                    <div className="text-center">
+                    <div className="text-center space-y-1">
                       <span className="text-sm font-bold text-white block">לחץ כאן לצילום או בחירת תמונה</span>
-                      <span className="text-xs text-slate-400">ה-AI ינתח את האריזה ויזהה את החומר במדויק</span>
+                      <span className="text-xs text-slate-400 block">התמונה תכווץ אוטומטית לזיהוי אולטרה-מהיר ב-AI</span>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-[11px] text-cyan-300 mt-1">
+                        <Zap className="w-3 h-3 text-amber-400" />
+                        <span>דחיסה חכמה + זיהוי OCR תווית ב-1-2 שניות בלבד</span>
+                      </div>
                     </div>
                     <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
                   </label>
                 ) : (
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-950">
-                    <img src={imagePreview} alt="צילום חומר" className="w-full h-48 object-contain bg-slate-950" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setImagePreview("");
-                        setIdentifiedData(null);
-                      }}
-                      className="absolute top-2 right-2 px-3 py-1 bg-black/70 hover:bg-black/90 rounded-full text-white text-xs flex items-center gap-1"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      <span>החלף תמונה</span>
-                    </button>
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 shadow-lg">
+                    <img src={imagePreview} alt="צילום חומר" className="w-full h-52 object-contain bg-slate-950" />
+
+                    {/* Active AI Scanning Overlay with laser beam & thinking animation */}
+                    {isScanningPhoto && (
+                      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center space-y-3 animate-in fade-in">
+                        {/* Laser Scan Animation Line */}
+                        <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee] animate-bounce" />
+
+                        {/* Pulsing AI Icon */}
+                        <div className="relative">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 animate-pulse">
+                            <Sparkles className="w-7 h-7 text-white animate-spin" style={{ animationDuration: "3s" }} />
+                          </div>
+                          <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-4 w-4 bg-cyan-500"></span>
+                          </span>
+                        </div>
+
+                        <div className="space-y-1 max-w-xs">
+                          <div className="flex items-center justify-center gap-1.5 text-sm font-black text-cyan-300">
+                            {scanStage === "COMPRESSING" && <span>⚡ ממטב ודוחס תמונה...</span>}
+                            {scanStage === "SCANNING_AI" && <span>🤖 רופא מים AI סורק תווית...</span>}
+                            {scanStage === "DECODING" && <span>🧪 מפענח רכיבים ומינונים...</span>}
+                          </div>
+                          <p className="text-[11px] text-slate-300">
+                            {scanStage === "COMPRESSING" && "ממיר את הצילום לגודל אופטימלי לקריאת OCR מהירה"}
+                            {scanStage === "SCANNING_AI" && "קריאת טקסט מלאה (OCR), יצרן, מותג והוראות בטיחות"}
+                            {scanStage === "DECODING" && "חילוץ סוג החומר, יחידת המידה וכמויות מומלצות"}
+                          </p>
+                        </div>
+
+                        {/* Real-time thinking timer & compression pill */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-[11px] text-amber-300 font-mono flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-400 animate-spin" />
+                            <span>{scanSeconds.toFixed(1)}s</span>
+                          </span>
+                          {scanStats && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-800 text-[10px] text-cyan-300 font-bold">
+                              כווץ: {scanStats.original} ➔ {scanStats.compressed} ({scanStats.reduction}%-)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Change / Retake Photo Button */}
+                    {!isScanningPhoto && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview("");
+                          setIdentifiedData(null);
+                          setScanStats(null);
+                        }}
+                        className="absolute top-2 right-2 px-3 py-1.5 bg-black/80 hover:bg-black rounded-full text-white text-xs flex items-center gap-1 shadow-md border border-slate-700"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>החלף תמונה</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -526,6 +604,22 @@ export default function InventoryPage() {
               {/* Step 2: Recognized or Editable Chemical Form */}
               {imagePreview && !isScanningPhoto && (
                 <div className="space-y-4 p-4 rounded-2xl bg-slate-950/90 border border-cyan-900/60 shadow-inner">
+                  {/* Identification Success Banner */}
+                  {identifiedData && (
+                    <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/80 to-cyan-950/80 border border-emerald-500/50 shadow-sm flex items-start gap-2.5 animate-in fade-in">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-bold text-emerald-300 block">
+                          ✓ זוהה בהצלחה: {identifiedData.name}
+                        </span>
+                        <p className="text-[11px] text-slate-300 leading-tight">
+                          {identifiedData.activeIngredients ? `חומר פעיל: ${identifiedData.activeIngredients}. ` : ""}
+                          {identifiedData.usageSummary || "הפרטים נטענו אוטומטית לשדות למטה — ניתן לערוך כל שדה."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold">
                       <Sparkles className="w-4 h-4" />
