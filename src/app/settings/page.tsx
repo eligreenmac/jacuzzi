@@ -348,7 +348,7 @@ export default function SettingsPage() {
                 }
                 className="text-[11px] px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg border border-slate-700 transition-colors"
               >
-                ברירת מחדל (4 מדדים)
+                ברירת מחדל (3 מדדים)
               </button>
             </div>
           </div>

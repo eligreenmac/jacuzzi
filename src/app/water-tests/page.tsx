@@ -20,6 +20,8 @@ import {
 
 import {
   ALL_TEST_STRIP_PARAMS,
+  ALL_PARAMS_WITH_CLARITY,
+  WATER_CLARITY_PARAM,
   DEFAULT_TEST_STRIP_PARAM_IDS,
   PARAM_CATEGORIES,
   parseTestStripParams,
@@ -286,13 +288,13 @@ export default function WaterTestsPage() {
       testedAt: new Date(testDate).toISOString(),
       testedParams: activeParams,
       description: description || null,
-      waterClarity: activeParams.includes("clarity") ? clarity : "CLEAR",
+      waterClarity: clarity || "CLEAR",
     };
 
     for (const pId of activeParams) {
       if (pId === "clarity") continue;
       const sel = paramSelections[pId] || { rangeId: "OK", noNumeric: true, manualVal: "" };
-      const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
+      const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
       const parsedNum = !sel.noNumeric && sel.manualVal.trim() ? parseFloat(sel.manualVal) : null;
       const matchedRange = pDef?.defaultRanges?.find((r) => r.id === sel.rangeId);
       const rangeLabel = matchedRange?.label || (parsedNum ? `${parsedNum} ${pDef?.unit || ""}` : sel.rangeId);
@@ -353,7 +355,7 @@ export default function WaterTestsPage() {
 
     const editParamMap: Record<string, { rangeId: string; noNumeric: boolean; manualVal: string }> = {};
 
-    ALL_TEST_STRIP_PARAMS.forEach((param) => {
+    ALL_PARAMS_WITH_CLARITY.forEach((param) => {
       const { val, rangeStr } = extractParamValue(test, param.id);
       const hasNum = typeof val === "number" && !isNaN(val);
       const domain = getGenericDomain(param.id, val, rangeStr);
@@ -386,7 +388,7 @@ export default function WaterTestsPage() {
     };
 
     Object.entries(editForm.params).forEach(([pId, sel]) => {
-      const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
+      const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
       const parsedNum = !sel.noNumeric && sel.manualVal.trim() ? parseFloat(sel.manualVal) : null;
       const matchedRange = pDef?.defaultRanges?.find((r) => r.id === sel.rangeId);
       const rangeLabel = matchedRange?.label || (parsedNum ? `${parsedNum} ${pDef?.unit || ""}` : sel.rangeId);
@@ -597,7 +599,7 @@ export default function WaterTestsPage() {
                   } catch {}
                 }
                 if (list.length === 0) {
-                  ALL_TEST_STRIP_PARAMS.forEach((param) => {
+                  ALL_PARAMS_WITH_CLARITY.forEach((param) => {
                     if (param.id === "clarity") return;
                     const { val, rangeStr } = extractParamValue(test, param.id);
                     if (val !== null || rangeStr) list.push(param.id);
@@ -616,7 +618,7 @@ export default function WaterTestsPage() {
               const abnormalRisks: Array<{ name: string; risk: string }> = [];
 
               for (const pId of testedParamIds) {
-                const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
+                const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
                 if (!pDef) continue;
 
                 if (pId === "clarity") {
@@ -701,7 +703,7 @@ export default function WaterTestsPage() {
                   {/* Dynamic Parameter Badges Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {testedParamIds.map((pId) => {
-                      const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
+                      const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
                       if (!pDef) return null;
 
                       if (pId === "clarity") {
@@ -935,28 +937,26 @@ export default function WaterTestsPage() {
                 })}
 
                 {/* Water Clarity - Always rendered last among metrics */}
-                {activeParams.includes("clarity") && (
-                  <div className="space-y-1.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                    <div className="flex items-center justify-between text-xs">
-                      <label className="text-xs font-semibold text-slate-300">צלילות ומראה המים (Water Clarity)</label>
-                      <span className="text-[11px] text-slate-400">אידיאלי: צלול ונקי</span>
-                    </div>
-                    <select
-                      value={clarity}
-                      onChange={(e) => setClarity(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-medium"
-                    >
-                      <option value="CLEAR">מים צלולים לחלוטין</option>
-                      <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
-                      <option value="VERY_CLOUDY">עכורים מאוד / חלביים</option>
-                      <option value="FOAMY">מקציפים בהפעלת ג'טים</option>
-                      <option value="GREEN">ירוקים / אצות</option>
-                      <option value="METALLIC_COPPER">גוון ירוק-טורקיז / נחושת (Copper)</option>
-                      <option value="METALLIC_RUST">גוון חלודה / ברזל (Iron / Rust)</option>
-                      <option value="BAD_ODOR">ריח חריף</option>
-                    </select>
+                <div className="space-y-1.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                  <div className="flex items-center justify-between text-xs">
+                    <label className="text-xs font-semibold text-slate-300">צלילות ומראה המים (Water Clarity)</label>
+                    <span className="text-[11px] text-slate-400">אידיאלי: צלול ונקי</span>
                   </div>
-                )}
+                  <select
+                    value={clarity}
+                    onChange={(e) => setClarity(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-medium"
+                  >
+                    <option value="CLEAR">מים צלולים לחלוטין</option>
+                    <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
+                    <option value="VERY_CLOUDY">עכורים מאוד / חלביים</option>
+                    <option value="FOAMY">מקציפים בהפעלת ג'טים</option>
+                    <option value="GREEN">ירוקים / אצות</option>
+                    <option value="METALLIC_COPPER">גוון ירוק-טורקיז / נחושת (Copper)</option>
+                    <option value="METALLIC_RUST">גוון חלודה / ברזל (Iron / Rust)</option>
+                    <option value="BAD_ODOR">ריח חריף</option>
+                  </select>
+                </div>
               </div>
 
               {/* Free text */}

@@ -106,18 +106,6 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "מים קרים שאינם מתאימים לרחצה טיפולית ונוחות בספא.",
     dangerHigh: "סכנת מכת חום, התייבשות, ירידת לחץ דם חדה ועומס קיצוני על הלב (מעל 40°C אסור לשימוש).",
   },
-  {
-    id: "clarity",
-    nameHe: "צלילות ומראה המים",
-    enName: "Water Clarity",
-    category: "מדדי איזון מים בסיסיים",
-    unit: "מראה",
-    idealRange: "צלול ונקי",
-    isDefault: true,
-    description: "מראה המים ועומס חלקיקים/שומנים צפים.",
-    dangerLow: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
-    dangerHigh: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
-  },
 
   // 2. מדדי חיטוי וסניטציה
   {
@@ -350,7 +338,22 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
   },
 ];
 
-export const DEFAULT_TEST_STRIP_PARAM_IDS = ["ph", "chlorine", "alkalinity", "clarity"];
+export const WATER_CLARITY_PARAM: TestStripParamDef = {
+  id: "clarity",
+  nameHe: "צלילות ומראה המים",
+  enName: "Water Clarity",
+  category: "מדדי מראה וצלילות",
+  unit: "מראה",
+  idealRange: "צלול ונקי",
+  isDefault: true,
+  description: "מראה המים ועומס חלקיקים/שומנים צפים.",
+  dangerLow: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
+  dangerHigh: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
+};
+
+export const ALL_PARAMS_WITH_CLARITY: TestStripParamDef[] = [...ALL_TEST_STRIP_PARAMS, WATER_CLARITY_PARAM];
+
+export const DEFAULT_TEST_STRIP_PARAM_IDS = ["ph", "chlorine", "alkalinity"];
 
 export function parseTestStripParams(val: any): string[] {
   if (Array.isArray(val)) return val;
