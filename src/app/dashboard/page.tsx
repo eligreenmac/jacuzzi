@@ -358,9 +358,96 @@ export default function DashboardPage() {
     if (match && match[1] && !match[1].includes("אין חוסרים")) {
       recommendedPurchaseItems = match[1].split(",").map((s: string) => s.trim()).filter(Boolean);
     }
-  } else if (lowStockChemicals.length > 0) {
+  } else  if (lowStockChemicals.length > 0) {
     recommendedPurchaseItems = lowStockChemicals.map((c: any) => c.name);
   }
+
+  // Helper to format relative days in Hebrew
+  const formatRelativeDays = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return "היום";
+    if (diffDays === 1) return "אתמול";
+    if (diffDays === 2) return "שלשום";
+    if (diffDays < 0) return `בעוד ${Math.abs(diffDays)} ימים`;
+    return `לפני ${diffDays} ימים`;
+  };
+
+  // Build Recent Chemical Additions List combining chemicalInventory and diary entries
+  const recentChemicalAdditions = (() => {
+    const list: Array<{
+      id: string;
+      text: string;
+      amount?: string | null;
+      date: Date;
+      formattedDate: string;
+      relative: string;
+    }> = [];
+
+    // 1. From chemicalInventory items that have lastUsedDate
+    chemicals.forEach((c: any) => {
+      if (c.lastUsedDate) {
+        const d = new Date(c.lastUsedDate);
+        const unitLabel = c.unit === "GRAMS" ? 'גר\'' : c.unit === "ML" ? 'מ"ל' : c.unit === "TABLETS" ? "טבליות" : c.unit;
+        const amountStr = c.lastUsedAmount ? `${c.lastUsedAmount} ${unitLabel}` : "";
+        list.push({
+          id: `chem-${c.id}-${d.getTime()}`,
+          text: `הוספת ${amountStr ? amountStr + " " : ""}${c.name}`,
+          amount: amountStr || null,
+          date: d,
+          formattedDate: d.toLocaleDateString("he-IL"),
+          relative: formatRelativeDays(d),
+        });
+      }
+    });
+
+    // 2. From diary entries that contain chemical additions
+    (data?.diaryEntries || []).forEach((entry: any) => {
+      const rawText = `${entry.title || ""} ${entry.content || ""} ${entry.chemicalsAdded || ""}`;
+      const isChemAction =
+        rawText.includes("הוספ") ||
+        rawText.includes("שמתי") ||
+        rawText.includes("גרם") ||
+        rawText.includes("GRAMS") ||
+        rawText.includes("ML") ||
+        rawText.includes("מ\"ל") ||
+        rawText.includes("ברום") ||
+        rawText.includes("כלור") ||
+        rawText.includes("אלקליניטי") ||
+        rawText.includes("pH") ||
+        rawText.includes("אנזים") ||
+        rawText.includes("שוק") ||
+        rawText.includes("חמצן") ||
+        rawText.includes("טבליות") ||
+        entry.chemicalsAdded;
+
+      if (isChemAction) {
+        const d = new Date(entry.entryDate || entry.createdAt);
+        let clean = (entry.chemicalsAdded || entry.content || entry.title || "").trim();
+        clean = clean.replace(/^(בוצעה פעולה יזומה:\s*|פעולת אחזקה יזומה:\s*|פעולת אחזקה:\s*)+/gi, "");
+        clean = clean.replace(/פעולת אחזקה יזומה בג'קוזי\.?/gi, "").trim();
+        clean = clean.replace(/\.?\s*הפעולה תועדה בהצלחה ולוח הזמנים עודכן\.?/gi, "");
+        clean = clean.replace(/\.?\s*הפעולה תועדה בהצלחה\.?/gi, "");
+        clean = clean.replace(/\.?\s*ולוח הזמנים עודכן\.?/gi, "");
+
+        if (clean && !list.some((existing) => existing.text.includes(clean.slice(0, 20)) && Math.abs(existing.date.getTime() - d.getTime()) < 3600000)) {
+          list.push({
+            id: `diary-${entry.id}`,
+            text: clean,
+            amount: null,
+            date: d,
+            formattedDate: d.toLocaleDateString("he-IL"),
+            relative: formatRelativeDays(d),
+          });
+        }
+      }
+    });
+
+    return list.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+  })();
 
   return (
     <div className="space-y-8 pb-12">
@@ -588,20 +675,64 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              {chemicals.map((chem: any) => {
-                const isLow = chem.minThreshold && chem.quantity <= chem.minThreshold;
-                const unitLabel = chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit === "TABLETS" ? "טבליות" : chem.unit;
-                return (
-                  <div key={chem.id} className="flex items-center justify-between">
-                    <span className="text-slate-400 truncate max-w-[150px]" title={chem.name}>
-                      {chem.name}:
-                    </span>
-                    <span className={`font-semibold ${isLow ? "text-amber-400 font-bold" : "text-slate-200"}`}>
-                      {chem.quantity} {unitLabel} {isLow ? "(נמוך)" : ""}
-                    </span>
+              {/* Chemical Inventory with Last Addition Dates */}
+              <div className="space-y-2 pt-0.5">
+                {chemicals.map((chem: any) => {
+                  const isLow = chem.minThreshold && chem.quantity <= chem.minThreshold;
+                  const unitLabel = chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit === "TABLETS" ? "טבליות" : chem.unit;
+                  const lastDate = chem.lastUsedDate ? new Date(chem.lastUsedDate) : null;
+
+                  return (
+                    <div key={chem.id} className="p-2 rounded-xl bg-slate-950/70 border border-slate-800/60 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300 font-bold truncate max-w-[150px]" title={chem.name}>
+                          {chem.name}
+                        </span>
+                        <span className={`font-black text-xs ${isLow ? "text-amber-400" : "text-slate-100"}`}>
+                          {chem.quantity} {unitLabel} {isLow ? "(נמוך)" : ""}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-slate-400">
+                        <span>תאריך הוספה אחרון:</span>
+                        {lastDate ? (
+                          <span className="text-cyan-300 font-semibold">
+                            {lastDate.toLocaleDateString("he-IL")} ({formatRelativeDays(lastDate)})
+                            {chem.lastUsedAmount ? ` • ${chem.lastUsedAmount} ${unitLabel}` : ""}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">טרם הוסף לג'קוזי</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Recent Chemical Additions Log */}
+              {recentChemicalAdditions.length > 0 && (
+                <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-purple-300">
+                    <span>🧪 תיעוד הוספת חומרים לאחרונה:</span>
                   </div>
-                );
-              })}
+
+                  <div className="space-y-1">
+                    {recentChemicalAdditions.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-1.5 rounded-lg bg-purple-950/30 border border-purple-900/40 text-[10px] flex items-center justify-between gap-1.5"
+                      >
+                        <span className="text-purple-200 font-medium truncate max-w-[160px]" title={item.text}>
+                          • {item.text}
+                        </span>
+                        <span className="text-cyan-300 font-bold shrink-0">
+                          {item.formattedDate} ({item.relative})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="pt-1.5 border-t border-slate-800/60 space-y-1">
                 <div className="flex items-center justify-between pb-0.5">

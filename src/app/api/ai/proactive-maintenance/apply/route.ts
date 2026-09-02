@@ -94,6 +94,47 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Auto-match any user inventory chemicals mentioned in freeText to update lastUsedDate and lastUsedAmount
+    try {
+      const allUserChemicals = await prisma.chemicalInventory.findMany({
+        where: { userId: user.id },
+      });
+
+      for (const chemical of allUserChemicals) {
+        const chemNameLower = chemical.name.toLowerCase();
+        const keywords = [chemNameLower, ...chemNameLower.split(/[\s\-()]+/).filter((w) => w.length > 2)];
+        const isMentioned = keywords.some((kw) => textLower.includes(kw));
+
+        if (isMentioned) {
+          let extractedAmount: number | null = null;
+          const amountMatch = freeText.match(/(\d+(?:\.\d+)?)\s*(?:גרם|גר|GRAMS?|GRAM|GR|ML|מ"ל|טבליות|יחידות)?/i);
+          if (amountMatch && amountMatch[1]) {
+            extractedAmount = parseFloat(amountMatch[1]);
+          }
+
+          const alreadyHandled = chemicalsUsed.some((cu: any) => cu.id === chemical.id);
+          const newQuantity = !alreadyHandled && extractedAmount && extractedAmount > 0
+            ? Math.max(0, (chemical.quantity || 0) - extractedAmount)
+            : chemical.quantity;
+
+          await prisma.chemicalInventory.update({
+            where: { id: chemical.id },
+            data: {
+              lastUsedDate: actionDateObj,
+              lastUsedAmount: extractedAmount || chemical.lastUsedAmount,
+              quantity: newQuantity,
+            },
+          });
+
+          if (!chemicalDeductionsSummary.some((s) => s.includes(chemical.name))) {
+            chemicalDeductionsSummary.push(`${chemical.name}${extractedAmount ? ` (${extractedAmount} ${chemical.unit || "גרם"})` : ""}`);
+          }
+        }
+      }
+    } catch (chemErr) {
+      console.warn("Chemical auto-match error:", chemErr);
+    }
+
     // 1. Apply Schedule Shifts to existing Maintenance Tasks
     const shiftedTasksSummary = [];
     for (const shift of scheduleShifts) {
