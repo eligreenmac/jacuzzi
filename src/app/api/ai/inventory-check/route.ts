@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const lowStockItems = (analysis.lowStockAlerts || []).map((l: any) => l.name);
     const allRecommendedPurchases = Array.from(new Set([...missingItems, ...lowStockItems])).filter(Boolean);
 
-    // Clean previous purchase tasks from maintenance task list
+    // Clean previous purchase tasks and purchase diary entries from maintenance calendar/diary
     await prisma.maintenanceTask.deleteMany({
       where: {
         userId: user.id,
@@ -48,27 +48,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (allRecommendedPurchases.length > 0) {
-      await prisma.diaryEntry.create({
-        data: {
-          userId: user.id,
-          title: "בדיקת חומרים חסרים AI בארון החומרים",
-          content: `חומרים מומלצים לרכש: ${allRecommendedPurchases.join(", ")}.\n${analysis.inventorySummary || ""}`,
-          entryDate: new Date(),
-          waterQualityRating: 5,
-        },
-      });
-    } else {
-      await prisma.diaryEntry.create({
-        data: {
-          userId: user.id,
-          title: "בדיקת חומרים חסרים AI בארון החומרים",
-          content: `בוצעה בדיקת AI: ארון החומרים מלא ותקין, אין חוסרים לרכש.`,
-          entryDate: new Date(),
-          waterQualityRating: 5,
-        },
-      });
-    }
+    await prisma.diaryEntry.deleteMany({
+      where: {
+        userId: user.id,
+        OR: [
+          { title: { contains: "חומרים חסרים" } },
+          { title: { contains: "רכש מומלץ" } },
+          { content: { contains: "חומרים מומלצים לרכש" } },
+        ],
+      },
+    });
 
     return NextResponse.json({
       success: true,
