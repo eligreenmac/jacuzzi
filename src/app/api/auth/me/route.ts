@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { prisma, ensureDbSchema } from "@/lib/prisma";
+import { prisma, ensureDbSchema, withRetry } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,23 +10,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
     }
 
-    const fullUserData = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: {
-        jacuzzi: true,
-        chemicals: true,
-        tasks: {
-          orderBy: { nextDueDate: "asc" },
+    const fullUserData = await withRetry(async () => {
+      return await prisma.user.findUnique({
+        where: { id: user.id },
+        include: {
+          jacuzzi: true,
+          chemicals: true,
+          tasks: {
+            orderBy: { nextDueDate: "asc" },
+          },
+          waterLogs: {
+            orderBy: { testedAt: "desc" },
+            take: 5,
+          },
+          diaryEntries: {
+            orderBy: { entryDate: "desc" },
+            take: 100,
+          },
         },
-        waterLogs: {
-          orderBy: { testedAt: "desc" },
-          take: 5,
-        },
-        diaryEntries: {
-          orderBy: { entryDate: "desc" },
-          take: 100,
-        },
-      },
+      });
     });
 
     if (!fullUserData) {

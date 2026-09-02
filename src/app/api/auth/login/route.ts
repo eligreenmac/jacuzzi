@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, ensureDbSchema } from "@/lib/prisma";
+import { prisma, ensureDbSchema, withRetry } from "@/lib/prisma";
 import { hashPassword, verifyPassword, signToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { getDefaultMaintenanceTasks } from "@/lib/jacuzzi-calc";
 
@@ -14,11 +14,13 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    let user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      include: {
-        jacuzzi: true,
-      },
+    let user = await withRetry(async () => {
+      return await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+        include: {
+          jacuzzi: true,
+        },
+      });
     });
 
     // If user does not exist yet, auto-provision the account seamlessly
