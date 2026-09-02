@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Settings,
   Droplets,
@@ -29,6 +30,7 @@ import {
 } from "@/lib/test-strip-params";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "הג'קוזי שלי",
     brand: "",
@@ -87,6 +89,17 @@ export default function SettingsPage() {
     loadSettings();
   }, []);
 
+  const handleClose = () => {
+    try {
+      window.close();
+    } catch {}
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/water-tests");
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -105,8 +118,10 @@ export default function SettingsPage() {
         throw new Error(d.error || "שגיאה בשמירת הגדרות");
       }
 
-      setSuccessMsg("ההגדרות עודכנו בהצלחה!");
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setSuccessMsg("ההגדרות עודכנו בהצלחה! סוגר חלון...");
+      setTimeout(() => {
+        handleClose();
+      }, 500);
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
@@ -153,14 +168,25 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-          <Settings className="w-8 h-8 text-cyan-400" />
-          <span>הגדרות הג'קוזי והתראות מייל</span>
-        </h1>
-        <p className="text-sm text-slate-400 mt-1">
-          התאם אישית את מאפייני הג'קוזי, תאריכי החלפת מים, והגדרות שליחת תזכורות למייל.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
+            <Settings className="w-8 h-8 text-cyan-400" />
+            <span>הגדרות הג'קוזי והתראות מייל</span>
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            התאם אישית את מאפייני הג'קוזי, תאריכי החלפת מים, והגדרות שליחת תזכורות למייל.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleClose}
+          className="self-start sm:self-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5"
+        >
+          <span>✕</span>
+          <span>סגור</span>
+        </button>
       </div>
 
       {successMsg && (
@@ -545,15 +571,22 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Submit */}
-        <div className="flex items-center justify-end gap-4">
+        {/* Submit & Close */}
+        <div className="flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="px-6 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all"
+          >
+            סגור
+          </button>
           <button
             type="submit"
             disabled={saving}
             className="px-8 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/30 flex items-center gap-2 transition-all disabled:opacity-50 hover:scale-105"
           >
             <Save className="w-4 h-4" />
-            <span>{saving ? "שומר..." : "שמור את כל השינויים"}</span>
+            <span>{saving ? "שומר..." : "שמור וסגור"}</span>
           </button>
         </div>
       </form>
