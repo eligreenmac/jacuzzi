@@ -36,6 +36,18 @@ export async function GET(req: NextRequest) {
     }
 
     const { passwordHash: _, ...safeUser } = fullUserData;
+
+    // Ensure no purchase entries leak into maintenance diary
+    safeUser.diaryEntries = (safeUser.diaryEntries || []).filter((d: any) => {
+      const text = `${d.title || ""} ${d.content || ""}`.toLowerCase();
+      return (
+        !text.includes("רכש") &&
+        !text.includes("חומרים חסרים") &&
+        !text.includes("מומלצים לרכש") &&
+        !text.includes("להזמין")
+      );
+    });
+
     return NextResponse.json({ user: safeUser });
   } catch (error: any) {
     console.error("Auth Me Error:", error);

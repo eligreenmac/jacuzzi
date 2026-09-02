@@ -404,9 +404,19 @@ export default function DashboardPage() {
       }
     });
 
-    // 2. From diary entries that contain chemical additions
+    // 2. From diary entries that contain chemical additions (excluding purchase checks)
     (data?.diaryEntries || []).forEach((entry: any) => {
       const rawText = `${entry.title || ""} ${entry.content || ""} ${entry.chemicalsAdded || ""}`;
+      const isPurchase =
+        rawText.includes("רכש") ||
+        rawText.includes("חומרים חסרים") ||
+        rawText.includes("מומלצים לרכש") ||
+        rawText.includes("להזמין") ||
+        rawText.includes("בדיקת חומרים") ||
+        rawText.includes("קנייה");
+
+      if (isPurchase) return;
+
       const isChemAction =
         rawText.includes("הוספ") ||
         rawText.includes("שמתי") ||
@@ -433,7 +443,12 @@ export default function DashboardPage() {
         clean = clean.replace(/\.?\s*הפעולה תועדה בהצלחה\.?/gi, "");
         clean = clean.replace(/\.?\s*ולוח הזמנים עודכן\.?/gi, "");
 
-        if (clean && !list.some((existing) => existing.text.includes(clean.slice(0, 20)) && Math.abs(existing.date.getTime() - d.getTime()) < 3600000)) {
+        if (
+          clean &&
+          !clean.includes("רכש") &&
+          !clean.includes("חסרים") &&
+          !list.some((existing) => existing.text.includes(clean.slice(0, 20)) && Math.abs(existing.date.getTime() - d.getTime()) < 3600000)
+        ) {
           list.push({
             id: `diary-${entry.id}`,
             text: clean,
@@ -649,6 +664,31 @@ export default function DashboardPage() {
                   </div>
                 );
               })}
+
+              {/* 🧪 Recent Chemical Additions Log inside Maintenance Card */}
+              {recentChemicalAdditions.length > 0 && (
+                <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-teal-300">
+                    <span>🧪 תיעוד הוספת חומרים לאחרונה:</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    {recentChemicalAdditions.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-1.5 rounded-lg bg-teal-950/30 border border-teal-900/40 text-[10px] flex items-center justify-between gap-1.5"
+                      >
+                        <span className="text-teal-200 font-medium truncate max-w-[160px]" title={item.text}>
+                          • {item.text}
+                        </span>
+                        <span className="text-cyan-300 font-bold shrink-0">
+                          {item.formattedDate} ({item.relative})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -708,31 +748,6 @@ export default function DashboardPage() {
                   );
                 })}
               </div>
-
-              {/* Recent Chemical Additions Log */}
-              {recentChemicalAdditions.length > 0 && (
-                <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-purple-300">
-                    <span>🧪 תיעוד הוספת חומרים לאחרונה:</span>
-                  </div>
-
-                  <div className="space-y-1">
-                    {recentChemicalAdditions.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-1.5 rounded-lg bg-purple-950/30 border border-purple-900/40 text-[10px] flex items-center justify-between gap-1.5"
-                      >
-                        <span className="text-purple-200 font-medium truncate max-w-[160px]" title={item.text}>
-                          • {item.text}
-                        </span>
-                        <span className="text-cyan-300 font-bold shrink-0">
-                          {item.formattedDate} ({item.relative})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div className="pt-1.5 border-t border-slate-800/60 space-y-1">
                 <div className="flex items-center justify-between pb-0.5">
