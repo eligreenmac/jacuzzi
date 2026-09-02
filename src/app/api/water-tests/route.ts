@@ -66,6 +66,17 @@ export async function POST(req: NextRequest) {
       alkalinity,
       alkalinityRange,
       waterClarity,
+      calcium,
+      calciumRange,
+      totalChlorine,
+      totalChlorineRange,
+      cya,
+      cyaRange,
+      salt,
+      saltRange,
+      waterTemp,
+      waterTempRange,
+      testedParams,
       description,
       imageUrl,
     } = body;
@@ -79,6 +90,26 @@ export async function POST(req: NextRequest) {
       alkalinity === "UNKNOWN" || alkalinity === "" || alkalinity === undefined || alkalinity === null
         ? null
         : parseFloat(alkalinity);
+    const parsedCalcium =
+      calcium === "UNKNOWN" || calcium === "" || calcium === undefined || calcium === null
+        ? null
+        : parseFloat(calcium);
+    const parsedTotalCl =
+      totalChlorine === "UNKNOWN" || totalChlorine === "" || totalChlorine === undefined || totalChlorine === null
+        ? null
+        : parseFloat(totalChlorine);
+    const parsedCya =
+      cya === "UNKNOWN" || cya === "" || cya === undefined || cya === null
+        ? null
+        : parseFloat(cya);
+    const parsedSalt =
+      salt === "UNKNOWN" || salt === "" || salt === undefined || salt === null
+        ? null
+        : parseFloat(salt);
+    const parsedWaterTemp =
+      waterTemp === "UNKNOWN" || waterTemp === "" || waterTemp === undefined || waterTemp === null
+        ? null
+        : parseFloat(waterTemp);
 
     const effectivePh = resolveNumericValue(parsedPh, phRange, "PH");
     const effectiveCl = resolveNumericValue(parsedCl, chlorineRange, "CL");
@@ -190,6 +221,10 @@ export async function POST(req: NextRequest) {
       pendingUnexecutedRecommendations: pendingUnexecutedRecommendations.slice(0, 5),
     });
 
+    const activeTestedParamsStr = testedParams
+      ? (typeof testedParams === "string" ? testedParams : JSON.stringify(testedParams))
+      : (jacuzzi?.testStripParams || '["ph","chlorine","alkalinity","clarity"]');
+
     const newTest = await prisma.waterLog.create({
       data: {
         userId: user.id,
@@ -201,6 +236,17 @@ export async function POST(req: NextRequest) {
         alkalinity: parsedAlk,
         alkalinityRange: alkalinityRange || null,
         waterClarity: waterClarity || "CLEAR",
+        calcium: parsedCalcium,
+        calciumRange: calciumRange || null,
+        totalChlorine: parsedTotalCl,
+        totalChlorineRange: totalChlorineRange || null,
+        cya: parsedCya,
+        cyaRange: cyaRange || null,
+        salt: parsedSalt,
+        saltRange: saltRange || null,
+        waterTemp: parsedWaterTemp,
+        waterTempRange: waterTempRange || null,
+        testedParams: activeTestedParamsStr,
         description: description || null,
         imageUrl: imageUrl || null,
         aiDiagnosis: diagnosis.waterStatusSummary,

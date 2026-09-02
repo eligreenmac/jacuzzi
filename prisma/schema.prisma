@@ -40,6 +40,7 @@ model Jacuzzi {
   lastRefillDate    DateTime @default(now())
   lastDeepCleanDate DateTime @default(now())
   lastFilterReplaceDate DateTime?
+  testStripParams   String?  @default("[\"ph\",\"chlorine\",\"alkalinity\",\"clarity\"]")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -76,6 +77,17 @@ model WaterLog {
   alkalinity        Float?
   alkalinityRange   String?  // e.g. "80 - 120 ppm (אידיאלי)"
   waterClarity      String   @default("CLEAR") // CLEAR, SLIGHTLY_CLOUDY, VERY_CLOUDY, GREEN, FOAMY, BAD_ODOR
+  calcium           Float?
+  calciumRange      String?  // e.g. "150 - 250 ppm (אידיאלי)"
+  totalChlorine     Float?
+  totalChlorineRange String? // e.g. "2.0 - 4.0 ppm"
+  cya               Float?
+  cyaRange          String?  // e.g. "20 - 50 ppm"
+  salt              Float?
+  saltRange         String?  // e.g. "1500 - 2500 ppm"
+  waterTemp         Float?
+  waterTempRange    String?  // e.g. "36°C - 39°C"
+  testedParams      String?  // JSON list of active params during this test
   description       String?
   imageUrl          String?
   aiDiagnosis       String?

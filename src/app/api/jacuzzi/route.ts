@@ -34,6 +34,7 @@ export async function PUT(req: NextRequest) {
       lastRefillDate,
       lastDeepCleanDate,
       lastFilterReplaceDate,
+      testStripParams,
       emailNotificationsEnabled,
       notificationEmail,
       notifySameDayTasks,
@@ -58,6 +59,10 @@ export async function PUT(req: NextRequest) {
       });
     }
 
+    const testStripParamsStr = testStripParams !== undefined
+      ? (typeof testStripParams === "string" ? testStripParams : JSON.stringify(testStripParams))
+      : undefined;
+
     const updatedJacuzzi = await prisma.jacuzzi.upsert({
       where: { userId: user.id },
       create: {
@@ -72,6 +77,7 @@ export async function PUT(req: NextRequest) {
         lastRefillDate: lastRefillDate ? new Date(lastRefillDate) : new Date(),
         lastDeepCleanDate: lastDeepCleanDate ? new Date(lastDeepCleanDate) : new Date(),
         lastFilterReplaceDate: lastFilterReplaceDate ? new Date(lastFilterReplaceDate) : null,
+        testStripParams: testStripParamsStr || '["ph","chlorine","alkalinity","clarity"]',
       },
       update: {
         name: name || undefined,
@@ -84,6 +90,7 @@ export async function PUT(req: NextRequest) {
         lastRefillDate: lastRefillDate ? new Date(lastRefillDate) : undefined,
         lastDeepCleanDate: lastDeepCleanDate ? new Date(lastDeepCleanDate) : undefined,
         lastFilterReplaceDate: lastFilterReplaceDate !== undefined ? (lastFilterReplaceDate ? new Date(lastFilterReplaceDate) : null) : undefined,
+        testStripParams: testStripParamsStr !== undefined ? testStripParamsStr : undefined,
       },
     });
 

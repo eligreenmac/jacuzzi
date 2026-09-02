@@ -51,6 +51,22 @@ export async function ensureDbSchema() {
       await prisma.$executeRawUnsafe(`
         ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "notifyOverdueTasks" BOOLEAN DEFAULT true;
       `);
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "Jacuzzi" ADD COLUMN IF NOT EXISTS "testStripParams" TEXT DEFAULT '["ph","chlorine","alkalinity","clarity"]';
+      `);
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "calcium" DOUBLE PRECISION;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "calciumRange" TEXT;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "totalChlorine" DOUBLE PRECISION;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "totalChlorineRange" TEXT;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "cya" DOUBLE PRECISION;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "cyaRange" TEXT;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "salt" DOUBLE PRECISION;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "saltRange" TEXT;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "waterTemp" DOUBLE PRECISION;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "waterTempRange" TEXT;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "testedParams" TEXT;
+      `);
     });
     isSchemaEnsured = true;
   } catch (e) {
