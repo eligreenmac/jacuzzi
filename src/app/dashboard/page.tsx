@@ -480,11 +480,11 @@ export default function DashboardPage() {
         </div>
 
         {/* 3 Quick Metrics Cards (Unified & Minimalist, No Icons) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 items-stretch">
           {/* Card 1: מצב ואיכות המים -> /water-tests */}
           <div
             onClick={() => router.push("/water-tests")}
-            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-cyan-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group"
+            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-cyan-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group h-full"
             title="לחץ למעבר לבדיקות ואיכות המים"
           >
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
@@ -569,7 +569,7 @@ export default function DashboardPage() {
           {/* Card 2: תחזוקה -> /calendar */}
           <div
             onClick={() => router.push("/calendar")}
-            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-teal-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group"
+            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-teal-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group h-full"
             title="לחץ למעבר ליומן התחזוקה והשגרות"
           >
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
@@ -694,7 +694,7 @@ export default function DashboardPage() {
           {/* Card 3: ארון חומרים ומלאי -> /inventory */}
           <div
             onClick={() => router.push("/inventory")}
-            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-purple-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group"
+            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-purple-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group h-full"
             title="לחץ למעבר לארון החומרים והמלאי"
           >
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
