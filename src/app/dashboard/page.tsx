@@ -376,6 +376,13 @@ export default function DashboardPage() {
     return `לפני ${diffDays} ימים`;
   };
 
+  // Helper for due date color coding: Red if overdue / today (<= 0), Orange if approaching (1-3 days), Slate-200 for normal future
+  const getDueColorClass = (daysRemaining: number) => {
+    if (daysRemaining <= 0) return "text-red-400 font-bold";
+    if (daysRemaining <= 3) return "text-amber-400 font-bold";
+    return "text-slate-200 font-semibold";
+  };
+
   // Build Recent Chemical Additions List combining chemicalInventory and diary entries
   const recentChemicalAdditions = (() => {
     const list: Array<{
@@ -505,7 +512,9 @@ export default function DashboardPage() {
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">גיל המים:</span>
-                <span className="text-sm font-black text-white">{daysSinceRefill} ימים</span>
+                <span className={`font-semibold ${daysSinceRefill >= 90 ? "text-red-400 font-bold" : daysSinceRefill >= 75 ? "text-amber-400 font-bold" : "text-slate-200"}`}>
+                  {daysSinceRefill} ימים
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">החלפת מים מלאה:</span>
@@ -523,9 +532,9 @@ export default function DashboardPage() {
               </div>
 
               {/* Full Last Water Test Data */}
-              <div className="pt-2 border-t border-slate-800/80 space-y-1">
+              <div className="pt-2 border-t border-slate-800/60 space-y-1">
                 <div className="flex items-center justify-between text-[11px] pb-0.5">
-                  <span className="font-bold text-teal-300">בדיקת מים אחרונה:</span>
+                  <span className="font-bold text-cyan-300">בדיקת מים אחרונה:</span>
                   <span className="text-slate-400">
                     {latestWaterLog ? new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL") : "אין בדיקות"}
                   </span>
@@ -533,25 +542,45 @@ export default function DashboardPage() {
 
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">חומציות (pH):</span>
-                  <span className="font-bold text-white">
+                  <span className={`font-semibold ${
+                    latestWaterLog?.phRange?.includes("אידיאלי") || latestWaterLog?.phRange?.startsWith("OK")
+                      ? "text-slate-200"
+                      : latestWaterLog?.phRange?.includes("נמוך") || latestWaterLog?.phRange?.includes("גבוה")
+                      ? "text-amber-400 font-bold"
+                      : "text-slate-200"
+                  }`}>
                     {latestWaterLog?.phRange || (latestWaterLog?.ph !== null ? `pH ${latestWaterLog?.ph}` : "—")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">{sanitizerLabel}:</span>
-                  <span className="font-bold text-white">
+                  <span className={`font-semibold ${
+                    latestWaterLog?.chlorineRange?.includes("אידיאלי") || latestWaterLog?.chlorineRange?.startsWith("OK")
+                      ? "text-slate-200"
+                      : latestWaterLog?.chlorineRange?.includes("נמוך") || latestWaterLog?.chlorineRange?.includes("גבוה")
+                      ? "text-amber-400 font-bold"
+                      : "text-slate-200"
+                  }`}>
                     {latestWaterLog?.chlorineRange || (latestWaterLog?.freeChlorine !== null ? `${latestWaterLog?.freeChlorine} ppm` : "—")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">בסיסיות (TA):</span>
-                  <span className="font-bold text-white">
+                  <span className={`font-semibold ${
+                    latestWaterLog?.alkalinityRange?.includes("אידיאלי") || latestWaterLog?.alkalinityRange?.startsWith("OK")
+                      ? "text-slate-200"
+                      : latestWaterLog?.alkalinityRange?.includes("Very Low") || latestWaterLog?.alkalinityRange?.includes("נמוך מאוד")
+                      ? "text-red-400 font-bold"
+                      : latestWaterLog?.alkalinityRange?.includes("נמוך") || latestWaterLog?.alkalinityRange?.includes("גבוה")
+                      ? "text-amber-400 font-bold"
+                      : "text-slate-200"
+                  }`}>
                     {latestWaterLog?.alkalinityRange || (latestWaterLog?.alkalinity !== null ? `${latestWaterLog?.alkalinity} ppm` : "—")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">צלילות המים:</span>
-                  <span className="font-semibold text-blue-300">
+                  <span className={`font-semibold ${latestWaterLog?.waterClarity === "CLEAR" ? "text-slate-200" : "text-amber-400 font-bold"}`}>
                     {latestWaterLog?.waterClarity === "CLEAR" ? "צלול ונקי" : latestWaterLog?.waterClarity === "SLIGHTLY_CLOUDY" ? "עכירות קלה" : "צלול"}
                   </span>
                 </div>
@@ -559,7 +588,7 @@ export default function DashboardPage() {
 
               <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/60 text-slate-300">
                 <span className="text-slate-400">ריקון מלא הבא:</span>
-                <span className="font-bold text-amber-300">
+                <span className={`font-semibold ${getDueColorClass(daysUntilNextRefill)}`}>
                   בעוד {daysUntilNextRefill} יום ({nextRefillDate.toLocaleDateString("he-IL")})
                 </span>
               </div>
@@ -569,11 +598,11 @@ export default function DashboardPage() {
           {/* Card 2: תחזוקה -> /calendar */}
           <div
             onClick={() => router.push("/calendar")}
-            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-teal-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group h-full"
+            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-cyan-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group h-full"
             title="לחץ למעבר ליומן התחזוקה והשגרות"
           >
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="text-xs font-bold text-teal-300 group-hover:text-teal-200 transition-colors">
+              <span className="text-xs font-bold text-cyan-300 group-hover:text-cyan-200 transition-colors">
                 תחזוקה
               </span>
               <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
@@ -584,7 +613,7 @@ export default function DashboardPage() {
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between pb-1 border-b border-slate-800/50">
                 <span className="text-slate-400">משימות פתוחות השבוע:</span>
-                <span className="font-semibold text-white">
+                <span className={`font-semibold ${pendingTasks.length > 0 ? "text-amber-400 font-bold" : "text-emerald-400"}`}>
                   {pendingTasks.length > 0
                     ? pendingTasks.map((t: any) => t.title).slice(0, 2).join(", ") + (pendingTasks.length > 2 ? ` (+${pendingTasks.length - 2})` : "")
                     : "הכל הושלם ✓"}
@@ -594,7 +623,7 @@ export default function DashboardPage() {
               {/* בדיקת איכות מים */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">בדיקת איכות מים:</span>
-                <span className="font-semibold text-slate-200">
+                <span className={getDueColorClass(daysUntilNextWaterTest)}>
                   {nextWaterTestDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextWaterTest} יום)
                 </span>
               </div>
@@ -602,7 +631,7 @@ export default function DashboardPage() {
               {/* ניקוי צנרת ושטיפה */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי צנרת ושטיפה:</span>
-                <span className="font-semibold text-slate-200">
+                <span className={getDueColorClass(daysUntilNextDeepClean)}>
                   {nextDeepCleanDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextDeepClean} יום)
                 </span>
               </div>
@@ -610,7 +639,7 @@ export default function DashboardPage() {
               {/* ניקוי דפנות וקו מים */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי דפנות וקו מים:</span>
-                <span className="font-semibold text-slate-200">
+                <span className={getDueColorClass(daysUntilNextWallClean)}>
                   {nextWallCleanDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextWallClean} יום)
                 </span>
               </div>
@@ -618,7 +647,7 @@ export default function DashboardPage() {
               {/* שטיפת פילטר */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">שטיפת פילטר:</span>
-                <span className="font-semibold text-slate-200">
+                <span className={getDueColorClass(daysUntilNextFilterWash)}>
                   {nextFilterWashDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextFilterWash} יום)
                 </span>
               </div>
@@ -626,7 +655,7 @@ export default function DashboardPage() {
               {/* החלפת פילטר */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">החלפת פילטר:</span>
-                <span className="font-semibold text-teal-300">
+                <span className={getDueColorClass(daysUntilNextFilterReplace)}>
                   {nextFilterReplaceDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextFilterReplace} יום)
                 </span>
               </div>
@@ -634,7 +663,7 @@ export default function DashboardPage() {
               {/* ניקוי כיסוי */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">ניקוי כיסוי:</span>
-                <span className="font-semibold text-slate-200">
+                <span className={getDueColorClass(daysUntilNextCoverClean)}>
                   {nextCoverCleanDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextCoverClean} יום)
                 </span>
               </div>
@@ -642,7 +671,7 @@ export default function DashboardPage() {
               {/* החלפת מים חלקית */}
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">החלפת מים חלקית:</span>
-                <span className="font-semibold text-slate-200">
+                <span className={getDueColorClass(daysUntilNextPartialRefill)}>
                   {nextPartialRefillDate.toLocaleDateString("he-IL")} (בעוד {daysUntilNextPartialRefill} יום)
                 </span>
               </div>
@@ -655,10 +684,10 @@ export default function DashboardPage() {
                 if (!cleanTitle.endsWith(":")) cleanTitle += ":";
                 return (
                   <div key={t.id} className="flex items-center justify-between pt-0.5 border-t border-slate-800/40">
-                    <span className="text-slate-400 truncate max-w-[150px]" title={t.title}>
+                    <span className="text-slate-400 truncate max-w-[170px]" title={t.title}>
                       {cleanTitle}
                     </span>
-                    <span className="font-semibold text-pink-300 shrink-0">
+                    <span className={`shrink-0 ${getDueColorClass(daysRemaining)}`}>
                       {tDate.toLocaleDateString("he-IL")} (בעוד {daysRemaining} יום)
                     </span>
                   </div>
@@ -667,9 +696,9 @@ export default function DashboardPage() {
 
               {/* 🧪 Recent Chemical Additions Log inside Maintenance Card */}
               {recentChemicalAdditions.length > 0 && (
-                <div className="pt-2 border-t border-slate-800/60 space-y-1.5">
+                <div className="pt-2 border-t border-slate-800/60 space-y-1">
                   <div className="flex items-center justify-between pb-0.5">
-                    <span className="text-slate-400 font-bold text-[11px]">תיעוד הוספת חומרים לאחרונה:</span>
+                    <span className="text-cyan-300 font-bold text-[11px]">תיעוד הוספת חומרים לאחרונה:</span>
                   </div>
 
                   {recentChemicalAdditions.map((item) => {
@@ -694,11 +723,11 @@ export default function DashboardPage() {
           {/* Card 3: ארון חומרים ומלאי -> /inventory */}
           <div
             onClick={() => router.push("/inventory")}
-            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-purple-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group h-full"
+            className="bg-[#0a0f13] hover:bg-[#0f171e] border border-slate-800/80 hover:border-cyan-500/60 p-4 rounded-2xl flex flex-col justify-start space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm group h-full"
             title="לחץ למעבר לארון החומרים והמלאי"
           >
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="text-xs font-bold text-purple-300 group-hover:text-purple-200 transition-colors">
+              <span className="text-xs font-bold text-cyan-300 group-hover:text-cyan-200 transition-colors">
                 ארון חומרים ומלאי
               </span>
               <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
@@ -709,7 +738,7 @@ export default function DashboardPage() {
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between pb-1 border-b border-slate-800/50">
                 <span className="text-slate-400">סטטוס מלאי כללי:</span>
-                <span className={`font-semibold ${lowStockChemicals.length > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                <span className={`font-semibold ${lowStockChemicals.length > 0 ? "text-amber-400 font-bold" : "text-emerald-400"}`}>
                   {lowStockChemicals.length > 0 ? `${lowStockChemicals.length} במלאי נמוך ⚠️` : "תקין ומלא ✓"}
                 </span>
               </div>
@@ -717,25 +746,28 @@ export default function DashboardPage() {
               {/* Chemical Inventory Stock Levels */}
               <div className="space-y-1 pt-0.5">
                 {chemicals.map((chem: any) => {
-                  const isLow = chem.minThreshold && chem.quantity <= chem.minThreshold;
+                  const isOutOfStock = chem.quantity <= 0;
+                  const isLow = !isOutOfStock && chem.minThreshold && chem.quantity <= chem.minThreshold;
                   const unitLabel = chem.unit === "GRAMS" ? 'גר\'' : chem.unit === "ML" ? 'מ"ל' : chem.unit === "TABLETS" ? "טבליות" : chem.unit;
 
                   return (
                     <div key={chem.id} className="flex items-center justify-between py-1 border-b border-slate-800/40 last:border-b-0">
-                      <span className="text-slate-300 truncate max-w-[160px]" title={chem.name}>
+                      <span className="text-slate-400 truncate max-w-[170px]" title={chem.name}>
                         {chem.name}:
                       </span>
-                      <span className={`font-semibold ${isLow ? "text-amber-400 font-bold" : "text-slate-200"}`}>
-                        {chem.quantity} {unitLabel} {isLow ? "(נמוך)" : ""}
+                      <span className={`font-semibold ${
+                        isOutOfStock ? "text-red-400 font-bold" : isLow ? "text-amber-400 font-bold" : "text-slate-200"
+                      }`}>
+                        {chem.quantity} {unitLabel} {isOutOfStock ? "(אזל)" : isLow ? "(נמוך)" : ""}
                       </span>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="pt-1.5 border-t border-slate-800/60 space-y-1">
+              <div className="pt-2 border-t border-slate-800/60 space-y-1">
                 <div className="flex items-center justify-between pb-0.5">
-                  <span className="text-slate-400 font-bold text-[11px]">רכש מומלץ:</span>
+                  <span className="text-cyan-300 font-bold text-[11px]">רכש מומלץ:</span>
                   {recommendedPurchaseItems.length === 0 && (
                     <span className="font-semibold text-emerald-400 text-xs">אין חוסרים ✓</span>
                   )}
@@ -743,7 +775,7 @@ export default function DashboardPage() {
 
                 {recommendedPurchaseItems.map((item: string, idx: number) => (
                   <div key={idx} className="flex items-center justify-between text-xs py-0.5">
-                    <span className="text-slate-300 truncate max-w-[170px]" title={item}>
+                    <span className="text-slate-400 truncate max-w-[170px]" title={item}>
                       • {item}
                     </span>
                     <span className="font-bold text-amber-400 text-[11px] shrink-0">
