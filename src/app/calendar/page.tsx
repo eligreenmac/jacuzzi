@@ -504,6 +504,30 @@ export default function CalendarPage() {
     return taskDay.getTime() > today.getTime();
   };
 
+  // Helper to extract ONLY the clean maintenance action without duplicate titles or robotic sentences
+  const getCleanDiaryDisplay = (entry: { title?: string; content?: string }) => {
+    const cleanStr = (s?: string) => {
+      if (!s) return "";
+      let res = s.trim();
+      // Remove repeating robotic prefixes
+      res = res.replace(/^(בוצעה פעולה יזומה:\s*|פעולת אחזקה יזומה:\s*|פעולת אחזקה:\s*)+/gi, "");
+      res = res.replace(/פעולת אחזקה יזומה בג'קוזי\.?/gi, "").trim();
+      res = res.replace(/^(בוצעה פעולה יזומה:\s*|פעולת אחזקה יזומה:\s*)+/gi, "").trim();
+      // Remove robotic trailing sentences
+      res = res.replace(/\.?\s*הפעולה תועדה בהצלחה ולוח הזמנים עודכן\.?/gi, "");
+      res = res.replace(/\.?\s*הפעולה תועדה בהצלחה\.?/gi, "");
+      res = res.replace(/\.?\s*ולוח הזמנים עודכן\.?/gi, "");
+      return res.trim();
+    };
+
+    const cleanTitle = cleanStr(entry.title);
+    const cleanContent = cleanStr(entry.content);
+
+    if (cleanContent && !cleanContent.includes("פעולת אחזקה")) return cleanContent;
+    if (cleanTitle && !cleanTitle.includes("פעולת אחזקה")) return cleanTitle;
+    return cleanContent || cleanTitle || entry.content || entry.title || "פעולת אחזקה";
+  };
+
   // Open Completion Modal with automatic detection of task type (Locked for future tasks!)
   const openCompletionModal = (task: any) => {
     if (isTaskFuture(task)) {
@@ -1115,38 +1139,40 @@ export default function CalendarPage() {
                 </h4>
 
                 <div className="space-y-2">
-                  {dayEntries.map((e) => (
-                    <div key={e.id} className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3 sm:p-3.5 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h5 className="font-bold text-white text-xs sm:text-sm">{e.title}</h5>
-                        <button
-                          type="button"
-                          onClick={(evt) => {
-                            evt.stopPropagation();
-                            handleDeleteDiaryEntry(e.id);
-                          }}
-                          className="text-slate-500 hover:text-rose-400 p-1"
-                          title="מחק רשומה"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <p className="text-xs text-slate-300 whitespace-pre-wrap">{e.content}</p>
-                      {e.imageUrl && (
-                        <div className="pt-1">
-                          <img
-                            src={e.imageUrl}
-                            alt="תמונה מצורפת לרשומה"
+                  {dayEntries.map((e) => {
+                    const cleanText = getCleanDiaryDisplay(e);
+                    return (
+                      <div key={e.id} className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3 sm:p-3.5 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-bold text-white text-xs sm:text-sm leading-relaxed">{cleanText}</p>
+                          <button
+                            type="button"
                             onClick={(evt) => {
                               evt.stopPropagation();
-                              setPreviewEnlargeImage(e.imageUrl);
+                              handleDeleteDiaryEntry(e.id);
                             }}
-                            className="max-h-48 max-w-full rounded-xl object-contain border border-slate-800 hover:border-purple-500 cursor-pointer transition-all shadow-md hover:scale-[1.02]"
-                          />
+                            className="text-slate-500 hover:text-rose-400 p-1 shrink-0"
+                            title="מחק רשומה"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {e.imageUrl && (
+                          <div className="pt-1">
+                            <img
+                              src={e.imageUrl}
+                              alt="תמונה מצורפת לרשומה"
+                              onClick={(evt) => {
+                                evt.stopPropagation();
+                                setPreviewEnlargeImage(e.imageUrl);
+                              }}
+                              className="max-h-48 max-w-full rounded-xl object-contain border border-slate-800 hover:border-purple-500 cursor-pointer transition-all shadow-md hover:scale-[1.02]"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1479,10 +1505,10 @@ export default function CalendarPage() {
                         <div
                           key={e.id}
                           className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-purple-950/25 border border-purple-900/50 text-[10px] text-purple-300 flex items-center gap-1.5 truncate"
-                          title={e.title}
+                          title={getCleanDiaryDisplay(e)}
                         >
                           <BookOpen className="w-3 h-3 text-purple-400 shrink-0" />
-                          <span className="truncate">{e.title}</span>
+                          <span className="truncate">{getCleanDiaryDisplay(e)}</span>
                         </div>
                       ))}
 

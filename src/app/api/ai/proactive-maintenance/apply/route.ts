@@ -138,11 +138,11 @@ export async function POST(req: NextRequest) {
       else if (textLower.includes("30") || textLower.includes("שליש")) calculatedRefillPct = 30;
     }
 
-    let diaryTitle = suggestedDiaryTitle || `פעולת אחזקה יזומה: ${freeText.substring(0, 40)}...`;
-    let diaryContent = suggestedDiaryContent || freeText;
+    let diaryTitle = (suggestedDiaryTitle || freeText || "פעולת אחזקה").trim();
+    let diaryContent = (suggestedDiaryContent || freeText || "").trim();
     if (calculatedRefillPct > 0) {
-      diaryTitle = `החלפת מים חלקית (${calculatedRefillPct}%)`;
-      diaryContent = `בוצעה החלפת ${calculatedRefillPct}% ממי הג'קוזי במים טריים. ${diaryContent}`;
+      diaryTitle = `החלפת מים (${calculatedRefillPct}%)`;
+      diaryContent = `החלפת ${calculatedRefillPct}% ממי הג'קוזי במים טריים`;
     }
 
     const diaryEntry = await prisma.diaryEntry.create({

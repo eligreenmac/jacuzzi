@@ -1061,8 +1061,8 @@ ${JSON.stringify(req.currentTasks, null, 2)}
     }
   ],
   "newTasksToCreate": [],
-  "suggestedDiaryTitle": "פעולת אחזקה יזומה: ...",
-  "suggestedDiaryContent": "תיאור קצר ומדויק של מה שבוצע."
+  "suggestedDiaryTitle": "שם הפעולה הקצר והמדויק (ללא כותרות מיותרות)",
+  "suggestedDiaryContent": "תיאור הפעולה בלבד שבוצעה בצורה קצרה וברורה (ללא משפטים חוזרים וללא 'תועד ביומן')"
 }
 `;
 
@@ -1388,8 +1388,8 @@ function generateRuleBasedProactiveMaintenance(
     refillPercentage,
     scheduleShifts,
     newTasksToCreate,
-    suggestedDiaryTitle: `פעולת אחזקה יזומה: ${understanding}`,
-    suggestedDiaryContent: `בוצעה פעולה יזומה: ${req.freeText}. ${chemicalImpact}`,
+    suggestedDiaryTitle: understanding,
+    suggestedDiaryContent: req.freeText.trim(),
   };
 }
 
