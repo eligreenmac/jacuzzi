@@ -16,6 +16,7 @@ import {
   X,
   Activity,
   TrendingUp,
+  Sliders,
 } from "lucide-react";
 
 import {
@@ -244,6 +245,38 @@ export default function WaterTestsPage() {
     description: "",
     params: {},
   });
+
+  // Settings Modal State (In-Page Popup)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [tempParams, setTempParams] = useState<string[]>(DEFAULT_TEST_STRIP_PARAM_IDS);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  const openSettingsModal = () => {
+    setTempParams([...activeParams]);
+    setIsSettingsModalOpen(true);
+  };
+
+  const saveSettingsModal = async () => {
+    setSavingSettings(true);
+    try {
+      const res = await fetch("/api/jacuzzi", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ testStripParams: tempParams }),
+      });
+      if (!res.ok) {
+        throw new Error("שגיאה בשמירת הגדרות מקלון");
+      }
+      setActiveParams(tempParams);
+      setIsSettingsModalOpen(false);
+      setActionNotice("הגדרות מקלון הבדיקה נשמרו בהצלחה!");
+      setTimeout(() => setActionNotice(null), 4000);
+    } catch (err: any) {
+      alert(err.message || "שגיאה בשמירה");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   const loadTests = async () => {
     try {
@@ -483,12 +516,14 @@ export default function WaterTestsPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <Link
-            href="/settings"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs sm:text-sm transition-all"
+          <button
+            type="button"
+            onClick={openSettingsModal}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs sm:text-sm transition-all cursor-pointer select-none"
           >
-            <span>⚙️ הגדרות מקלון ({activeParams.length} פעילים)</span>
-          </Link>
+            <Sliders className="w-4 h-4 text-cyan-400" />
+            <span>הגדרות מקלון ({activeParams.length} פעילים)</span>
+          </button>
 
           <button
             onClick={() => {
@@ -804,13 +839,14 @@ export default function WaterTestsPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Link
-                  href="/settings"
-                  target="_blank"
-                  className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 transition-colors"
+                <button
+                  type="button"
+                  onClick={openSettingsModal}
+                  className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-700 transition-colors cursor-pointer select-none"
                 >
-                  <span>⚙️ הגדרות מקלון</span>
-                </Link>
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>הגדרות מקלון</span>
+                </button>
                 <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white p-1">
                   <X className="w-5 h-5" />
                 </button>
@@ -1161,6 +1197,149 @@ export default function WaterTestsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Test Strip Settings */}
+      {isSettingsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-cyan-950/80 border border-cyan-800/80 text-cyan-400">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">הגדרות מקלון בדיקה</h2>
+                  <p className="text-xs text-slate-400">סמן את המדדים הנמדדים במקלון או בערכת הבדיקה שלך</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick action buttons */}
+            <div className="flex items-center justify-between gap-3 flex-wrap bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
+              <span className="text-xs font-semibold text-cyan-300">
+                {tempParams.length} מדדים נבחרו מתוך {ALL_TEST_STRIP_PARAMS.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTempParams(ALL_TEST_STRIP_PARAMS.map((p) => p.id))}
+                  className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold rounded-xl border border-slate-700 transition-colors"
+                >
+                  בחר הכל ({ALL_TEST_STRIP_PARAMS.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTempParams(DEFAULT_TEST_STRIP_PARAM_IDS)}
+                  className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl border border-slate-700 transition-colors"
+                >
+                  ברירת מחדל ({DEFAULT_TEST_STRIP_PARAM_IDS.length} מדדים)
+                </button>
+              </div>
+            </div>
+
+            {/* Categorized List */}
+            <div className="space-y-6">
+              {PARAM_CATEGORIES.map((catName) => {
+                const catParams = ALL_TEST_STRIP_PARAMS.filter((p) => p.category === catName);
+                if (catParams.length === 0) return null;
+                const selectedCount = catParams.filter((p) => tempParams.includes(p.id)).length;
+
+                return (
+                  <div key={catName} className="space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                      <div className="text-xs font-bold text-cyan-300 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                        <span>{catName}</span>
+                      </div>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-semibold border border-slate-700">
+                        {selectedCount} / {catParams.length} פעילים
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {catParams.map((param) => {
+                        const isSelected = tempParams.includes(param.id);
+
+                        return (
+                          <div
+                            key={param.id}
+                            onClick={() => {
+                              setTempParams((prev) => {
+                                const next = prev.includes(param.id)
+                                  ? prev.filter((p) => p !== param.id)
+                                  : [...prev, param.id];
+                                if (next.length === 0) return prev;
+                                return next;
+                              });
+                            }}
+                            className={`p-3 rounded-2xl border cursor-pointer transition-all select-none flex items-start gap-3 ${
+                              isSelected
+                                ? "bg-cyan-950/30 border-cyan-500/60 shadow-sm"
+                                : "bg-slate-950/40 border-slate-800 hover:border-slate-700 opacity-60 hover:opacity-85"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="mt-0.5 w-4 h-4 accent-cyan-500 rounded cursor-pointer pointer-events-none"
+                            />
+                            <div className="space-y-0.5 flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1 flex-wrap">
+                                <span className={`font-bold text-xs ${isSelected ? "text-white" : "text-slate-400"}`}>
+                                  {param.nameHe} ({param.enName})
+                                </span>
+                                <span className="text-[10px] text-cyan-400 font-medium">{param.idealRange}</span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 leading-tight line-clamp-2">
+                                {param.description}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="px-4 py-2 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                onClick={saveSettingsModal}
+                disabled={savingSettings}
+                className="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow flex items-center gap-2 transition-all cursor-pointer select-none"
+              >
+                {savingSettings ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>שומר הגדרות...</span>
+                  </>
+                ) : (
+                  <span>שמור הגדרות מקלון</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

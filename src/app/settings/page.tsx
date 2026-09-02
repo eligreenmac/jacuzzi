@@ -90,9 +90,6 @@ export default function SettingsPage() {
   }, []);
 
   const handleClose = () => {
-    try {
-      window.close();
-    } catch {}
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
     } else {
@@ -118,10 +115,10 @@ export default function SettingsPage() {
         throw new Error(d.error || "שגיאה בשמירת הגדרות");
       }
 
-      setSuccessMsg("ההגדרות עודכנו בהצלחה! סוגר חלון...");
+      setSuccessMsg("ההגדרות עודכנו בהצלחה!");
       setTimeout(() => {
         handleClose();
-      }, 500);
+      }, 700);
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
