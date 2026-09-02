@@ -503,8 +503,34 @@ export default function CalendarPage() {
       (t) => t.isCompleted && !isPurchaseItem(t) && t.lastDoneDate && isSameDay(new Date(t.lastDoneDate), date)
     );
     const dayEntries = entries.filter(
-      (e) => !isPurchaseItem(e) && isSameDay(new Date(e.entryDate), date)
+      (e) => !isPurchaseItem(e) && isSameDay(new Date(e.entryDate || e.createdAt), date)
     );
+
+    // Also include chemical additions that occurred on this day
+    chemicals.forEach((c) => {
+      if (c.lastUsedDate && isSameDay(new Date(c.lastUsedDate), date)) {
+        const unitLabel = c.unit === "GRAMS" ? 'גר\'' : c.unit === "ML" ? 'מ"ל' : c.unit === "TABLETS" ? "טבליות" : c.unit;
+        const amountStr = c.lastUsedAmount ? `${c.lastUsedAmount} ${unitLabel}` : "";
+        const entryText = `הוספת ${amountStr ? amountStr + " " : ""}${c.name}`;
+
+        const alreadyExists = dayEntries.some((e) => {
+          const t = `${e.title || ""} ${e.content || ""}`.toLowerCase();
+          return t.includes(c.name.toLowerCase()) || (c.name.length > 5 && t.includes(c.name.slice(0, 8).toLowerCase()));
+        });
+
+        if (!alreadyExists) {
+          dayEntries.push({
+            id: `chem-used-${c.id}-${date.getTime()}`,
+            title: entryText,
+            content: entryText,
+            entryDate: c.lastUsedDate,
+            isChemicalAddition: true,
+            chemicalId: c.id,
+          });
+        }
+      }
+    });
+
     const dayWaterLogs = waterLogs.filter((w) => isSameDay(new Date(w.testedAt), date));
 
     return { dayTasks, doneTasks, dayEntries, dayWaterLogs };
@@ -812,7 +838,18 @@ export default function CalendarPage() {
   const handleDeleteDiaryEntry = async (id: string) => {
     if (!confirm("האם למחוק רשומה זו מהיומן?")) return;
     try {
-      await fetch(`/api/log?id=${id}`, { method: "DELETE" });
+      if (id.startsWith("chem-used-")) {
+        const chemId = id.split("-")[2];
+        if (chemId) {
+          await fetch("/api/chemicals", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: chemId, lastUsedDate: null, lastUsedAmount: null }),
+          });
+        }
+      } else {
+        await fetch(`/api/log?id=${id}`, { method: "DELETE" });
+      }
       loadData();
     } catch (err) {
       console.error(err);
