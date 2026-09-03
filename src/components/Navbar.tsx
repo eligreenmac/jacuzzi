@@ -59,6 +59,15 @@ export default function Navbar() {
                   👤 {user.name || user.email}
                 </span>
 
+                {/* 📦 ארון חומרים ומלאי */}
+                <Link
+                  href="/inventory"
+                  className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 text-sky-300 hover:text-white bg-sky-950/80 hover:bg-sky-900 border border-sky-800/70 rounded-xl transition-all shadow-sm"
+                  title="ארון חומרים ומלאי"
+                >
+                  <Package className="w-4 h-4" />
+                </Link>
+
                 {/* ⚙️ הגדרות הג'קוזי (גלגל שיניים בלבד) */}
                 <Link
                   href="/settings"

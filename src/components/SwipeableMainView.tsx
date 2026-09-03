@@ -46,7 +46,6 @@ export const CARD_TABS = [
   { id: "status", title: "סטטוס", subtitle: "משימות ל-7 ימים, איכות מים, סכנות והזמנת חומרים", icon: Activity },
   { id: "water-maintenance", title: "תחזוקת מים", subtitle: "הגדרות מקלון, מצב איכות מים, שגרת טיפולים ותוספות חומרים", icon: Droplets },
   { id: "jacuzzi-maintenance", title: "תחזוקת מתקן", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה, צנרת והחלפת פילטר", icon: Wrench },
-  { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר ופירוט מלאי חומרי טיפול", icon: Package },
   { id: "water-doctor", title: "רופא מים AI", subtitle: "אבחון מים מבוסס AI וחישוב מינונים", icon: Sparkles },
 ];
 
@@ -1301,7 +1300,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             {/* Footer */}
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">1 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">1 מתוך 4 ◂</span>
             </div>
           </div>
         );
@@ -1741,7 +1740,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             {/* Footer */}
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">2 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">2 מתוך 4 ◂</span>
             </div>
           </div>
         );
@@ -2000,147 +1999,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">3 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">3 מתוך 4 ◂</span>
             </div>
           </div>
         );
 
       // -------------------------------------------------------------
-      // CARD 3: ארון חומרים ומלאי (כולל פירוט מלא של החומרים בארון)
+      // CARD 3: רופא מים AI
       // -------------------------------------------------------------
       case 3:
-        return (
-          <div
-            onClick={() => setOpenPageId("inventory")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
-          >
-            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
-                  <Package className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
-                    ארון חומרים ומלאי
-                  </h2>
-                  <p className="text-xs text-slate-300">
-                    סך הכל <strong className="text-white">{chemicals.length} חומרים בארון</strong> • {lowStockChems.length > 0 ? <span className="text-rose-400 font-bold">{lowStockChems.length} בהתראת חוסר</span> : <span className="text-emerald-300">כל המלאי תקין ✓</span>}
-                  </p>
-                </div>
-              </div>
-
-              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
-                <span>פתח ארון חומרים</span>
-                <ArrowLeft className="w-4 h-4" />
-              </span>
-            </div>
-
-            {/* Quick Summary Strip */}
-            <div className="grid grid-cols-2 gap-3">
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenPageId("inventory");
-                }}
-                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all text-center space-y-0.5 cursor-pointer"
-              >
-                <span className="text-[10px] text-slate-400">סך הכל חומרים</span>
-                <div className="text-lg font-black text-white">{chemicals.length} פריטים</div>
-                <span className="text-[9px] text-sky-300/80">בארון החומרים</span>
-              </div>
-
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenPageId("inventory");
-                }}
-                className={`p-3 rounded-2xl border transition-all text-center space-y-0.5 cursor-pointer ${
-                  lowStockChems.length > 0
-                    ? "bg-rose-950/30 border-rose-900/50 hover:border-rose-500/60 text-rose-300"
-                    : "bg-[#080e14]/90 border-sky-900/30 hover:border-sky-500/60 text-emerald-300"
-                }`}
-              >
-                <span className="text-[10px] text-slate-400">התראות חוסר</span>
-                <div className="text-lg font-black text-white">{lowStockChems.length} פריטים</div>
-                <span className="text-[9px]">{lowStockChems.length > 0 ? "נדרשת רכישה ⚠️" : "מלאי מספק ✓"}</span>
-              </div>
-            </div>
-
-            {/* 🌟 רשימת פירוט החומרים שבארון */}
-            <div className="space-y-2 pt-1 border-t border-sky-900/20">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-white flex items-center gap-1.5">
-                  <Package className="w-3.5 h-3.5 text-sky-400" />
-                  <span>פירוט החומרים בארון:</span>
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  {chemicals.length} חומרים רשומים
-                </span>
-              </div>
-
-              {chemicals.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-0.5">
-                  {chemicals.map((chem: any) => {
-                    const isLow = (chem.quantity || 0) <= (chem.minThreshold || 100);
-                    return (
-                      <div
-                        key={chem.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenPageId("inventory");
-                        }}
-                        className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all flex items-center justify-between gap-3 cursor-pointer group/chem"
-                      >
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-white text-xs truncate group-hover/chem:text-sky-300 transition-colors">
-                              {chem.name}
-                            </span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-sky-950 text-sky-300 border border-sky-800/60 shrink-0 font-medium">
-                              {formatChemCategory(chem.category)}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                            {chem.brand && <span className="truncate">{chem.brand} •</span>}
-                            <span>סף מינימום: {chem.minThreshold || 100} {formatChemUnit(chem.unit)}</span>
-                          </div>
-                        </div>
-
-                        <div className="text-left shrink-0 space-y-0.5">
-                          <div className="text-xs sm:text-sm font-black text-white">
-                            {chem.quantity} <span className="text-[10px] font-normal text-slate-300">{formatChemUnit(chem.unit)}</span>
-                          </div>
-                          {isLow ? (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-950/80 text-rose-300 border border-rose-800/70 inline-block">
-                              חוסר ⚠️
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 inline-block">
-                              תקין ✓
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-[11px] text-slate-400 text-center py-4 bg-[#080e14]/60 rounded-2xl border border-sky-900/20">
-                  לא קיימים חומרים בארון • לחץ כאן להוספת חומר ראשון או צילום חומר
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">4 מתוך 5 ◂</span>
-            </div>
-          </div>
-        );
-
-      // -------------------------------------------------------------
-      // CARD 4: רופא מים AI
-      // -------------------------------------------------------------
-      case 4:
       default:
         return (
           <div
@@ -2195,7 +2062,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             <div className="flex items-center justify-end text-xs text-slate-400 pt-2">
-              <span className="text-sky-300 font-bold">5 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">4 מתוך 4 ◂</span>
             </div>
           </div>
         );
