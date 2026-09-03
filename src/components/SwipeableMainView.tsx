@@ -590,36 +590,34 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto py-2">
-      {/* 🌟 Top Navigation Pill Indicators & Arrows */}
-      <div className="flex items-center justify-between gap-2 bg-slate-900/90 backdrop-blur-md p-2 rounded-2xl border border-slate-800 shadow-md">
+      {/* 🌟 Top Navigation: Pagination Dots (Active is wider/fatter) & Arrows */}
+      <div className="flex items-center justify-between gap-4 bg-slate-900/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-800 shadow-md max-w-md mx-auto">
         <button
           type="button"
           onClick={prevCard}
-          className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-cyan-300 transition-all shrink-0 cursor-pointer shadow-sm"
+          className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-cyan-300 transition-all shrink-0 cursor-pointer shadow-sm"
           title="העבר ימינה (קודם)"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-4 h-4" />
         </button>
 
-        {/* Indicator dots / tabs */}
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1 no-scrollbar">
+        {/* Pagination Dots Indicator */}
+        <div className="flex items-center justify-center gap-2 flex-1" dir="rtl">
           {CARD_TABS.map((card, idx) => {
-            const Icon = card.icon;
             const isActive = idx === currentIndex;
             return (
               <button
                 key={card.id}
                 type="button"
                 onClick={() => goToCard(idx)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 border cursor-pointer select-none ${
+                className={`transition-all duration-300 cursor-pointer rounded-full ${
                   isActive
-                    ? `${card.badgeBg} shadow-md scale-105`
-                    : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200"
+                    ? "w-8 h-2.5 bg-gradient-to-r from-cyan-400 to-sky-400 shadow-md shadow-cyan-500/40"
+                    : "w-2.5 h-2.5 bg-slate-700/90 hover:bg-slate-500 hover:scale-125"
                 }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? card.color : "text-slate-500"}`} />
-                <span className="hidden sm:inline">{card.title}</span>
-              </button>
+                title={card.title}
+                aria-label={card.title}
+              />
             );
           })}
         </div>
@@ -627,10 +625,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         <button
           type="button"
           onClick={nextCard}
-          className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-cyan-300 transition-all shrink-0 cursor-pointer shadow-sm"
+          className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-cyan-300 transition-all shrink-0 cursor-pointer shadow-sm"
           title="העבר שמאלה (הבא)"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4" />
         </button>
       </div>
 
