@@ -23,6 +23,8 @@ import {
   History,
   ShieldCheck,
   Wrench,
+  ShieldAlert,
+  CalendarDays,
 } from "lucide-react";
 
 import WaterTestsPage from "@/app/water-tests/page";
@@ -34,8 +36,8 @@ import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARA
 
 export const CARD_TABS = [
   { id: "water-tests", title: "מצב איכות המים", subtitle: "בדיקת מקלון אחרונה, איזון ומדדים", icon: FlaskConical },
-  { id: "water-maintenance", title: "תחזוקת מים וגיל המים", subtitle: "גיל המים, ריקון מלא, ריענון וטיפול שוק", icon: Droplets },
-  { id: "jacuzzi-maintenance", title: "תחזוקת הג'קוזי", subtitle: "שטיפת פילטר, ניקוי דפנות וחיטוי צנרת", icon: Wrench },
+  { id: "water-maintenance", title: "תחזוקת מים וגיל המים", subtitle: "בדיקות, חיטוי שבועי, ריענון וריקון מלא", icon: Droplets },
+  { id: "jacuzzi-maintenance", title: "תחזוקת הג'קוזי", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה וצנרת", icon: Wrench },
   { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר וחומרים חיוניים", icon: Package },
   { id: "water-doctor", title: "רופא מים AI", subtitle: "אבחון מים מבוסס AI וחישוב מינונים", icon: Sparkles },
   { id: "settings", title: "הגדרות הג'קוזי והמקלון", subtitle: "נפח, סוג חיטוי ומדדים פעילים", icon: Settings },
@@ -307,16 +309,124 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const waterLogs = data?.waterLogs || [];
   const latestWaterLog = waterLogs.length > 0 ? waterLogs[0] : null;
 
-  // Water Age & Refill calculations
-  const refillDate = jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : new Date();
-  const daysSinceRefill = Math.max(0, Math.floor((Date.now() - refillDate.getTime()) / (1000 * 60 * 60 * 24)));
-  const daysUntilNextRefill = Math.max(0, 90 - daysSinceRefill);
+  // Date formatters and relative day helpers
+  const formatDateDisplay = (date: Date | string | null | undefined) => {
+    if (!date) return "טרם תועד";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "טרם תועד";
+    return d.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  };
 
-  // Active Pending Tasks
+  const getRelativeDaysDisplay = (targetDate: Date | string | null | undefined, isPast: boolean) => {
+    if (!targetDate) return "";
+    const d = new Date(targetDate);
+    if (isNaN(d.getTime())) return "";
+    const diffDays = Math.round((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+    if (isPast) {
+      const daysAgo = Math.max(0, -diffDays);
+      if (daysAgo === 0) return "(היום)";
+      if (daysAgo === 1) return "(אתמול)";
+      return `(לפני ${daysAgo} ימים)`;
+    } else {
+      if (diffDays < 0) return "(באיחור!)";
+      if (diffDays === 0) return "(היום!)";
+      if (diffDays === 1) return "(מחר)";
+      return `(בעוד ${diffDays} ימים)`;
+    }
+  };
+
+  // 1. Water Test Dates
+  const lastWaterTestDate = latestWaterLog?.testedAt ? new Date(latestWaterLog.testedAt) : null;
+  const nextWaterTestDate = lastWaterTestDate
+    ? new Date(lastWaterTestDate.getTime() + 3 * 24 * 3600 * 1000)
+    : new Date();
+
+  // 2. Sanitizer / Shock Treatment Dates
+  const sanitizerTask = tasks.find((t: any) =>
+    t.title?.includes("חיטוי") || t.title?.includes("שוק") || t.title?.includes("ברום") || t.title?.includes("כלור") || t.title?.includes("הלכרה")
+  );
+  const sanitizerChem = chemicals.find((c: any) =>
+    c.category === "SANITIZER" || c.name?.includes("כלור") || c.name?.includes("ברום")
+  );
+  const lastSanitizerDate = sanitizerTask?.lastDoneDate
+    ? new Date(sanitizerTask.lastDoneDate)
+    : sanitizerChem?.lastUsedDate
+    ? new Date(sanitizerChem.lastUsedDate)
+    : null;
+  const nextSanitizerDate = sanitizerTask?.nextDueDate
+    ? new Date(sanitizerTask.nextDueDate)
+    : lastSanitizerDate
+    ? new Date(lastSanitizerDate.getTime() + 7 * 24 * 3600 * 1000)
+    : new Date(Date.now() + 2 * 24 * 3600 * 1000);
+
+  // 3. Partial Refill Dates
+  const partialDiary = data?.diaryEntries?.find((d: any) => {
+    const t = `${d.title || ""} ${d.content || ""}`.toLowerCase();
+    return (t.includes("החלפ") || t.includes("ריענון") || t.includes("חלקית")) && t.includes("מים") && !t.includes("100%");
+  });
+  const lastPartialRefillDate = partialDiary ? new Date(partialDiary.entryDate || partialDiary.createdAt) : null;
+  const nextPartialRefillDate = lastPartialRefillDate
+    ? new Date(lastPartialRefillDate.getTime() + 30 * 24 * 3600 * 1000)
+    : new Date(Date.now() + 14 * 24 * 3600 * 1000);
+
+  // 4. Full Refill Dates
+  const lastFullRefillDate = jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : new Date();
+  const daysSinceRefill = Math.max(0, Math.floor((Date.now() - lastFullRefillDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const daysUntilNextRefill = Math.max(0, 90 - daysSinceRefill);
+  const nextFullRefillDate = new Date(lastFullRefillDate.getTime() + 90 * 24 * 3600 * 1000);
+
+  // 5. Weekly Filter Rinse Dates
+  const filterRinseTask = tasks.find((t: any) =>
+    t.title?.includes("שטיפת פילטר") || (t.title?.includes("פילטר") && !t.title?.includes("השרי") && !t.title?.includes("החלפ"))
+  );
+  const lastFilterRinseDate = filterRinseTask?.lastDoneDate ? new Date(filterRinseTask.lastDoneDate) : null;
+  const nextFilterRinseDate = filterRinseTask?.nextDueDate
+    ? new Date(filterRinseTask.nextDueDate)
+    : lastFilterRinseDate
+    ? new Date(lastFilterRinseDate.getTime() + 7 * 24 * 3600 * 1000)
+    : new Date(Date.now() + 7 * 24 * 3600 * 1000);
+
+  // 6. Waterline & Shell Cleaning Dates
+  const waterlineTask = tasks.find((t: any) =>
+    t.title?.includes("קו מים") || t.title?.includes("דפנ") || t.title?.includes("דופן")
+  );
+  const lastWaterlineDate = waterlineTask?.lastDoneDate ? new Date(waterlineTask.lastDoneDate) : null;
+  const nextWaterlineDate = waterlineTask?.nextDueDate
+    ? new Date(waterlineTask.nextDueDate)
+    : lastWaterlineDate
+    ? new Date(lastWaterlineDate.getTime() + 14 * 24 * 3600 * 1000)
+    : new Date(Date.now() + 14 * 24 * 3600 * 1000);
+
+  // 7. Cover Cleaning Dates (ניקוי וטיפול במכסה הג'קוזי)
+  const coverTask = tasks.find((t: any) =>
+    t.title?.includes("כיסוי") || t.title?.includes("מכסה")
+  );
+  const lastCoverDate = coverTask?.lastDoneDate ? new Date(coverTask.lastDoneDate) : null;
+  const nextCoverDate = coverTask?.nextDueDate
+    ? new Date(coverTask.nextDueDate)
+    : lastCoverDate
+    ? new Date(lastCoverDate.getTime() + 30 * 24 * 3600 * 1000)
+    : new Date(Date.now() + 21 * 24 * 3600 * 1000);
+
+  // 8. Monthly Filter Soak / Deep Pipe Flush Dates
+  const deepCleanTask = tasks.find((t: any) =>
+    t.title?.includes("השרי") || t.title?.includes("צנרת") || t.title?.includes("פלאש")
+  );
+  const lastDeepCleanDate = deepCleanTask?.lastDoneDate
+    ? new Date(deepCleanTask.lastDoneDate)
+    : jacuzzi?.lastDeepCleanDate
+    ? new Date(jacuzzi.lastDeepCleanDate)
+    : null;
+  const nextDeepCleanDate = deepCleanTask?.nextDueDate
+    ? new Date(deepCleanTask.nextDueDate)
+    : lastDeepCleanDate
+    ? new Date(lastDeepCleanDate.getTime() + 30 * 24 * 3600 * 1000)
+    : new Date(Date.now() + 30 * 24 * 3600 * 1000);
+
+  // Active Pending Tasks & Low Stock Chemicals
   const pendingTasks = tasks.filter((t: any) => !t.isCompleted);
   const overdueTasks = pendingTasks.filter((t: any) => new Date(t.nextDueDate).getTime() < Date.now());
-
-  // Low Stock Chemicals
   const lowStockChems = chemicals.filter((c: any) => (c.quantity || 0) <= (c.minThreshold || 100));
 
   // Extract short English labels for active test strip params
@@ -406,13 +516,13 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         );
 
       // -------------------------------------------------------------
-      // CARD 1: תחזוקת מים וגיל המים
+      // CARD 1: תחזוקת מים וגיל המים (כל טיפול כולל תאריך אחרון והבא)
       // -------------------------------------------------------------
       case 1:
         return (
           <div
             onClick={() => setOpenPageId("water-maintenance")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
             <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
@@ -424,7 +534,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     תחזוקת מים וגיל המים
                   </h2>
                   <p className="text-xs text-slate-300">
-                    גיל המים: {daysSinceRefill} ימים • ריקון מלא מתוכנן בעוד {daysUntilNextRefill} יום
+                    גיל המים הנוכחי: <strong className="text-white">{daysSinceRefill} ימים</strong> • ריקון מלא בעוד {daysUntilNextRefill} יום
                   </p>
                 </div>
               </div>
@@ -435,27 +545,110 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
-                <span className="text-[11px] text-slate-400">גיל המים הנוכחי</span>
-                <div className="text-lg font-black text-white">{daysSinceRefill} ימים</div>
-                <span className="text-[10px] text-sky-300/80">מילוי מלא / משוקלל</span>
+            {/* List of 4 Specific Water Treatments with Both Last & Next Dates */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Item 1: בדיקת איכות מים */}
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
+                    <FlaskConical className="w-3.5 h-3.5 text-sky-400" />
+                    <span>בדיקת איכות מים (מקלון)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60">
+                    כל 2-3 ימים
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastWaterTestDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastWaterTestDate, true)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextWaterTestDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextWaterTestDate, false)}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
-                <span className="text-[11px] text-slate-400">מועד ריקון מלא</span>
-                <div className="text-lg font-black text-white">בעוד {daysUntilNextRefill} יום</div>
-                <span className="text-[10px] text-sky-300/80">מחזור של 90 יום</span>
+              {/* Item 2: חיטוי שבועי / טיפול שוק */}
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                    <span>חיטוי שבועי / טיפול שוק</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60">
+                    כל 7 ימים
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastSanitizerDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastSanitizerDate, true)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextSanitizerDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextSanitizerDate, false)}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1 col-span-2 sm:col-span-1">
-                <span className="text-[11px] text-slate-400">ריענון מים חלקי</span>
-                <div className="text-lg font-black text-white">החלפת 25%</div>
-                <span className="text-[10px] text-sky-300/80">להורדת עומס מומסים (TDS)</span>
+              {/* Item 3: ריענון מים חלקי (25%) */}
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
+                    <Waves className="w-3.5 h-3.5 text-sky-400" />
+                    <span>החלפת מים חלקית (25%)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60">
+                    חודשי (TDS)
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastPartialRefillDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastPartialRefillDate, true)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextPartialRefillDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextPartialRefillDate, false)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Item 4: ריקון מים מלא (100%) */}
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
+                    <CalendarDays className="w-3.5 h-3.5 text-sky-400" />
+                    <span>ריקון ומילוי מים מלא (100%)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60">
+                    כל 90 ימים
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">מילוי אחרון:</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastFullRefillDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastFullRefillDate, true)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">ריקון הבא:</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextFullRefillDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextFullRefillDate, false)}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
+            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
               <span>💡 לחץ לפתיחת יומן הטיפולים ותיעוד החלפות מים וריענון</span>
               <span className="text-sky-300 font-bold">2 מתוך 6 ◂</span>
             </div>
@@ -463,13 +656,13 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         );
 
       // -------------------------------------------------------------
-      // CARD 2: תחזוקת הג'קוזי
+      // CARD 2: תחזוקת הג'קוזי (כל פעולה כוללת תאריך אחרון והבא)
       // -------------------------------------------------------------
       case 2:
         return (
           <div
             onClick={() => setOpenPageId("jacuzzi-maintenance")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
             <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
@@ -481,7 +674,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     תחזוקת הג'קוזי
                   </h2>
                   <p className="text-xs text-slate-300">
-                    שטיפת פילטרים, ניקוי דפנות, שטיפת צנרת וטיפולים תקופתיים
+                    שטיפת פילטרים, ניקוי דפנות, מכסה וצנרת הג'קוזי
                   </p>
                 </div>
               </div>
@@ -492,27 +685,110 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
-                <span className="text-[11px] text-slate-400">שטיפת פילטר שבועית</span>
-                <div className="text-lg font-black text-white">כל 7 ימים</div>
-                <span className="text-[10px] text-sky-300/80">שמירה על סירקולציה</span>
+            {/* List of 4 Specific Jacuzzi Equipment Actions with Both Last & Next Dates */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Item 1: שטיפת פילטר שבועית */}
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 text-sky-400" />
+                    <span>שטיפת פילטר שבועית בזרם</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60">
+                    כל 7 ימים
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastFilterRinseDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastFilterRinseDate, true)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextFilterRinseDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextFilterRinseDate, false)}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
-                <span className="text-[11px] text-slate-400">ניקוי קו מים ודפנות</span>
-                <div className="text-lg font-black text-white">כל 14 יום</div>
-                <span className="text-[10px] text-sky-300/80">הסרת טבעת שומנים</span>
+              {/* Item 2: ניקוי קו מים ודפנות */}
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
+                    <Waves className="w-3.5 h-3.5 text-sky-400" />
+                    <span>ניקוי קו מים ודפנות הג'קוזי</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60">
+                    כל 14 יום
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastWaterlineDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastWaterlineDate, true)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextWaterlineDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextWaterlineDate, false)}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1 col-span-2 sm:col-span-1">
-                <span className="text-[11px] text-slate-400">שטיפת צנרת (Line Flush)</span>
-                <div className="text-lg font-black text-white">לפני ריקון</div>
-                <span className="text-[10px] text-sky-300/80">הסרת ביופילם בצנרת</span>
+              {/* Item 3: ניקוי וטיפול במכסה הג'קוזי (חדש לפי בקשת המשתמש) */}
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                    <span>ניקוי וטיפול במכסה הג'קוזי</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60">
+                    כל 30 יום
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastCoverDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastCoverDate, true)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextCoverDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextCoverDate, false)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Item 4: השרית פילטר / שטיפת צנרת (Line Flush) */}
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
+                    <Wrench className="w-3.5 h-3.5 text-sky-400" />
+                    <span>השרית פילטר / שטיפת צנרת</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60">
+                    כל 30 יום / לפני ריקון
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastDeepCleanDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastDeepCleanDate, true)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextDeepCleanDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextDeepCleanDate, false)}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
+            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
               <span>💡 לחץ לפתיחת יומן הפעולות ותיעוד שטיפות וטיפולי ג'קוזי</span>
               <span className="text-sky-300 font-bold">3 מתוך 6 ◂</span>
             </div>
@@ -689,7 +965,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             </div>
 
-            {/* 🌟 Active Test Strip Parameters Chip List (Short English Names) */}
+            {/* Active Test Strip Parameters Chip List */}
             <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-white flex items-center gap-1.5">
@@ -726,7 +1002,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto py-2">
-      {/* 🌟 Top Navigation: Pagination Dots (dir="ltr" for exact direction alignment, active dot is a larger circle) & Arrows */}
+      {/* 🌟 Top Navigation: Pagination Dots & Arrows */}
       <div className="flex items-center justify-between gap-4 bg-[#0e1823]/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-sky-900/40 shadow-md max-w-xs mx-auto">
         <button
           type="button"
