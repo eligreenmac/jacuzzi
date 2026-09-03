@@ -741,6 +741,141 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     return paramId.toUpperCase();
   };
 
+  // Compute Health & Equipment Dangers of Abnormal Test Parameters
+  const calculateLatestAbnormalRisks = (test: any) => {
+    if (!test) return [];
+    const risks: Array<{ name: string; statusLabel: string; risk: string }> = [];
+
+    // 1. Check pH
+    const phVal = test.ph ? parseFloat(test.ph) : null;
+    const phRange = test.phRange || "";
+    const phDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === "ph");
+    if (phDef) {
+      if (phVal !== null) {
+        if (phVal < 7.2) {
+          risks.push({
+            name: "חומציות (pH)",
+            statusLabel: phVal < 6.8 ? "חומצי מאוד" : "חומצי / נמוך",
+            risk: phDef.dangerLow,
+          });
+        } else if (phVal > 7.6) {
+          risks.push({
+            name: "חומציות (pH)",
+            statusLabel: phVal > 8.0 ? "בסיסי מאוד" : "בסיסי / גבוה",
+            risk: phDef.dangerHigh,
+          });
+        }
+      } else if (phRange) {
+        if (phRange.includes("LOW") || phRange.includes("נמוך") || phRange.includes("חומצי")) {
+          risks.push({
+            name: "חומציות (pH)",
+            statusLabel: "חומצי / נמוך",
+            risk: phDef.dangerLow,
+          });
+        } else if (phRange.includes("HIGH") || phRange.includes("גבוה") || phRange.includes("בסיסי")) {
+          risks.push({
+            name: "חומציות (pH)",
+            statusLabel: "בסיסי / גבוה",
+            risk: phDef.dangerHigh,
+          });
+        }
+      }
+    }
+
+    // 2. Check Chlorine / Sanitizer
+    const clVal = test.freeChlorine ? parseFloat(test.freeChlorine) : test.totalChlorine ? parseFloat(test.totalChlorine) : null;
+    const clRange = test.chlorineRange || "";
+    const clDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === "chlorine");
+    if (clDef) {
+      if (clVal !== null) {
+        if (clVal < 2.0) {
+          risks.push({
+            name: "כלור / חומר חיטוי",
+            statusLabel: clVal < 0.5 ? "ללא חיטוי" : "חיטוי נמוך",
+            risk: clDef.dangerLow,
+          });
+        } else if (clVal > 4.0) {
+          risks.push({
+            name: "כלור / חומר חיטוי",
+            statusLabel: clVal > 8.0 ? "עודף חמור / שוק" : "גבוה מהרצוי",
+            risk: clDef.dangerHigh,
+          });
+        }
+      } else if (clRange) {
+        if (clRange.includes("LOW") || clRange.includes("נמוך") || clRange.includes("ללא")) {
+          risks.push({
+            name: "כלור / חומר חיטוי",
+            statusLabel: "חיטוי נמוך",
+            risk: clDef.dangerLow,
+          });
+        } else if (clRange.includes("HIGH") || clRange.includes("גבוה") || clRange.includes("שוק")) {
+          risks.push({
+            name: "כלור / חומר חיטוי",
+            statusLabel: "גבוה מהרצוי",
+            risk: clDef.dangerHigh,
+          });
+        }
+      }
+    }
+
+    // 3. Check Total Alkalinity (TA)
+    const taVal = test.alkalinity ? parseFloat(test.alkalinity) : null;
+    const taRange = test.alkalinityRange || "";
+    const taDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === "alkalinity");
+    if (taDef) {
+      if (taVal !== null) {
+        if (taVal < 80) {
+          risks.push({
+            name: "בסיסיות כוללת (TA)",
+            statusLabel: taVal < 40 ? "נמוכה מאוד" : "נמוכה",
+            risk: taDef.dangerLow,
+          });
+        } else if (taVal > 120) {
+          risks.push({
+            name: "בסיסיות כוללת (TA)",
+            statusLabel: taVal > 180 ? "גבוהה מאוד" : "גבוהה",
+            risk: taDef.dangerHigh,
+          });
+        }
+      } else if (taRange) {
+        if (taRange.includes("LOW") || taRange.includes("נמוך") || taRange.includes("נמוכה")) {
+          risks.push({
+            name: "בסיסיות כוללת (TA)",
+            statusLabel: "נמוכה",
+            risk: taDef.dangerLow,
+          });
+        } else if (taRange.includes("HIGH") || taRange.includes("גבוה") || taRange.includes("גבוהה")) {
+          risks.push({
+            name: "בסיסיות כוללת (TA)",
+            statusLabel: "גבוהה",
+            risk: taDef.dangerHigh,
+          });
+        }
+      }
+    }
+
+    // 4. Check Water Clarity
+    const clarityDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === "clarity");
+    if (clarityDef && test.waterClarity && test.waterClarity !== "CLEAR") {
+      const labelMap: Record<string, string> = {
+        SLIGHTLY_CLOUDY: "עכירות קלה",
+        CLOUDY: "עכורים",
+        FOAMY: "קצף במים",
+        ALGAE: "ירוקת / אצות",
+        BAD_SMELL: "ריח חריף",
+      };
+      risks.push({
+        name: `צלילות ומראה (${labelMap[test.waterClarity] || test.waterClarity})`,
+        statusLabel: "נדרש טיפול",
+        risk: clarityDef.dangerLow,
+      });
+    }
+
+    return risks;
+  };
+
+  const latestAbnormalRisks = calculateLatestAbnormalRisks(latestWaterLog);
+
   // Harmonized Card Render (Unified Serene Blue & White Palette)
   const renderCard = (cardIdx: number) => {
     switch (cardIdx) {
@@ -777,57 +912,95 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             {latestWaterLog ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenPageId("water-tests");
-                  }}
-                  className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                >
-                  <span className="text-[11px] text-slate-400">חומציות (pH)</span>
-                  <div className="text-lg font-black text-white">{latestWaterLog.ph || latestWaterLog.phRange || "7.4"}</div>
-                  <span className="text-[10px] text-sky-300/80">יעד: 7.2 - 7.6</span>
-                </div>
-
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenPageId("water-tests");
-                  }}
-                  className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                >
-                  <span className="text-[11px] text-slate-400">כלור / חיטוי</span>
-                  <div className="text-lg font-black text-white">{latestWaterLog.freeChlorine || latestWaterLog.chlorineRange || "3.0"}</div>
-                  <span className="text-[10px] text-sky-300/80">יעד: 2.0 - 4.0 ppm</span>
-                </div>
-
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenPageId("water-tests");
-                  }}
-                  className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                >
-                  <span className="text-[11px] text-slate-400">בסיסיות כוללת (TA)</span>
-                  <div className="text-lg font-black text-white">{latestWaterLog.alkalinity || latestWaterLog.alkalinityRange || "90"}</div>
-                  <span className="text-[10px] text-sky-300/80">יעד: 80 - 120 ppm</span>
-                </div>
-
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenPageId("water-tests");
-                  }}
-                  className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                >
-                  <span className="text-[11px] text-slate-400">צלילות ומראה</span>
-                  <div className="text-lg font-black text-white">
-                    {latestWaterLog.waterClarity === "CLEAR" ? "צלול ונקי" : "נדרש טיפול"}
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenPageId("water-tests");
+                    }}
+                    className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                  >
+                    <span className="text-[11px] text-slate-400">חומציות (pH)</span>
+                    <div className="text-lg font-black text-white">{latestWaterLog.ph || latestWaterLog.phRange || "7.4"}</div>
+                    <span className="text-[10px] text-sky-300/80">יעד: 7.2 - 7.6</span>
                   </div>
-                  <span className="text-[10px] text-sky-300/80">בדיקה ויזואלית</span>
+
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenPageId("water-tests");
+                    }}
+                    className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                  >
+                    <span className="text-[11px] text-slate-400">כלור / חיטוי</span>
+                    <div className="text-lg font-black text-white">{latestWaterLog.freeChlorine || latestWaterLog.chlorineRange || "3.0"}</div>
+                    <span className="text-[10px] text-sky-300/80">יעד: 2.0 - 4.0 ppm</span>
+                  </div>
+
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenPageId("water-tests");
+                    }}
+                    className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                  >
+                    <span className="text-[11px] text-slate-400">בסיסיות כוללת (TA)</span>
+                    <div className="text-lg font-black text-white">{latestWaterLog.alkalinity || latestWaterLog.alkalinityRange || "90"}</div>
+                    <span className="text-[10px] text-sky-300/80">יעד: 80 - 120 ppm</span>
+                  </div>
+
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenPageId("water-tests");
+                    }}
+                    className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                  >
+                    <span className="text-[11px] text-slate-400">צלילות ומראה</span>
+                    <div className="text-lg font-black text-white">
+                      {latestWaterLog.waterClarity === "CLEAR" ? "צלול ונקי" : "נדרש טיפול"}
+                    </div>
+                    <span className="text-[10px] text-sky-300/80">בדיקה ויזואלית</span>
+                  </div>
                 </div>
-              </div>
+
+                {/* 🌟 סכנות והתראות בריאות/ציוד של מדדים לא תקינים ישירות בכרטיסייה הנגללת */}
+                {latestAbnormalRisks.length > 0 ? (
+                  <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-amber-900/40 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>סכנות והתראות של מדדים חריגים ({latestAbnormalRisks.length}):</span>
+                      </span>
+                      <span className="text-[10px] text-amber-400/90 font-bold px-2 py-0.5 rounded-md bg-amber-950/80 border border-amber-800/60">
+                        דורש איזון
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 pt-1 border-t border-amber-900/30">
+                      {latestAbnormalRisks.map((risk, idx) => (
+                        <div key={idx} className="bg-amber-950/30 border border-amber-900/30 rounded-xl p-2.5 space-y-1">
+                          <div className="flex items-center justify-between font-bold text-xs text-amber-200">
+                            <span>⚠️ {risk.name}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-950 text-amber-300 border border-amber-800/60 font-semibold">
+                              {risk.statusLabel}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-300 leading-relaxed">
+                            {risk.risk}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#080e14]/90 p-3 rounded-2xl border border-emerald-900/30 flex items-center gap-2 text-xs text-emerald-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="font-bold">כל המדדים שנבדקו נמצאים בטווח האידיאלי והמים מאוזנים לחלוטין ✓</span>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="p-6 rounded-2xl bg-[#080e14]/90 border border-sky-900/30 text-center text-slate-300 text-xs">
                 לחץ כאן כדי להזין את בדיקת המקלון הראשונה שלך
