@@ -38,7 +38,7 @@ import CalendarPage from "@/app/calendar/page";
 import InventoryPage from "@/app/inventory/page";
 import WaterDoctorPage from "@/app/water-doctor/page";
 import SettingsPage from "@/app/settings/page";
-import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARAM_IDS } from "@/lib/test-strip-params";
+import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARAM_IDS, PARAM_CATEGORIES } from "@/lib/test-strip-params";
 
 export const CARD_TABS = [
   { id: "water-maintenance", title: "תחזוקת מים", subtitle: "הגדרות מקלון, מצב איכות מים, שגרת טיפולים ותוספות חומרים", icon: Droplets },
@@ -57,7 +57,7 @@ interface ItemModalData {
   title: string;
   subtitle: string;
   icon: any;
-  type: "task" | "jacuzzi" | "water-test" | "params" | "refill" | "chemical" | "adhoc-chemical";
+  type: "task" | "jacuzzi" | "water-test" | "params" | "refill" | "chemical" | "adhoc-chemical" | "strip-settings";
   taskId?: string;
   taskCategory?: string;
   defaultFreqDays: number;
@@ -87,6 +87,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const [refillPercent, setRefillPercent] = useState<number>(25);
   const [editVolume, setEditVolume] = useState<string>("1200");
   const [editSanitization, setEditSanitization] = useState<string>("BROMINE");
+  const [modalSelectedParams, setModalSelectedParams] = useState<string[]>(DEFAULT_TEST_STRIP_PARAM_IDS);
   const [modalSaving, setModalSaving] = useState<boolean>(false);
   const [modalNotice, setModalNotice] = useState<string | null>(null);
 
@@ -367,6 +368,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             sanitizationType: editSanitization,
           }),
         });
+      } else if (activeItemModal.type === "strip-settings" || activeItemModal.id === "test-strip-settings") {
+        await fetch("/api/jacuzzi", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            testStripParams: modalSelectedParams,
+          }),
+        });
+        setActiveParamIds(modalSelectedParams);
       }
 
       setModalNotice("ההגדרות עודכנו בהצלחה!");
@@ -843,7 +853,18 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             <div
               onClick={(e) => {
                 e.stopPropagation();
-                setOpenPageId("water-tests");
+                setModalSelectedParams([...activeParamIds]);
+                openItemModal({
+                  id: "test-strip-settings",
+                  title: "הגדרות מקלון בדיקה",
+                  subtitle: "בחירת המדדים הפעילים שברשותך בערכת הבדיקה",
+                  icon: Sliders,
+                  type: "strip-settings",
+                  defaultFreqDays: 0,
+                  currentFreqDays: 0,
+                  currentLastDoneDate: null,
+                  currentNextDueDate: null,
+                });
               }}
               className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/strip"
             >
@@ -2011,8 +2032,122 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             )}
 
+            {/* 🧪 SECTION: הגדרות מקלון בדיקה (בתוך תחזוקת מים) */}
+            {(activeItemModal.type === "strip-settings" || activeItemModal.id === "test-strip-settings") && (
+              <div className="space-y-4">
+                {/* Top Action Buttons */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-sky-900/40 pb-3">
+                  <span className="text-xs font-bold text-sky-300">
+                    {modalSelectedParams.length} מדדים נבחרו לבדיקה
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setModalSelectedParams(ALL_TEST_STRIP_PARAMS.map((p) => p.id))}
+                      className="text-[11px] px-3 py-1 bg-sky-950 hover:bg-sky-900 text-sky-300 font-bold rounded-lg border border-sky-800/80 transition-colors cursor-pointer"
+                    >
+                      בחר הכל ({ALL_TEST_STRIP_PARAMS.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalSelectedParams(DEFAULT_TEST_STRIP_PARAM_IDS)}
+                      className="text-[11px] px-3 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold rounded-lg border border-slate-700 transition-colors cursor-pointer"
+                    >
+                      ברירת מחדל (3 מדדים)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-sky-950/40 border border-sky-800/40 text-xs text-sky-200/90 leading-relaxed">
+                  סמן את המדדים הנמדדים במקלון או בערכת הבדיקה שלך. המדדים המסומנים יופיעו ישירות בכרטיסיית תחזוקת מים ובדוחות האיזון והסכנות.
+                </div>
+
+                {/* Categorized List */}
+                <div className="space-y-4 max-h-[45vh] overflow-y-auto pr-1">
+                  {PARAM_CATEGORIES.map((catName) => {
+                    const catParams = ALL_TEST_STRIP_PARAMS.filter((p) => p.category === catName);
+                    const selectedInCat = catParams.filter((p) => modalSelectedParams.includes(p.id)).length;
+
+                    return (
+                      <div key={catName} className="space-y-2.5">
+                        <div className="flex items-center justify-between border-b border-sky-900/30 pb-1.5">
+                          <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-sky-400" />
+                            <span>{catName}</span>
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-950 text-sky-300 font-semibold border border-sky-800/60">
+                            {selectedInCat} / {catParams.length} פעילים
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2">
+                          {catParams.map((param) => {
+                            const isSelected = modalSelectedParams.includes(param.id);
+
+                            return (
+                              <div
+                                key={param.id}
+                                onClick={() => {
+                                  setModalSelectedParams((prev) => {
+                                    const next = prev.includes(param.id)
+                                      ? prev.filter((p) => p !== param.id)
+                                      : [...prev, param.id];
+                                    if (next.length === 0) return prev;
+                                    return next;
+                                  });
+                                }}
+                                className={`p-3 rounded-2xl border cursor-pointer transition-all select-none flex items-start gap-3 ${
+                                  isSelected
+                                    ? "bg-sky-950/40 border-sky-500/60 shadow-sm"
+                                    : "bg-slate-950/40 border-slate-800/80 hover:border-slate-700 opacity-60 hover:opacity-85"
+                                }`}
+                              >
+                                <div className="pt-0.5">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {}}
+                                    className="w-4 h-4 accent-sky-500 rounded cursor-pointer pointer-events-none"
+                                  />
+                                </div>
+
+                                <div className="space-y-1 flex-1">
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <span className={`font-bold text-xs sm:text-sm ${isSelected ? "text-white" : "text-slate-400"}`}>
+                                      {param.nameHe} ({param.enName})
+                                    </span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-sky-300 font-semibold shrink-0">
+                                      יעד: {param.idealRange}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-400 leading-tight">
+                                    {param.description}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Save Button */}
+                <button
+                  type="button"
+                  disabled={modalSaving}
+                  onClick={handleSaveModalSettings}
+                  className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                >
+                  {modalSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-4 h-4" />}
+                  <span>שמור הגדרות מקלון ({modalSelectedParams.length} מדדים פעילים)</span>
+                </button>
+              </div>
+            )}
+
             {/* SECTION 2: שליטה בתדירות ובתאריכים (עבור פעולות מחזוריות) */}
-            {activeItemModal.type !== "adhoc-chemical" && (
+            {activeItemModal.type !== "adhoc-chemical" && activeItemModal.type !== "strip-settings" && activeItemModal.id !== "test-strip-settings" && (
               <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-3">
                 <span className="font-bold text-xs sm:text-sm text-sky-200 flex items-center gap-1.5">
                   <Sliders className="w-4 h-4 text-sky-400" />
