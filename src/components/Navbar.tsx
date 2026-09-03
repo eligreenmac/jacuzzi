@@ -36,44 +36,20 @@ export default function Navbar() {
     router.refresh();
   };
 
-  const navLinks = [
-    { href: "/?tab=water-tests", label: "בדיקות מים", icon: FlaskConical },
-    { href: "/?tab=calendar", label: "יומן תחזוקה", icon: Calendar },
-    { href: "/?tab=inventory", label: "ארון חומרים", icon: Package },
-    { href: "/?tab=water-doctor", label: "רופא מים AI", icon: Sparkles },
-    { href: "/?tab=settings", label: "הגדרות", icon: Settings },
-  ];
-
-  // Don't show full navigation on login/register/landing pages if not logged in
-  const isAuthPage = pathname === "/login" || pathname === "/register" || (pathname === "/" && !user);
-
   return (
-    <header className="sticky top-0 z-50 bg-[#0e161c]/90 backdrop-blur-md border-b border-slate-800/80 text-slate-200 shadow-md">
+    <header className="sticky top-0 z-50 bg-[#0e1823]/95 backdrop-blur-md border-b border-sky-900/40 text-slate-200 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
-          {/* Navigation Links (Visible on All Devices) */}
-          {!isAuthPage && (
-            <nav className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                const isActive = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 ${
-                      isActive
-                        ? "bg-sky-950/80 text-sky-200 border border-sky-800/80 font-bold shadow-sm"
-                        : "text-slate-300 hover:text-white hover:bg-slate-800/60"
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? "text-sky-300" : "text-slate-400"}`} />
-                    <span>{link.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
+          {/* Logo / App Title */}
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm sm:text-base font-black text-white hover:text-sky-300 transition-colors select-none"
+          >
+            <div className="w-8 h-8 rounded-xl bg-sky-950 border border-sky-800/80 flex items-center justify-center text-sky-400 shadow-inner">
+              <Droplets className="w-4 h-4" />
+            </div>
+            <span>Jacuzzi Spa Master</span>
+          </Link>
 
           {/* User actions */}
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">

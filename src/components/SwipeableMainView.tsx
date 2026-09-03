@@ -51,6 +51,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   // Carousel index state (0..4 with infinite wrap)
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [visualActiveIndex, setVisualActiveIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -86,6 +87,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       const idx = CARD_TABS.findIndex((t) => t.id === tab);
       if (idx >= 0) {
         setCurrentIndex(idx);
+        setVisualActiveIndex(idx);
       }
     }
   }, [searchParams, initialTab]);
@@ -97,26 +99,34 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const nextCard = () => {
     if (isAnimating || isDragging) return;
     const width = getContainerWidth();
+    const newIdx = (currentIndex + 1) % CARD_TABS.length;
+
+    // 🌟 Update visual dot indicator SIMULTANEOUSLY (0 lag)
+    setVisualActiveIndex(newIdx);
     setIsAnimating(true);
     setDragOffset(-width);
 
     setTimeout(() => {
       setIsAnimating(false);
       setDragOffset(0);
-      setCurrentIndex((prev) => (prev + 1) % CARD_TABS.length);
+      setCurrentIndex(newIdx);
     }, 350);
   };
 
   const prevCard = () => {
     if (isAnimating || isDragging) return;
     const width = getContainerWidth();
+    const newIdx = (currentIndex - 1 + CARD_TABS.length) % CARD_TABS.length;
+
+    // 🌟 Update visual dot indicator SIMULTANEOUSLY (0 lag)
+    setVisualActiveIndex(newIdx);
     setIsAnimating(true);
     setDragOffset(width);
 
     setTimeout(() => {
       setIsAnimating(false);
       setDragOffset(0);
-      setCurrentIndex((prev) => (prev - 1 + CARD_TABS.length) % CARD_TABS.length);
+      setCurrentIndex(newIdx);
     }, 350);
   };
 
@@ -126,6 +136,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     const isForward = (safe > currentIndex && !(currentIndex === 0 && safe === CARD_TABS.length - 1)) || (currentIndex === CARD_TABS.length - 1 && safe === 0);
     const width = getContainerWidth();
 
+    // 🌟 Update visual dot indicator SIMULTANEOUSLY (0 lag)
+    setVisualActiveIndex(safe);
     setIsAnimating(true);
     setDragOffset(isForward ? -width : width);
 
@@ -184,22 +196,29 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     const threshold = Math.min(60, width * 0.15);
 
     if (offset < -threshold) {
+      const newIdx = (currentIndex + 1) % CARD_TABS.length;
+      // 🌟 Update visual dot indicator SIMULTANEOUSLY (0 lag)
+      setVisualActiveIndex(newIdx);
       setIsAnimating(true);
       setDragOffset(-width);
       setTimeout(() => {
         setIsAnimating(false);
         setDragOffset(0);
-        setCurrentIndex((prev) => (prev + 1) % CARD_TABS.length);
+        setCurrentIndex(newIdx);
       }, 350);
     } else if (offset > threshold) {
+      const newIdx = (currentIndex - 1 + CARD_TABS.length) % CARD_TABS.length;
+      // 🌟 Update visual dot indicator SIMULTANEOUSLY (0 lag)
+      setVisualActiveIndex(newIdx);
       setIsAnimating(true);
       setDragOffset(width);
       setTimeout(() => {
         setIsAnimating(false);
         setDragOffset(0);
-        setCurrentIndex((prev) => (prev - 1 + CARD_TABS.length) % CARD_TABS.length);
+        setCurrentIndex(newIdx);
       }, 350);
     } else {
+      setVisualActiveIndex(currentIndex);
       setIsBouncing(true);
       setDragOffset(0);
       setTimeout(() => setIsBouncing(false), 380);
@@ -599,7 +618,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         {/* Pagination Dots Indicator - Same Round Shape, Selected is Larger */}
         <div className="flex items-center justify-center gap-3 flex-1 h-6" dir="rtl">
           {CARD_TABS.map((card, idx) => {
-            const isActive = idx === currentIndex;
+            const isActive = idx === visualActiveIndex;
             return (
               <button
                 key={card.id}
