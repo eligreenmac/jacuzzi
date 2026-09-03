@@ -1064,7 +1064,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         return (
           <div
             onClick={() => setOpenPageId("calendar")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40 h-full flex flex-col justify-between min-h-[580px]"
           >
             {/* Header */}
             <div className="flex items-center justify-between gap-3 border-b border-sky-900/30 pb-4">
@@ -1321,7 +1321,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         return (
           <div
             onClick={() => setOpenPageId("water-maintenance")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40 h-full flex flex-col justify-between min-h-[580px]"
           >
             {/* Header */}
             <div className="flex items-center justify-between gap-3 border-b border-sky-900/30 pb-4">
@@ -1772,7 +1772,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         return (
           <div
             onClick={() => setOpenPageId("jacuzzi-maintenance")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40 h-full flex flex-col justify-between min-h-[580px]"
           >
             <div className="flex items-center justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
@@ -2066,17 +2066,17 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
           }}
         >
           {/* Slide 0: Previous Card */}
-          <div className="w-full min-w-full max-w-full shrink-0 px-1" dir="rtl">
+          <div className="w-full min-w-full max-w-full shrink-0 px-1 flex flex-col h-full" dir="rtl">
             {renderCard(prevIdx)}
           </div>
 
           {/* Slide 1: Current Card */}
-          <div className="w-full min-w-full max-w-full shrink-0 px-1" dir="rtl">
+          <div className="w-full min-w-full max-w-full shrink-0 px-1 flex flex-col h-full" dir="rtl">
             {renderCard(currIdx)}
           </div>
 
           {/* Slide 2: Next Card */}
-          <div className="w-full min-w-full max-w-full shrink-0 px-1" dir="rtl">
+          <div className="w-full min-w-full max-w-full shrink-0 px-1 flex flex-col h-full" dir="rtl">
             {renderCard(nextIdx)}
           </div>
         </div>
