@@ -312,7 +312,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     setSelectedChemId(chemicals.length > 0 ? chemicals[0].id : "");
     setChemDeductQty("");
     setAdhocNotes("");
-    setRefillPercent(25);
+    setRefillPercent(modalData.id === "partial-refill" ? (parseInt(latestPartialPercent, 10) || 50) : 50);
     setEditVolume(modalData.volumeLiters ? String(modalData.volumeLiters) : "1200");
     setEditSanitization(modalData.sanitizationType || "BROMINE");
     setModalNotice(null);
@@ -598,15 +598,31 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(lastSanitizerDate.getTime() + (sanitizerTask?.frequencyDays || 7) * 24 * 3600 * 1000)
     : new Date(Date.now() + 2 * 24 * 3600 * 1000);
 
-  // 3. Partial Refill Dates
+  // 3. Partial Refill Dates & Percentage
   const partialDiary = diaryEntries.find((d: any) => {
     const t = `${d.title || ""} ${d.content || ""}`.toLowerCase();
-    return (t.includes("החלפ") || t.includes("ריענון") || t.includes("חלקית")) && t.includes("מים") && !t.includes("100%");
+    return (t.includes("החלפ") || t.includes("ריענון") || t.includes("חלקית") || t.includes("חצי מים")) && t.includes("מים") && !t.includes("100%");
   });
   const lastPartialRefillDate = partialDiary ? new Date(partialDiary.entryDate || partialDiary.createdAt) : null;
   const nextPartialRefillDate = lastPartialRefillDate
     ? new Date(lastPartialRefillDate.getTime() + 30 * 24 * 3600 * 1000)
     : new Date(Date.now() + 14 * 24 * 3600 * 1000);
+
+  // Dynamic percentage of the last recorded partial refill
+  let latestPartialPercent = "50";
+  if (partialDiary) {
+    const text = `${partialDiary.title || ""} ${partialDiary.content || ""}`;
+    const match = text.match(/(\d+)%/);
+    if (match) {
+      latestPartialPercent = match[1];
+    } else if (text.includes("חצי")) {
+      latestPartialPercent = "50";
+    } else if (text.includes("שליש")) {
+      latestPartialPercent = "33";
+    } else if (text.includes("רבע")) {
+      latestPartialPercent = "25";
+    }
+  }
 
   // 4. Full Refill Dates
   const lastFullRefillDate = jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : new Date();
@@ -943,13 +959,13 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 </div>
               </div>
 
-              {/* Item 3: ריענון מים חלקי (25%) */}
+              {/* Item 3: החלפת מים חלקית (אחוז דינמי לפי ביצוע אחרון) */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   openItemModal({
                     id: "partial-refill",
-                    title: "החלפת מים חלקית (ריענון TDS)",
+                    title: `החלפת מים חלקית (${latestPartialPercent}%)`,
                     subtitle: "רישום החלפת 25%-50% מים, שקלול גיל המים וקביעת תדירות",
                     icon: Waves,
                     type: "refill",
@@ -964,7 +980,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
                     <Waves className="w-3.5 h-3.5 text-sky-400" />
-                    <span>החלפת מים חלקית (25%)</span>
+                    <span>החלפת מים חלקית ({latestPartialPercent}%)</span>
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
                     <Edit2 className="w-2.5 h-2.5 opacity-60" />
