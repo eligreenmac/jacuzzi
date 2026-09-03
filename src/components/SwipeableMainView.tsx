@@ -21,6 +21,8 @@ import {
   Sliders,
   X,
   History,
+  ShieldCheck,
+  Wrench,
 } from "lucide-react";
 
 import WaterTestsPage from "@/app/water-tests/page";
@@ -28,11 +30,12 @@ import CalendarPage from "@/app/calendar/page";
 import InventoryPage from "@/app/inventory/page";
 import WaterDoctorPage from "@/app/water-doctor/page";
 import SettingsPage from "@/app/settings/page";
-import { ALL_PARAMS_WITH_CLARITY, DEFAULT_TEST_STRIP_PARAM_IDS } from "@/lib/test-strip-params";
+import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARAM_IDS } from "@/lib/test-strip-params";
 
 export const CARD_TABS = [
   { id: "water-tests", title: "מצב איכות המים", subtitle: "בדיקת מקלון אחרונה, איזון ומדדים", icon: FlaskConical },
-  { id: "calendar", title: "שגרת תחזוקה וגיל המים", subtitle: "משימות לביצוע, שטיפות והחלפות", icon: Calendar },
+  { id: "water-maintenance", title: "תחזוקת מים וגיל המים", subtitle: "גיל המים, ריקון מלא, ריענון וטיפול שוק", icon: Droplets },
+  { id: "jacuzzi-maintenance", title: "תחזוקת הג'קוזי", subtitle: "שטיפת פילטר, ניקוי דפנות וחיטוי צנרת", icon: Wrench },
   { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר וחומרים חיוניים", icon: Package },
   { id: "water-doctor", title: "רופא מים AI", subtitle: "אבחון מים מבוסס AI וחישוב מינונים", icon: Sparkles },
   { id: "settings", title: "הגדרות הג'קוזי והמקלון", subtitle: "נפח, סוג חיטוי ומדדים פעילים", icon: Settings },
@@ -49,7 +52,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   // Full page view state (when a card is clicked)
   const [openPageId, setOpenPageId] = useState<string | null>(null);
 
-  // Carousel index state (0..4 with infinite wrap)
+  // Carousel index state (0..5 with infinite wrap)
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visualActiveIndex, setVisualActiveIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
@@ -60,6 +63,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   // App Data for live summary cards
   const [data, setData] = useState<any>(null);
   const [loadingData, setLoadingData] = useState(true);
+  const [activeParamIds, setActiveParamIds] = useState<string[]>(DEFAULT_TEST_STRIP_PARAM_IDS);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const loadSummaryData = async () => {
@@ -68,6 +72,27 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       if (res.ok) {
         const json = await res.json();
         setData(json.user);
+
+        // Load active test strip params from user jacuzzi / localStorage
+        if (json.user?.jacuzzi?.activeTestStripParams) {
+          try {
+            const parsed = JSON.parse(json.user.jacuzzi.activeTestStripParams);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setActiveParamIds(parsed);
+              return;
+            }
+          } catch {}
+        }
+      }
+
+      const saved = localStorage.getItem("active_test_strip_params");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setActiveParamIds(parsed);
+          }
+        } catch {}
       }
     } catch (err) {
       console.error(err);
@@ -84,7 +109,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   useEffect(() => {
     const tab = searchParams.get("tab") || initialTab;
     if (tab) {
-      const idx = CARD_TABS.findIndex((t) => t.id === tab);
+      const idx = CARD_TABS.findIndex((t) => t.id === tab || (tab === "calendar" && (t.id === "water-maintenance" || t.id === "jacuzzi-maintenance")));
       if (idx >= 0) {
         setCurrentIndex(idx);
         setVisualActiveIndex(idx);
@@ -259,14 +284,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
           </button>
 
           <span className="text-xs font-semibold text-sky-100 hidden sm:inline">
-            {CARD_TABS.find((t) => t.id === openPageId)?.title}
+            {CARD_TABS.find((t) => t.id === openPageId)?.title || "תצוגה מלאה"}
           </span>
         </div>
 
         {/* Full Page View Component */}
         <div className="pt-2">
           {openPageId === "water-tests" && <WaterTestsPage />}
-          {openPageId === "calendar" && <CalendarPage />}
+          {(openPageId === "water-maintenance" || openPageId === "jacuzzi-maintenance" || openPageId === "calendar") && <CalendarPage />}
           {openPageId === "inventory" && <InventoryPage />}
           {openPageId === "water-doctor" && <WaterDoctorPage />}
           {openPageId === "settings" && <SettingsPage />}
@@ -294,9 +319,22 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   // Low Stock Chemicals
   const lowStockChems = chemicals.filter((c: any) => (c.quantity || 0) <= (c.minThreshold || 100));
 
+  // Extract short English labels for active test strip params
+  const getShortParamLabel = (paramId: string) => {
+    const p = ALL_TEST_STRIP_PARAMS.find((x) => x.id === paramId);
+    if (!p) return paramId.toUpperCase();
+    const match = p.enName.match(/\((.*?)\)/);
+    if (match) return match[1];
+    if (p.enName.length <= 6) return p.enName;
+    return paramId.toUpperCase();
+  };
+
   // Harmonized Card Render (Unified Serene Blue & White Palette)
   const renderCard = (cardIdx: number) => {
     switch (cardIdx) {
+      // -------------------------------------------------------------
+      // CARD 0: מצב איכות המים
+      // -------------------------------------------------------------
       case 0:
         return (
           <div
@@ -361,35 +399,38 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             )}
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
-              <span>💡 לחץ בכל מקום בכרטיס לפתיחת יומן הבדיקות המלא והזנת בדיקה</span>
-              <span className="text-sky-300 font-bold">1 מתוך 5 ◂</span>
+              <span>💡 לחץ לפתיחת יומן הבדיקות המלא והזנת תוצאות</span>
+              <span className="text-sky-300 font-bold">1 מתוך 6 ◂</span>
             </div>
           </div>
         );
 
+      // -------------------------------------------------------------
+      // CARD 1: תחזוקת מים וגיל המים
+      // -------------------------------------------------------------
       case 1:
         return (
           <div
-            onClick={() => setOpenPageId("calendar")}
+            onClick={() => setOpenPageId("water-maintenance")}
             className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
             <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
-                  <Calendar className="w-6 h-6" />
+                  <Droplets className="w-6 h-6" />
                 </div>
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
-                    שגרת תחזוקה וגיל המים
+                    תחזוקת מים וגיל המים
                   </h2>
                   <p className="text-xs text-slate-300">
-                    גיל המים: {daysSinceRefill} ימים במערכת • {overdueTasks.length > 0 ? `${overdueTasks.length} משימות באיחור` : "כל המשימות מעודכנות"}
+                    גיל המים: {daysSinceRefill} ימים • ריקון מלא מתוכנן בעוד {daysUntilNextRefill} יום
                   </p>
                 </div>
               </div>
 
               <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
-                <span>פתח יומן תחזוקה</span>
+                <span>פתח יומן מים</span>
                 <ArrowLeft className="w-4 h-4" />
               </span>
             </div>
@@ -398,32 +439,90 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">גיל המים הנוכחי</span>
                 <div className="text-lg font-black text-white">{daysSinceRefill} ימים</div>
-                <span className="text-[10px] text-sky-300/80">ריקון בעוד {daysUntilNextRefill} יום</span>
+                <span className="text-[10px] text-sky-300/80">מילוי מלא / משוקלל</span>
               </div>
 
               <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
-                <span className="text-[11px] text-slate-400">משימות פתוחות</span>
-                <div className="text-lg font-black text-white">
-                  {pendingTasks.length} משימות
-                </div>
-                <span className="text-[10px] text-sky-300/80">{overdueTasks.length > 0 ? `${overdueTasks.length} דורשות ביצוע היום` : "הכל מעודכן ✓"}</span>
+                <span className="text-[11px] text-slate-400">מועד ריקון מלא</span>
+                <div className="text-lg font-black text-white">בעוד {daysUntilNextRefill} יום</div>
+                <span className="text-[10px] text-sky-300/80">מחזור של 90 יום</span>
               </div>
 
               <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1 col-span-2 sm:col-span-1">
-                <span className="text-[11px] text-slate-400">שטיפת פילטר שבועית</span>
-                <div className="text-lg font-black text-white">כל 7 ימים</div>
-                <span className="text-[10px] text-sky-300/80">שמירה על סירקולציה</span>
+                <span className="text-[11px] text-slate-400">ריענון מים חלקי</span>
+                <div className="text-lg font-black text-white">החלפת 25%</div>
+                <span className="text-[10px] text-sky-300/80">להורדת עומס מומסים (TDS)</span>
               </div>
             </div>
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
-              <span>💡 לחץ לפתיחת יומן הטיפולים, פעולות אחזקה יזומות ותיעוד משימות</span>
-              <span className="text-sky-300 font-bold">2 מתוך 5 ◂</span>
+              <span>💡 לחץ לפתיחת יומן הטיפולים ותיעוד החלפות מים וריענון</span>
+              <span className="text-sky-300 font-bold">2 מתוך 6 ◂</span>
             </div>
           </div>
         );
 
+      // -------------------------------------------------------------
+      // CARD 2: תחזוקת הג'קוזי
+      // -------------------------------------------------------------
       case 2:
+        return (
+          <div
+            onClick={() => setOpenPageId("jacuzzi-maintenance")}
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
+                  <Wrench className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
+                    תחזוקת הג'קוזי
+                  </h2>
+                  <p className="text-xs text-slate-300">
+                    שטיפת פילטרים, ניקוי דפנות, שטיפת צנרת וטיפולים תקופתיים
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
+                <span>פתח משימות ג'קוזי</span>
+                <ArrowLeft className="w-4 h-4" />
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
+                <span className="text-[11px] text-slate-400">שטיפת פילטר שבועית</span>
+                <div className="text-lg font-black text-white">כל 7 ימים</div>
+                <span className="text-[10px] text-sky-300/80">שמירה על סירקולציה</span>
+              </div>
+
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
+                <span className="text-[11px] text-slate-400">ניקוי קו מים ודפנות</span>
+                <div className="text-lg font-black text-white">כל 14 יום</div>
+                <span className="text-[10px] text-sky-300/80">הסרת טבעת שומנים</span>
+              </div>
+
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1 col-span-2 sm:col-span-1">
+                <span className="text-[11px] text-slate-400">שטיפת צנרת (Line Flush)</span>
+                <div className="text-lg font-black text-white">לפני ריקון</div>
+                <span className="text-[10px] text-sky-300/80">הסרת ביופילם בצנרת</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
+              <span>💡 לחץ לפתיחת יומן הפעולות ותיעוד שטיפות וטיפולי ג'קוזי</span>
+              <span className="text-sky-300 font-bold">3 מתוך 6 ◂</span>
+            </div>
+          </div>
+        );
+
+      // -------------------------------------------------------------
+      // CARD 3: ארון חומרים ומלאי
+      // -------------------------------------------------------------
+      case 3:
         return (
           <div
             onClick={() => setOpenPageId("inventory")}
@@ -450,36 +549,33 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">סך הכל חומרים</span>
-                <div className="text-lg font-black text-white">{chemicals.length} פריטים</div>
+                <div className="text-xl font-black text-white">{chemicals.length} פריטים</div>
                 <span className="text-[10px] text-sky-300/80">בארון הג'קוזי</span>
               </div>
 
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
+              <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">התראות חוסר</span>
-                <div className="text-lg font-black text-white">
+                <div className="text-xl font-black text-white">
                   {lowStockChems.length} פריטים
                 </div>
                 <span className="text-[10px] text-sky-300/80">{lowStockChems.length > 0 ? "נדרשת רכישה" : "מלאי מספק ✓"}</span>
-              </div>
-
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1 col-span-2 sm:col-span-1">
-                <span className="text-[11px] text-slate-400">זיהוי צילום AI</span>
-                <div className="text-lg font-black text-white">פעיל ✓</div>
-                <span className="text-[10px] text-sky-300/80">סריקה ופענוח אריזות</span>
               </div>
             </div>
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
               <span>💡 לחץ לפתיחת ארון החומרים המלא, הוספת פריטים וסריקת תמונות</span>
-              <span className="text-sky-300 font-bold">3 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">4 מתוך 6 ◂</span>
             </div>
           </div>
         );
 
-      case 3:
+      // -------------------------------------------------------------
+      // CARD 4: רופא מים AI
+      // -------------------------------------------------------------
+      case 4:
         return (
           <div
             onClick={() => setOpenPageId("water-doctor")}
@@ -534,12 +630,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
               <span>💡 לחץ להפעלת אבחון רופא המים והזנת תיאור מצב המים</span>
-              <span className="text-sky-300 font-bold">4 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">5 מתוך 6 ◂</span>
             </div>
           </div>
         );
 
-      case 4:
+      // -------------------------------------------------------------
+      // CARD 5: הגדרות הג'קוזי והמקלון
+      // -------------------------------------------------------------
+      case 5:
       default:
         return (
           <div
@@ -567,6 +666,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </span>
             </div>
 
+            {/* Jacuzzi Quick Specs */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">נפח מים</span>
@@ -589,9 +689,31 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             </div>
 
+            {/* 🌟 Active Test Strip Parameters Chip List (Short English Names) */}
+            <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-sky-400" />
+                  <span>מדדי מקלון פעילים לבדיקה:</span>
+                </span>
+                <span className="text-[11px] text-sky-300/80">{activeParamIds.length} מדדים נבחרו</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {activeParamIds.map((paramId) => (
+                  <span
+                    key={paramId}
+                    className="text-[11px] font-mono font-bold bg-sky-950/90 text-sky-200 border border-sky-800/60 px-2.5 py-1 rounded-lg"
+                  >
+                    {getShortParamLabel(paramId)}
+                  </span>
+                ))}
+              </div>
+            </div>
+
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
               <span>💡 לחץ לפתיחת ההגדרות, שינוי מאפייני הג'קוזי ובחירת מדדי מקלון הבדיקה</span>
-              <span className="text-sky-300 font-bold">5 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">6 מתוך 6 ◂</span>
             </div>
           </div>
         );
@@ -604,7 +726,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto py-2">
-      {/* 🌟 Top Navigation: Pagination Dots (Same round shape, selected is a larger circle) & Arrows */}
+      {/* 🌟 Top Navigation: Pagination Dots (dir="ltr" for exact direction alignment, active dot is a larger circle) & Arrows */}
       <div className="flex items-center justify-between gap-4 bg-[#0e1823]/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-sky-900/40 shadow-md max-w-xs mx-auto">
         <button
           type="button"
@@ -615,8 +737,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
           <ChevronRight className="w-4 h-4" />
         </button>
 
-        {/* Pagination Dots Indicator - Same Round Shape, Selected is Larger */}
-        <div className="flex items-center justify-center gap-3 flex-1 h-6" dir="rtl">
+        {/* Pagination Dots Indicator - Synchronized Direction, Selected is Larger Circle */}
+        <div className="flex items-center justify-center gap-3 flex-1 h-6" dir="ltr">
           {CARD_TABS.map((card, idx) => {
             const isActive = idx === visualActiveIndex;
             return (
@@ -624,9 +746,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 key={card.id}
                 type="button"
                 onClick={() => goToCard(idx)}
-                className={`transition-all duration-300 cursor-pointer rounded-full aspect-square flex items-center justify-center ${
+                className={`transition-all duration-200 cursor-pointer rounded-full aspect-square flex items-center justify-center ${
                   isActive
-                    ? "w-4.5 h-4.5 bg-sky-400 border-2 border-white/60 shadow-md shadow-sky-500/40 scale-110"
+                    ? "w-4.5 h-4.5 bg-sky-400 border-2 border-white/70 shadow-md shadow-sky-500/40 scale-110"
                     : "w-2.5 h-2.5 bg-slate-700/90 hover:bg-slate-500 hover:scale-125"
                 }`}
                 title={card.title}
@@ -666,17 +788,17 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               : "none",
           }}
         >
-          {/* Slide 0: Previous Card (Enters from left as you drag right) */}
+          {/* Slide 0: Previous Card */}
           <div className="w-full min-w-full max-w-full shrink-0 px-1" dir="rtl">
             {renderCard(prevIdx)}
           </div>
 
-          {/* Slide 1: Current Card (Moves in real-time sync with drag) */}
+          {/* Slide 1: Current Card */}
           <div className="w-full min-w-full max-w-full shrink-0 px-1" dir="rtl">
             {renderCard(currIdx)}
           </div>
 
-          {/* Slide 2: Next Card (Enters from right as you drag left) */}
+          {/* Slide 2: Next Card */}
           <div className="w-full min-w-full max-w-full shrink-0 px-1" dir="rtl">
             {renderCard(nextIdx)}
           </div>
