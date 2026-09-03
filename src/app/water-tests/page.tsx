@@ -214,18 +214,29 @@ export function extractParamValue(test: any, paramId: string): { val: number | n
   return { val: null, rangeStr: null };
 }
 
-export default function WaterTestsPage() {
+interface WaterTestsPageProps {
+  initialOpenAddModal?: boolean;
+}
+
+export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTestsPageProps) {
   const [tests, setTests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeParams, setActiveParams] = useState<string[]>(DEFAULT_TEST_STRIP_PARAM_IDS);
 
   // Add Test Modal State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(initialOpenAddModal);
   const [testDate, setTestDate] = useState(new Date().toISOString().slice(0, 16));
   const [clarity, setClarity] = useState("CLEAR");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    if (initialOpenAddModal) {
+      setTestDate(new Date().toISOString().slice(0, 16));
+      setIsAddModalOpen(true);
+    }
+  }, [initialOpenAddModal]);
 
   // Generic dynamic parameter selections for Add Modal
   const [paramSelections, setParamSelections] = useState<Record<string, { rangeId: string; noNumeric: boolean; manualVal: string }>>({});

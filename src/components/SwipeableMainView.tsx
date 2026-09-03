@@ -38,7 +38,6 @@ import {
 import WaterTestsPage, { getGenericDomain, extractParamValue } from "@/app/water-tests/page";
 import CalendarPage from "@/app/calendar/page";
 import InventoryPage from "@/app/inventory/page";
-import WaterDoctorPage from "@/app/water-doctor/page";
 import SettingsPage from "@/app/settings/page";
 import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARAM_IDS, PARAM_CATEGORIES } from "@/lib/test-strip-params";
 
@@ -554,16 +553,19 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
           </button>
 
           <span className="text-xs font-semibold text-sky-100 hidden sm:inline">
-            {CARD_TABS.find((t) => t.id === openPageId)?.title || "תצוגה מלאה"}
+            {openPageId === "water-tests-new"
+              ? "הזנת בדיקת מקלון חדשה"
+              : CARD_TABS.find((t) => t.id === openPageId)?.title || "תצוגה מלאה"}
           </span>
         </div>
 
         {/* Full Page View Component */}
         <div className="pt-2">
-          {openPageId === "water-tests" && <WaterTestsPage />}
+          {(openPageId === "water-tests" || openPageId === "water-tests-new") && (
+            <WaterTestsPage initialOpenAddModal={openPageId === "water-tests-new"} />
+          )}
           {(openPageId === "water-maintenance" || openPageId === "jacuzzi-maintenance" || openPageId === "calendar") && <CalendarPage />}
           {openPageId === "inventory" && <InventoryPage />}
-          {openPageId === "water-doctor" && <WaterDoctorPage />}
           {openPageId === "settings" && <SettingsPage />}
         </div>
       </div>
@@ -1340,7 +1342,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setOpenPageId("water-tests");
+                setOpenPageId("water-tests-new");
               }}
               className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer group/btn"
             >
