@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Package,
   Plus,
@@ -19,6 +20,7 @@ import {
   Clock,
   Cpu,
   Zap,
+  ChevronRight,
 } from "lucide-react";
 import { compressImageForAI } from "@/lib/image-utils";
 
@@ -301,7 +303,18 @@ export default function InventoryPage() {
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 pb-12">
+      {/* Return to Dashboard / Control Cards Button */}
+      <div className="flex items-center justify-between pb-3 border-b border-sky-900/40">
+        <Link
+          href="/"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all hover:scale-105 cursor-pointer select-none"
+        >
+          <ChevronRight className="w-4 h-4" />
+          <span>חזרה לכרטיסי הבקרה</span>
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

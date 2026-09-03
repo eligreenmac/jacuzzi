@@ -1754,7 +1754,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             onClick={() => setOpenPageId("jacuzzi-maintenance")}
             className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
+            <div className="flex items-center justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
                   <Wrench className="w-6 h-6" />
@@ -1763,16 +1763,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
                     תחזוקת מתקן
                   </h2>
-                  <p className="text-xs text-slate-300">
-                    שטיפת פילטר, ניקוי דפנות, כיסוי, ניקוי צנרת והחלפת פילטר
-                  </p>
                 </div>
               </div>
-
-              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
-                <span>פתח משימות מתקן</span>
-                <ArrowLeft className="w-4 h-4" />
-              </span>
             </div>
 
             {/* List of 5 Specific Jacuzzi Equipment Actions */}
