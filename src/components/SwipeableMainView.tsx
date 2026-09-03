@@ -31,6 +31,8 @@ import {
   Layers,
   Plus,
   Beaker,
+  Activity,
+  ShoppingCart,
 } from "lucide-react";
 
 import WaterTestsPage, { getGenericDomain, extractParamValue } from "@/app/water-tests/page";
@@ -41,6 +43,7 @@ import SettingsPage from "@/app/settings/page";
 import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARAM_IDS, PARAM_CATEGORIES } from "@/lib/test-strip-params";
 
 export const CARD_TABS = [
+  { id: "status", title: "סטטוס", subtitle: "משימות ל-7 ימים, איכות מים, סכנות והזמנת חומרים", icon: Activity },
   { id: "water-maintenance", title: "תחזוקת מים", subtitle: "הגדרות מקלון, מצב איכות מים, שגרת טיפולים ותוספות חומרים", icon: Droplets },
   { id: "jacuzzi-maintenance", title: "תחזוקת מתקן", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה, צנרת והחלפת פילטר", icon: Wrench },
   { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר ופירוט מלאי חומרי טיפול", icon: Package },
@@ -324,7 +327,29 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     setModalNotice(null);
 
     try {
-      if (activeItemModal.type === "task") {
+      if (activeItemModal.id === "water-test" || activeItemModal.type === "water-test") {
+        if (activeItemModal.taskId) {
+          await fetch("/api/tasks", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: activeItemModal.taskId,
+              frequencyDays: editFreqDays,
+            }),
+          });
+        } else {
+          await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: "בדיקת איכות מים (מקלון)",
+              category: "WEEKLY",
+              frequencyDays: editFreqDays,
+              nextDueDate: new Date(Date.now() + editFreqDays * 24 * 3600 * 1000),
+            }),
+          });
+        }
+      } else if (activeItemModal.type === "task") {
         // Find or create task
         if (activeItemModal.taskId) {
           await fetch("/api/tasks", {
@@ -583,9 +608,19 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   };
 
   // 1. Water Test Dates
-  const lastWaterTestDate = latestWaterLog?.testedAt ? new Date(latestWaterLog.testedAt) : null;
-  const nextWaterTestDate = lastWaterTestDate
-    ? new Date(lastWaterTestDate.getTime() + 3 * 24 * 3600 * 1000)
+  const waterTestTask = tasks.find((t: any) =>
+    t.title?.includes("בדיקת איכות מים") || t.title?.includes("בדיקת מים") || t.title?.includes("מקלון")
+  );
+  const waterTestFreqDays = waterTestTask?.frequencyDays || 3;
+  const lastWaterTestDate = latestWaterLog?.testedAt
+    ? new Date(latestWaterLog.testedAt)
+    : waterTestTask?.lastDoneDate
+    ? new Date(waterTestTask.lastDoneDate)
+    : null;
+  const nextWaterTestDate = waterTestTask?.nextDueDate
+    ? new Date(waterTestTask.nextDueDate)
+    : lastWaterTestDate
+    ? new Date(lastWaterTestDate.getTime() + waterTestFreqDays * 24 * 3600 * 1000)
     : new Date();
 
   // 2. Sanitizer Dates (חיטוי שבועי)
@@ -739,6 +774,175 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   // Active Pending Tasks & Low Stock Chemicals
   const lowStockChems = chemicals.filter((c: any) => (c.quantity || 0) <= (c.minThreshold || 100));
 
+  // Compute upcoming tasks in next 7 days for the Status Card
+  const nowMs = Date.now();
+  const allScheduledEvents = [
+    {
+      id: "water-test",
+      title: "בדיקת איכות מים (מקלון)",
+      dueDate: nextWaterTestDate,
+      icon: FlaskConical,
+      type: "water-test",
+      onOpen: () => openItemModal({
+        id: "water-test",
+        title: "הגדרת תדירות בדיקת איכות מים",
+        subtitle: "קביעת מרווח הזמן הרצוי לביצוע בדיקת מקלון",
+        icon: FlaskConical,
+        type: "water-test",
+        defaultFreqDays: 3,
+        currentFreqDays: waterTestFreqDays,
+        currentLastDoneDate: lastWaterTestDate?.toISOString() || null,
+        currentNextDueDate: nextWaterTestDate.toISOString(),
+      }),
+    },
+    {
+      id: "sanitizer-shock",
+      title: "חיטוי שבועי",
+      dueDate: nextSanitizerDate,
+      icon: ShieldAlert,
+      type: "task",
+      onOpen: () => openItemModal({
+        id: "sanitizer-shock",
+        title: "חיטוי שבועי",
+        subtitle: "הוספת מנת חיטוי / שוק תחזוקתי לג'קוזי ועדכון מלאי החומרים",
+        icon: ShieldAlert,
+        type: "task",
+        taskId: sanitizerTask?.id,
+        taskCategory: "WEEKLY",
+        defaultFreqDays: 7,
+        currentFreqDays: sanitizerTask?.frequencyDays || 7,
+        currentLastDoneDate: lastSanitizerDate?.toISOString() || null,
+        currentNextDueDate: nextSanitizerDate.toISOString(),
+      }),
+    },
+    {
+      id: "filter-rinse",
+      title: "שטיפת פילטר",
+      dueDate: nextFilterRinseDate,
+      icon: ShieldCheck,
+      type: "task",
+      onOpen: () => openItemModal({
+        id: "filter-wash",
+        title: "שטיפת פילטר",
+        subtitle: "שטיפת הפילטר במים זורמים (אחת לשבוע או לפי תדירות)",
+        icon: ShieldCheck,
+        type: "task",
+        taskId: filterRinseTask?.id,
+        taskCategory: "WEEKLY",
+        defaultFreqDays: 7,
+        currentFreqDays: filterRinseTask?.frequencyDays || 7,
+        currentLastDoneDate: lastFilterRinseDate?.toISOString() || null,
+        currentNextDueDate: nextFilterRinseDate.toISOString(),
+      }),
+    },
+    {
+      id: "waterline-clean",
+      title: "ניקוי דפנות וקו מים",
+      dueDate: nextWaterlineDate,
+      icon: Sparkles,
+      type: "task",
+      onOpen: () => openItemModal({
+        id: "waterline-clean",
+        title: "ניקוי דפנות וקו מים",
+        subtitle: "ניקוי והסרת שמנים ולכלוך מקו המים והדפנות",
+        icon: Sparkles,
+        type: "task",
+        taskId: waterlineTask?.id,
+        taskCategory: "WEEKLY",
+        defaultFreqDays: 7,
+        currentFreqDays: waterlineTask?.frequencyDays || 7,
+        currentLastDoneDate: lastWaterlineDate?.toISOString() || null,
+        currentNextDueDate: nextWaterlineDate.toISOString(),
+      }),
+    },
+    {
+      id: "cover-clean",
+      title: "ניקוי ואוורור כיסוי",
+      dueDate: nextCoverDate,
+      icon: ShieldCheck,
+      type: "task",
+      onOpen: () => openItemModal({
+        id: "cover-clean",
+        title: "ניקוי ואוורור כיסוי",
+        subtitle: "אוורור הכיסוי וניקוי החלק הפנימי והחיצוני",
+        icon: ShieldCheck,
+        type: "task",
+        taskId: coverTask?.id,
+        taskCategory: "WEEKLY",
+        defaultFreqDays: 7,
+        currentFreqDays: coverTask?.frequencyDays || 7,
+        currentLastDoneDate: lastCoverDate?.toISOString() || null,
+        currentNextDueDate: nextCoverDate.toISOString(),
+      }),
+    },
+    {
+      id: "pipe-clean",
+      title: "ניקוי צנרת",
+      dueDate: nextPipeCleanDate,
+      icon: Wrench,
+      type: "task",
+      onOpen: () => openItemModal({
+        id: "deep-clean",
+        title: "ניקוי צנרת",
+        subtitle: "שטיפת פלאש לצנרת להסרת ביופילם לפני ריקון המים",
+        icon: Wrench,
+        type: "task",
+        taskId: pipeCleanTask?.id,
+        taskCategory: "MONTHLY",
+        defaultFreqDays: 90,
+        currentFreqDays: pipeCleanTask?.frequencyDays || 90,
+        currentLastDoneDate: lastPipeCleanDate?.toISOString() || null,
+        currentNextDueDate: nextPipeCleanDate.toISOString(),
+      }),
+    },
+    {
+      id: "filter-replace",
+      title: "החלפת פילטר (סנן חדש)",
+      dueDate: nextFilterReplaceDate,
+      icon: RefreshCw,
+      type: "task",
+      onOpen: () => openItemModal({
+        id: "filter-replace",
+        title: "החלפת פילטר (סנן חדש)",
+        subtitle: "סימון התקנת פילטר חדש, קביעת תדירות החלפה (חצי שנתי / שנתי) ומועד הבא",
+        icon: RefreshCw,
+        type: "task",
+        taskId: filterReplaceTask?.id,
+        taskCategory: "CUSTOM",
+        defaultFreqDays: 180,
+        currentFreqDays: filterReplaceTask?.frequencyDays || 180,
+        currentLastDoneDate: lastFilterReplaceDate?.toISOString() || null,
+        currentNextDueDate: nextFilterReplaceDate.toISOString(),
+      }),
+    },
+    {
+      id: "full-refill",
+      title: "ריקון ומילוי מים מלא",
+      dueDate: nextFullRefillDate,
+      icon: Waves,
+      type: "refill",
+      onOpen: () => openItemModal({
+        id: "full-refill",
+        title: "ריקון ומילוי מים מלא (100%)",
+        subtitle: "מחזור רענון מים מלא (כל 90 יום / 3 חודשים)",
+        icon: Waves,
+        type: "refill",
+        defaultFreqDays: 90,
+        currentFreqDays: 90,
+        currentLastDoneDate: lastFullRefillDate.toISOString(),
+        currentNextDueDate: nextFullRefillDate.toISOString(),
+      }),
+    },
+  ];
+
+  const sevenDaysUpcomingTasks = allScheduledEvents
+    .map((evt) => {
+      const diffDays = Math.round((evt.dueDate.getTime() - nowMs) / (1000 * 60 * 60 * 24));
+      return { ...evt, diffDays };
+    })
+    .filter((evt) => evt.diffDays <= 7)
+    .sort((a, b) => a.diffDays - b.diffDays);
+
   // Extract short English labels for active test strip params
   const getShortParamLabel = (paramId: string) => {
     const p = ALL_TEST_STRIP_PARAMS.find((x) => x.id === paramId);
@@ -854,9 +1058,258 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const renderCard = (cardIdx: number) => {
     switch (cardIdx) {
       // -------------------------------------------------------------
-      // CARD 0: תחזוקת מים (הגדרות מקלון מעל + איכות מים קודם + שגרת טיפולים ותוספות תחתיו)
+      // CARD 0: סטטוס (משימות 7 ימים, איכות מים, סכנות חריגים והזמנת חומרים)
       // -------------------------------------------------------------
       case 0:
+        return (
+          <div
+            onClick={() => setOpenPageId("calendar")}
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
+                  <Activity className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
+                    סטטוס
+                  </h2>
+                  <p className="text-xs text-slate-300">
+                    גיל המים: <strong className="text-white">{daysSinceRefill} ימים</strong> • {sevenDaysUpcomingTasks.length} משימות ל-7 הימים הקרובים
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
+                <span>פתח יומן ומשימות</span>
+                <ArrowLeft className="w-4 h-4" />
+              </span>
+            </div>
+
+            {/* 1. משימות קרובות בטווח של 7 ימים */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-sky-400" />
+                  <span>משימות קרובות (טווח 7 ימים):</span>
+                </span>
+                <span className="text-[10px] text-sky-300 font-semibold">
+                  {sevenDaysUpcomingTasks.length} פעולות לביצוע
+                </span>
+              </div>
+
+              {sevenDaysUpcomingTasks.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-0.5">
+                  {sevenDaysUpcomingTasks.map((t) => {
+                    const IconComp = t.icon || Calendar;
+                    const isOverdue = t.diffDays < 0;
+                    const isToday = t.diffDays === 0;
+                    const isTomorrow = t.diffDays === 1;
+
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          t.onOpen();
+                        }}
+                        className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-2.5 cursor-pointer group/task ${
+                          isOverdue
+                            ? "bg-rose-950/30 border-rose-900/50 hover:border-rose-500/70"
+                            : isToday
+                            ? "bg-amber-950/30 border-amber-900/50 hover:border-amber-500/70"
+                            : "bg-[#080e14]/90 border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-xl bg-sky-950/80 border border-sky-800/50 flex items-center justify-center text-sky-300 shrink-0">
+                            <IconComp className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="text-xs font-bold text-white truncate group-hover/task:text-sky-300 transition-colors">
+                            {t.title}
+                          </span>
+                        </div>
+
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0 border ${
+                            isOverdue
+                              ? "bg-rose-950 text-rose-300 border-rose-800"
+                              : isToday
+                              ? "bg-amber-950 text-amber-300 border-amber-800"
+                              : isTomorrow
+                              ? "bg-sky-950 text-sky-300 border-sky-800"
+                              : "bg-slate-900 text-slate-300 border-slate-700"
+                          }`}
+                        >
+                          {isOverdue
+                            ? `באיחור של ${Math.abs(t.diffDays)} ימים!`
+                            : isToday
+                            ? "היום!"
+                            : isTomorrow
+                            ? "מחר"
+                            : `בעוד ${t.diffDays} ימים`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-3 bg-[#080e14]/90 rounded-2xl border border-emerald-900/30 flex items-center justify-center gap-2 text-xs text-emerald-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>אין משימות קרובות ל-7 הימים הקרובים ✓</span>
+                </div>
+              )}
+            </div>
+
+            {/* 2. מצב המים הנוכחי וסכנות חריגים */}
+            <div className="space-y-2.5 pt-1 border-t border-sky-900/20">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <FlaskConical className="w-3.5 h-3.5 text-sky-400" />
+                  <span>מצב איכות המים הנוכחי:</span>
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {latestWaterLog ? `נבדק: ${new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")}` : "טרם בוצעה בדיקה"}
+                </span>
+              </div>
+
+              {latestWaterLog ? (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-sky-900/30 text-center space-y-0.5">
+                      <span className="text-[10px] text-slate-400">חומציות (pH)</span>
+                      <div className="text-sm font-black text-white">{latestWaterLog.ph || latestWaterLog.phRange || "7.4"}</div>
+                      <span className="text-[9px] text-sky-300/80">יעד: 7.2 - 7.6</span>
+                    </div>
+
+                    <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-sky-900/30 text-center space-y-0.5">
+                      <span className="text-[10px] text-slate-400">כלור / חיטוי</span>
+                      <div className="text-sm font-black text-white">{latestWaterLog.freeChlorine || latestWaterLog.chlorineRange || "3.0"}</div>
+                      <span className="text-[9px] text-sky-300/80">יעד: 2.0 - 4.0</span>
+                    </div>
+
+                    <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-sky-900/30 text-center space-y-0.5">
+                      <span className="text-[10px] text-slate-400">בסיסיות (TA)</span>
+                      <div className="text-sm font-black text-white">{latestWaterLog.alkalinity || latestWaterLog.alkalinityRange || "90"}</div>
+                      <span className="text-[9px] text-sky-300/80">יעד: 80 - 120</span>
+                    </div>
+
+                    <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-sky-900/30 text-center space-y-0.5">
+                      <span className="text-[10px] text-slate-400">צלילות ומראה</span>
+                      <div className="text-sm font-black text-white">
+                        {latestWaterLog.waterClarity === "CLEAR" ? "צלול ונקי" : "נדרש טיפול"}
+                      </div>
+                      <span className="text-[9px] text-sky-300/80">בדיקה ויזואלית</span>
+                    </div>
+                  </div>
+
+                  {/* סכנות המופיעות מבדיקת מים אחרונה */}
+                  {latestAbnormalRisks.length > 0 ? (
+                    <div className="bg-[#180e14]/95 border border-rose-900/60 rounded-2xl p-3 space-y-1.5 text-xs text-right shadow-md">
+                      <div className="flex items-center gap-1.5 text-rose-400 font-bold text-xs">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                        <span>סכנות שהתגלו בבדיקת המים האחרונה:</span>
+                      </div>
+                      <div className="space-y-1 pt-1 border-t border-rose-900/30">
+                        {latestAbnormalRisks.map((risk, idx) => (
+                          <div key={idx} className="text-[11px] text-slate-200">
+                            <span className="text-rose-300 font-bold">• {risk.name} ({risk.statusLabel}):</span>{" "}
+                            <span className="text-slate-300">{risk.risk}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#080e14]/90 p-2 rounded-xl border border-emerald-900/30 flex items-center gap-2 text-[11px] text-emerald-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="font-bold">כל מדדי המים מאוזנים לחלוטין וללא סכנות ✓</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="p-3 bg-[#080e14]/90 rounded-2xl border border-sky-900/30 text-center text-xs text-slate-300">
+                  טרם תועדה בדיקת מים במערכת
+                </div>
+              )}
+            </div>
+
+            {/* 3. הזמנת חומרים במידה ויש חוסר */}
+            <div className="space-y-2 pt-1 border-t border-sky-900/20">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-sky-400" />
+                  <span>הזמנת חומרים ומצב מלאי:</span>
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {lowStockChems.length > 0 ? `${lowStockChems.length} חומרים בחוסר` : "מלאי מספק"}
+                </span>
+              </div>
+
+              {lowStockChems.length > 0 ? (
+                <div className="space-y-2 bg-[#180e14]/80 p-3 rounded-2xl border border-rose-900/50">
+                  <div className="text-[11px] text-rose-300 font-bold flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                    <span>נמצאו חומרים מתחת לסף המינימום - נדרשת הזמנה:</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                    {lowStockChems.map((c: any) => (
+                      <span
+                        key={c.id}
+                        className="text-[11px] bg-rose-950/90 text-rose-200 border border-rose-800/70 px-2.5 py-1 rounded-xl font-bold flex items-center gap-1"
+                      >
+                        <span>{c.name}:</span>
+                        <span className="text-white">{c.quantity} {formatChemUnit(c.unit)}</span>
+                        <span className="text-rose-400 text-[9px]">(סף: {c.minThreshold || 100})</span>
+                      </span>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenPageId("inventory");
+                    }}
+                    className="w-full mt-1 py-2 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <ShoppingCart className="w-3.5 h-3.5" />
+                    <span>פתח ארון חומרים להזמנה ועדכון מלאי</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-2.5 bg-[#080e14]/90 rounded-xl border border-emerald-900/30 flex items-center justify-between text-[11px] text-emerald-300">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>כל החומרים בארון מעל סף המינימום ולא נדרשת הזמנה ✓</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenPageId("inventory");
+                    }}
+                    className="text-[10px] text-sky-300 hover:text-white underline cursor-pointer"
+                  >
+                    לארון החומרים
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
+              <span className="text-sky-300 font-bold">1 מתוך 5 ◂</span>
+            </div>
+          </div>
+        );
+
+      // -------------------------------------------------------------
+      // CARD 1: תחזוקת מים (הגדרות מקלון מעל + איכות מים קודם + שגרת טיפולים ותוספות תחתיו)
+      // -------------------------------------------------------------
+      case 1:
         return (
           <div
             onClick={() => setOpenPageId("water-maintenance")}
@@ -1064,12 +1517,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     e.stopPropagation();
                     openItemModal({
                       id: "water-test",
-                      title: "בדיקת איכות מים (מקלון)",
-                      subtitle: "קביעת תדירות בדיקה, רישום בדיקה אחרונה וקביעת המועד הבא",
+                      title: "הגדרת תדירות בדיקת איכות מים",
+                      subtitle: "קביעת מרווח הזמן הרצוי לביצוע בדיקת מקלון (בימים)",
                       icon: FlaskConical,
                       type: "water-test",
+                      taskId: waterTestTask?.id,
+                      taskCategory: "WEEKLY",
                       defaultFreqDays: 3,
-                      currentFreqDays: 3,
+                      currentFreqDays: waterTestFreqDays,
                       currentLastDoneDate: lastWaterTestDate?.toISOString() || null,
                       currentNextDueDate: nextWaterTestDate.toISOString(),
                     });
@@ -1083,7 +1538,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
                       <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                      <span>כל 2-3 ימים</span>
+                      <span>כל {waterTestFreqDays} ימים</span>
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
@@ -1351,6 +1806,12 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
                     <Edit2 className="w-2.5 h-2.5 opacity-60" />
                     <span>כל {filterRinseTask?.frequencyDays || 7} ימים</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                    <span>שטיפת פילטר</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
+                    <Edit2 className="w-2.5 h-2.5 opacity-60" />
+                    <span>כל {filterRinseTask?.frequencyDays || 7} יום</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
@@ -1360,27 +1821,27 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastFilterRinseDate, true)}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
                     <span className="text-sky-300 font-bold">{formatDateDisplay(nextFilterRinseDate)}</span>{" "}
                     <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextFilterRinseDate, false)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Item 2: ניקוי דפנות וקו מים */}
+              {/* Task 2: ניקוי דפנות וקו מים */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   openItemModal({
-                    id: "waterline",
-                    title: "ניקוי דפנות וקו מים (Waterline)",
-                    subtitle: "סימון ניקוי שומנים וקו מים, קביעת תדירות ומועד ביצוע הבא",
-                    icon: Waves,
+                    id: "waterline-clean",
+                    title: "ניקוי דפנות וקו מים",
+                    subtitle: "ניקוי והסרת שמנים ולכלוך מקו המים והדפנות",
+                    icon: Sparkles,
                     type: "task",
                     taskId: waterlineTask?.id,
-                    taskCategory: "BIWEEKLY",
-                    defaultFreqDays: 14,
-                    currentFreqDays: waterlineTask?.frequencyDays || 14,
+                    taskCategory: "WEEKLY",
+                    defaultFreqDays: 7,
+                    currentFreqDays: waterlineTask?.frequencyDays || 7,
                     currentLastDoneDate: lastWaterlineDate?.toISOString() || null,
                     currentNextDueDate: nextWaterlineDate.toISOString(),
                   });
@@ -1389,12 +1850,12 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                    <Waves className="w-3.5 h-3.5 text-sky-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-sky-400" />
                     <span>ניקוי דפנות וקו מים</span>
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
                     <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                    <span>כל {waterlineTask?.frequencyDays || 14} יום</span>
+                    <span>כל {waterlineTask?.frequencyDays || 7} יום</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
@@ -1404,27 +1865,27 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastWaterlineDate, true)}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
                     <span className="text-sky-300 font-bold">{formatDateDisplay(nextWaterlineDate)}</span>{" "}
                     <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextWaterlineDate, false)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Item 3: ניקוי כיסוי ג'קוזי */}
+              {/* Task 3: ניקוי ואוורור כיסוי */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   openItemModal({
                     id: "cover-clean",
-                    title: "ניקוי וחיטוי כיסוי הג'קוזי",
-                    subtitle: "סימון ניקוי כיסוי, הגנה מפני UV ועובש ושליטה בתדירות",
+                    title: "ניקוי ואוורור כיסוי",
+                    subtitle: "אוורור הכיסוי וניקוי החלק הפנימי והחיצוני",
                     icon: ShieldCheck,
                     type: "task",
                     taskId: coverTask?.id,
-                    taskCategory: "MONTHLY",
-                    defaultFreqDays: 30,
-                    currentFreqDays: coverTask?.frequencyDays || 30,
+                    taskCategory: "WEEKLY",
+                    defaultFreqDays: 7,
+                    currentFreqDays: coverTask?.frequencyDays || 7,
                     currentLastDoneDate: lastCoverDate?.toISOString() || null,
                     currentNextDueDate: nextCoverDate.toISOString(),
                   });
@@ -1434,11 +1895,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
                     <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-                    <span>ניקוי כיסוי הג'קוזי</span>
+                    <span>ניקוי ואוורור כיסוי</span>
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
                     <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                    <span>כל {coverTask?.frequencyDays || 30} יום</span>
+                    <span>כל {coverTask?.frequencyDays || 7} יום</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
@@ -1448,21 +1909,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastCoverDate, true)}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
                     <span className="text-sky-300 font-bold">{formatDateDisplay(nextCoverDate)}</span>{" "}
                     <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextCoverDate, false)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Item 4: ניקוי צנרת */}
+              {/* Task 4: ניקוי צנרת */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   openItemModal({
                     id: "deep-clean",
-                    title: "ניקוי צנרת (Line Flush)",
-                    subtitle: "סימון שטיפת פלאש לצנרת לפני ריקון מים, קביעת תדירות ומועד הבא",
+                    title: "ניקוי צנרת",
+                    subtitle: "שטיפת פלאש לצנרת להסרת ביופילם לפני ריקון המים",
                     icon: Wrench,
                     type: "task",
                     taskId: pipeCleanTask?.id,
@@ -1478,7 +1939,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
                     <Wrench className="w-3.5 h-3.5 text-sky-400" />
-                    <span>ניקוי צנרת (Line Flush)</span>
+                    <span>ניקוי צנרת</span>
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
                     <Edit2 className="w-2.5 h-2.5 opacity-60" />
@@ -1492,21 +1953,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastPipeCleanDate, true)}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                    <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
                     <span className="text-sky-300 font-bold">{formatDateDisplay(nextPipeCleanDate)}</span>{" "}
                     <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextPipeCleanDate, false)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Item 5: החלפת פילטר */}
+              {/* Task 5: החלפת פילטר */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   openItemModal({
                     id: "filter-replace",
                     title: "החלפת פילטר (סנן חדש)",
-                    subtitle: "סימון התקנת פילטר חדש, קביעת תדירות החלפה (חצי שנתי / שנתי) ומועד הבא",
+                    subtitle: "סימון התקנת פילטר חדש, קביעת תדירות החלפה ומועד הבא",
                     icon: RefreshCw,
                     type: "task",
                     taskId: filterReplaceTask?.id,
@@ -1545,15 +2006,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">2 מתוך 4 ◂</span>
+              <span className="text-sky-300 font-bold">2 מתוך 5 ◂</span>
             </div>
           </div>
         );
 
       // -------------------------------------------------------------
-      // CARD 2: ארון חומרים ומלאי (כולל פירוט מלא של החומרים בארון)
+      // CARD 3: ארון חומרים ומלאי (כולל פירוט מלא של החומרים בארון)
       // -------------------------------------------------------------
-      case 2:
+      case 3:
         return (
           <div
             onClick={() => setOpenPageId("inventory")}
@@ -1677,15 +2138,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">3 מתוך 4 ◂</span>
+              <span className="text-sky-300 font-bold">4 מתוך 5 ◂</span>
             </div>
           </div>
         );
 
       // -------------------------------------------------------------
-      // CARD 3: רופא מים AI
+      // CARD 4: רופא מים AI
       // -------------------------------------------------------------
-      case 3:
+      case 4:
       default:
         return (
           <div
@@ -1740,7 +2201,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             <div className="flex items-center justify-end text-xs text-slate-400 pt-2">
-              <span className="text-sky-300 font-bold">4 מתוך 4 ◂</span>
+              <span className="text-sky-300 font-bold">5 מתוך 5 ◂</span>
             </div>
           </div>
         );
@@ -1878,7 +2339,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             )}
 
             {/* SECTION 1: סימון ביצוע מיידי של הפעולה */}
-            {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill" || activeItemModal.type === "adhoc-chemical") && (
+            {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill" || activeItemModal.type === "adhoc-chemical") && activeItemModal.id !== "water-test" && activeItemModal.type !== "water-test" && (
               <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs sm:text-sm text-sky-200 flex items-center gap-1.5">
@@ -2019,22 +2480,55 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             )}
 
-            {/* Quick Water Test Shortcut */}
-            {activeItemModal.id === "water-test" && (
-              <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-3 text-center">
-                <p className="text-xs text-slate-300">
-                  ניתן לפתוח ישירות את טופס הזנת בדיקת המקלון עם כל המדדים והצבעים.
-                </p>
+            {/* 🧪 SECTION: הגדרת תדירות בדיקת איכות מים בלבד */}
+            {(activeItemModal.id === "water-test" || activeItemModal.type === "water-test") && (
+              <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-sky-200 block">
+                    תדירות בדיקת איכות מים (בימים):
+                  </label>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    קבע את מרווח הימים הרצוי בין בדיקות מקלון שגרתיות.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={editFreqDays}
+                    onChange={(e) => setEditFreqDays(parseInt(e.target.value, 10) || 1)}
+                    className="w-24 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white text-center font-bold focus:outline-none focus:border-sky-500"
+                  />
+                  <span className="text-xs text-slate-300">ימים</span>
+
+                  <div className="flex items-center gap-1.5 mr-auto flex-wrap">
+                    {[2, 3, 5, 7, 14].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setEditFreqDays(d)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                          editFreqDays === d
+                            ? "bg-sky-950 text-sky-200 border-sky-500 shadow-sm"
+                            : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        {d} ימים
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveItemModal(null);
-                    setOpenPageId("water-tests");
-                  }}
-                  className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  disabled={modalSaving}
+                  onClick={handleSaveModalSettings}
+                  className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
                 >
-                  <FlaskConical className="w-4 h-4" />
-                  <span>פתח טופס הזנת בדיקת מים מלאה</span>
+                  {modalSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-4 h-4" />}
+                  <span>שמור תדירות בדיקה (כל {editFreqDays} ימים)</span>
                 </button>
               </div>
             )}
@@ -2154,7 +2648,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             )}
 
             {/* SECTION 2: שליטה בתדירות ובתאריכים (עבור פעולות מחזוריות) */}
-            {activeItemModal.type !== "adhoc-chemical" && activeItemModal.type !== "strip-settings" && activeItemModal.id !== "test-strip-settings" && (
+            {activeItemModal.type !== "adhoc-chemical" && activeItemModal.type !== "strip-settings" && activeItemModal.id !== "test-strip-settings" && activeItemModal.id !== "water-test" && activeItemModal.type !== "water-test" && (
               <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-3">
                 <span className="font-bold text-xs sm:text-sm text-sky-200 flex items-center gap-1.5">
                   <Sliders className="w-4 h-4 text-sky-400" />
