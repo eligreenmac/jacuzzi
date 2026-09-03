@@ -29,6 +29,8 @@ import {
   Check,
   Info,
   Layers,
+  Plus,
+  Beaker,
 } from "lucide-react";
 
 import WaterTestsPage from "@/app/water-tests/page";
@@ -40,8 +42,8 @@ import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARA
 
 export const CARD_TABS = [
   { id: "water-tests", title: "מצב איכות המים", subtitle: "בדיקת מקלון אחרונה, איזון ומדדים", icon: FlaskConical },
-  { id: "water-maintenance", title: "תחזוקת מים וגיל המים", subtitle: "בדיקות, חיטוי שבועי, ריענון וריקון מלא", icon: Droplets },
-  { id: "jacuzzi-maintenance", title: "תחזוקת הג'קוזי", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה וצנרת", icon: Wrench },
+  { id: "water-maintenance", title: "תחזוקת מים וגיל המים", subtitle: "בדיקות, חיטוי שבועי, ריענון, ריקון ותוספות יזומות", icon: Droplets },
+  { id: "jacuzzi-maintenance", title: "תחזוקת הג'קוזי", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה, צנרת והחלפת פילטר", icon: Wrench },
   { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר וחומרים חיוניים", icon: Package },
   { id: "water-doctor", title: "רופא מים AI", subtitle: "אבחון מים מבוסס AI וחישוב מינונים", icon: Sparkles },
   { id: "settings", title: "הגדרות הג'קוזי והמקלון", subtitle: "נפח, סוג חיטוי ומדדים פעילים", icon: Settings },
@@ -56,7 +58,7 @@ interface ItemModalData {
   title: string;
   subtitle: string;
   icon: any;
-  type: "task" | "jacuzzi" | "water-test" | "params" | "refill" | "chemical";
+  type: "task" | "jacuzzi" | "water-test" | "params" | "refill" | "chemical" | "adhoc-chemical";
   taskId?: string;
   taskCategory?: string;
   defaultFreqDays: number;
@@ -82,6 +84,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const [actionDoneDate, setActionDoneDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [selectedChemId, setSelectedChemId] = useState<string>("");
   const [chemDeductQty, setChemDeductQty] = useState<string>("");
+  const [adhocNotes, setAdhocNotes] = useState<string>("");
   const [refillPercent, setRefillPercent] = useState<number>(25);
   const [editVolume, setEditVolume] = useState<string>("1200");
   const [editSanitization, setEditSanitization] = useState<string>("BROMINE");
@@ -306,8 +309,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     setEditLastDoneDate(modalData.currentLastDoneDate ? modalData.currentLastDoneDate.split("T")[0] : "");
     setEditNextDueDate(modalData.currentNextDueDate ? modalData.currentNextDueDate.split("T")[0] : "");
     setActionDoneDate(new Date().toISOString().split("T")[0]);
-    setSelectedChemId("");
+    setSelectedChemId(chemicals.length > 0 ? chemicals[0].id : "");
     setChemDeductQty("");
+    setAdhocNotes("");
     setRefillPercent(25);
     setEditVolume(modalData.volumeLiters ? String(modalData.volumeLiters) : "1200");
     setEditSanitization(modalData.sanitizationType || "BROMINE");
@@ -379,7 +383,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     }
   };
 
-  // Mark task performed now
+  // Mark task performed now (or record ad-hoc chemical addition)
   const handleMarkActionDone = async () => {
     if (!activeItemModal) return;
     setModalSaving(true);
@@ -388,7 +392,40 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     try {
       const actionDateObj = actionDoneDate ? new Date(actionDoneDate) : new Date();
 
-      if (activeItemModal.id === "full-refill") {
+      if (activeItemModal.type === "adhoc-chemical") {
+        // Record ad-hoc manual chemical addition (no next date)
+        const chem = chemicals.find((c: any) => c.id === selectedChemId);
+        const chemName = chem ? chem.name : "חומר כימי";
+        const chemUnit = chem ? (chem.unit || "גרם") : "גרם";
+        const amountNum = chemDeductQty ? parseFloat(chemDeductQty) : 0;
+
+        // Deduct inventory if selected
+        if (chem && amountNum > 0) {
+          const newQty = Math.max(0, chem.quantity - amountNum);
+          await fetch("/api/chemicals", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: chem.id,
+              quantity: newQty,
+              lastUsedDate: actionDateObj,
+              lastUsedAmount: amountNum,
+            }),
+          });
+        }
+
+        // Log to Diary
+        await fetch("/api/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: `תוספת חומר יזומה: ${chemName}`,
+            content: `הוספת חומר יזומה: ${chemName} (${amountNum} ${chemUnit}). ${adhocNotes ? `הערות: ${adhocNotes}` : ""}`,
+            chemicalsAdded: `${chemName}: ${amountNum} ${chemUnit}`,
+            entryDate: actionDateObj,
+          }),
+        });
+      } else if (activeItemModal.id === "full-refill") {
         // Full refill (100%)
         await fetch("/api/jacuzzi", {
           method: "PUT",
@@ -454,7 +491,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         }
       }
 
-      setModalNotice("הפעולה נרשמה בהצלחה והמועד הבא חושב מחדש!");
+      setModalNotice("הפעולה נרשמה בהצלחה!");
       await loadSummaryData();
       setTimeout(() => {
         setActiveItemModal(null);
@@ -506,6 +543,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const jacuzzi = data?.jacuzzi;
   const chemicals = data?.chemicals || [];
   const tasks = data?.tasks || [];
+  const diaryEntries = data?.diaryEntries || [];
   const waterLogs = data?.waterLogs || [];
   const latestWaterLog = waterLogs.length > 0 ? waterLogs[0] : null;
 
@@ -542,9 +580,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(lastWaterTestDate.getTime() + 3 * 24 * 3600 * 1000)
     : new Date();
 
-  // 2. Sanitizer / Shock Treatment Dates
+  // 2. Sanitizer Dates (חיטוי שבועי)
   const sanitizerTask = tasks.find((t: any) =>
-    t.title?.includes("חיטוי") || t.title?.includes("שוק") || t.title?.includes("ברום") || t.title?.includes("כלור") || t.title?.includes("הלכרה")
+    t.title?.includes("חיטוי") || t.title?.includes("ברום") || t.title?.includes("כלור") || t.title?.includes("הלכרה")
   );
   const sanitizerChem = chemicals.find((c: any) =>
     c.category === "SANITIZER" || c.name?.includes("כלור") || c.name?.includes("ברום")
@@ -561,7 +599,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     : new Date(Date.now() + 2 * 24 * 3600 * 1000);
 
   // 3. Partial Refill Dates
-  const partialDiary = data?.diaryEntries?.find((d: any) => {
+  const partialDiary = diaryEntries.find((d: any) => {
     const t = `${d.title || ""} ${d.content || ""}`.toLowerCase();
     return (t.includes("החלפ") || t.includes("ריענון") || t.includes("חלקית")) && t.includes("מים") && !t.includes("100%");
   });
@@ -576,7 +614,20 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const daysUntilNextRefill = Math.max(0, 90 - daysSinceRefill);
   const nextFullRefillDate = new Date(lastFullRefillDate.getTime() + 90 * 24 * 3600 * 1000);
 
-  // 5. Weekly Filter Rinse Dates
+  // 5. Ad-Hoc / Manual Chemical Additions (ללא תאריך הבא!)
+  const adHocChemicalList = diaryEntries
+    .filter((d: any) => d.chemicalsAdded || (d.title && d.title.includes("חומר")))
+    .slice(0, 4)
+    .map((d: any) => ({
+      id: d.id,
+      title: d.chemicalsAdded || d.title,
+      date: d.entryDate || d.createdAt,
+      formattedDate: formatDateDisplay(d.entryDate || d.createdAt),
+      relativeDate: getRelativeDaysDisplay(d.entryDate || d.createdAt, true),
+    }));
+
+  // Jacuzzi Maintenance Dates
+  // 6. Weekly Filter Rinse Dates
   const filterRinseTask = tasks.find((t: any) =>
     t.title?.includes("שטיפת פילטר") || (t.title?.includes("פילטר") && !t.title?.includes("השרי") && !t.title?.includes("החלפ"))
   );
@@ -587,7 +638,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(lastFilterRinseDate.getTime() + (filterRinseTask?.frequencyDays || 7) * 24 * 3600 * 1000)
     : new Date(Date.now() + 7 * 24 * 3600 * 1000);
 
-  // 6. Waterline & Shell Cleaning Dates
+  // 7. Waterline & Shell Cleaning Dates
   const waterlineTask = tasks.find((t: any) =>
     t.title?.includes("קו מים") || t.title?.includes("דפנ") || t.title?.includes("דופן")
   );
@@ -598,7 +649,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(lastWaterlineDate.getTime() + (waterlineTask?.frequencyDays || 14) * 24 * 3600 * 1000)
     : new Date(Date.now() + 14 * 24 * 3600 * 1000);
 
-  // 7. Cover Cleaning Dates
+  // 8. Cover Cleaning Dates
   const coverTask = tasks.find((t: any) =>
     t.title?.includes("כיסוי") || t.title?.includes("מכסה")
   );
@@ -609,20 +660,31 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(lastCoverDate.getTime() + (coverTask?.frequencyDays || 30) * 24 * 3600 * 1000)
     : new Date(Date.now() + 21 * 24 * 3600 * 1000);
 
-  // 8. Monthly Filter Soak / Deep Pipe Flush Dates
-  const deepCleanTask = tasks.find((t: any) =>
-    t.title?.includes("השרי") || t.title?.includes("צנרת") || t.title?.includes("פלאש")
+  // 9. Pipe Line Cleaning (ניקוי צנרת)
+  const pipeCleanTask = tasks.find((t: any) =>
+    t.title?.includes("צנרת") || t.title?.includes("פלאש") || t.title?.includes("Flush")
   );
-  const lastDeepCleanDate = deepCleanTask?.lastDoneDate
-    ? new Date(deepCleanTask.lastDoneDate)
+  const lastPipeCleanDate = pipeCleanTask?.lastDoneDate
+    ? new Date(pipeCleanTask.lastDoneDate)
     : jacuzzi?.lastDeepCleanDate
     ? new Date(jacuzzi.lastDeepCleanDate)
     : null;
-  const nextDeepCleanDate = deepCleanTask?.nextDueDate
-    ? new Date(deepCleanTask.nextDueDate)
-    : lastDeepCleanDate
-    ? new Date(lastDeepCleanDate.getTime() + (deepCleanTask?.frequencyDays || 30) * 24 * 3600 * 1000)
-    : new Date(Date.now() + 30 * 24 * 3600 * 1000);
+  const nextPipeCleanDate = pipeCleanTask?.nextDueDate
+    ? new Date(pipeCleanTask.nextDueDate)
+    : lastPipeCleanDate
+    ? new Date(lastPipeCleanDate.getTime() + (pipeCleanTask?.frequencyDays || 90) * 24 * 3600 * 1000)
+    : new Date(Date.now() + 90 * 24 * 3600 * 1000);
+
+  // 10. Filter Replacement (החלפת פילטר)
+  const filterReplaceTask = tasks.find((t: any) =>
+    t.title?.includes("החלפת פילטר") || (t.title?.includes("פילטר") && t.title?.includes("החלפ"))
+  );
+  const lastFilterReplaceDate = filterReplaceTask?.lastDoneDate ? new Date(filterReplaceTask.lastDoneDate) : null;
+  const nextFilterReplaceDate = filterReplaceTask?.nextDueDate
+    ? new Date(filterReplaceTask.nextDueDate)
+    : lastFilterReplaceDate
+    ? new Date(lastFilterReplaceDate.getTime() + (filterReplaceTask?.frequencyDays || 180) * 24 * 3600 * 1000)
+    : new Date(Date.now() + 180 * 24 * 3600 * 1000);
 
   // Active Pending Tasks & Low Stock Chemicals
   const lowStockChems = chemicals.filter((c: any) => (c.quantity || 0) <= (c.minThreshold || 100));
@@ -738,7 +800,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         );
 
       // -------------------------------------------------------------
-      // CARD 1: תחזוקת מים וגיל המים
+      // CARD 1: תחזוקת מים וגיל המים (כולל תוספות יזומות ללא תאריך הבא)
       // -------------------------------------------------------------
       case 1:
         return (
@@ -767,7 +829,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </span>
             </div>
 
-            {/* List of 4 Specific Water Treatments */}
+            {/* List of 4 Specific Water Treatments with Both Last & Next Dates */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Item 1: בדיקת איכות מים */}
               <div
@@ -811,14 +873,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 </div>
               </div>
 
-              {/* Item 2: חיטוי שבועי / טיפול שוק */}
+              {/* Item 2: חיטוי שבועי (עודכן לפי בקשת המשתמש) */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   openItemModal({
                     id: "sanitizer-shock",
-                    title: "חיטוי שבועי / טיפול שוק",
-                    subtitle: "סימון ביצוע חיטוי/שוק, גריעת מלאי מהארון ושליטה בתדירות",
+                    title: "חיטוי שבועי",
+                    subtitle: "סימון ביצוע חיטוי שבועי, גריעת מלאי מהארון ושליטה בתדירות",
                     icon: ShieldCheck,
                     type: "task",
                     taskId: sanitizerTask?.id,
@@ -834,7 +896,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
                     <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-                    <span>חיטוי שבועי / טיפול שוק</span>
+                    <span>חיטוי שבועי</span>
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
                     <Edit2 className="w-2.5 h-2.5 opacity-60" />
@@ -940,6 +1002,60 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             </div>
 
+            {/* 🌟 NEW SECTION: תוספות חומרים יזומות (ללא תאריך הבא!) */}
+            <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-white flex items-center gap-1.5">
+                  <Beaker className="w-3.5 h-3.5 text-sky-400" />
+                  <span>תוספות חומרים יזומות (ללא מחזור קבוע):</span>
+                </span>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openItemModal({
+                      id: "adhoc-chemical",
+                      title: "רישום תוספת חומר יזומה",
+                      subtitle: "הוספת חומר מחוץ לשגרה, גריעת כמות מהארון ותיעוד ביומן",
+                      icon: Beaker,
+                      type: "adhoc-chemical",
+                      defaultFreqDays: 0,
+                      currentFreqDays: 0,
+                      currentLastDoneDate: new Date().toISOString(),
+                      currentNextDueDate: null,
+                    });
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-sky-950/90 hover:bg-sky-900 border border-sky-800/80 text-sky-200 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                >
+                  <Plus className="w-3 h-3 text-sky-400" />
+                  <span>+ הוסף חומר יזום</span>
+                </button>
+              </div>
+
+              {adHocChemicalList.length > 0 ? (
+                <div className="space-y-1.5 pt-1 border-t border-sky-900/20">
+                  {adHocChemicalList.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between text-[11px] bg-sky-950/40 px-3 py-1.5 rounded-xl border border-sky-900/30"
+                    >
+                      <span className="font-semibold text-white truncate max-w-[200px] sm:max-w-xs">
+                        🧪 {item.title}
+                      </span>
+                      <span className="text-slate-300 text-[10px] shrink-0">
+                        בוצע בתאריך {item.formattedDate} {item.relativeDate}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[11px] text-slate-400 text-center py-1">
+                  לא תועדו תוספות חומרים יזומות לאחרונה • לחץ על "+ הוסף חומר יזום" לתיעוד
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
               <span>💡 לחץ על כל פריט להגדרת תדירות, עדכון תאריכים וסימון ביצוע</span>
               <span className="text-sky-300 font-bold">2 מתוך 6 ◂</span>
@@ -948,7 +1064,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         );
 
       // -------------------------------------------------------------
-      // CARD 2: תחזוקת הג'קוזי
+      // CARD 2: תחזוקת הג'קוזי (כולל ניקוי צנרת והחלפת פילטר)
       // -------------------------------------------------------------
       case 2:
         return (
@@ -966,7 +1082,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     תחזוקת הג'קוזי
                   </h2>
                   <p className="text-xs text-slate-300">
-                    שטיפת פילטרים, ניקוי דפנות, מכסה וצנרת הג'קוזי
+                    שטיפת פילטר, ניקוי דפנות, מכסה, ניקוי צנרת והחלפת פילטר
                   </p>
                 </div>
               </div>
@@ -977,7 +1093,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </span>
             </div>
 
-            {/* List of 4 Specific Jacuzzi Equipment Actions */}
+            {/* List of 5 Specific Jacuzzi Equipment Actions */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Item 1: שטיפת פילטר שבועית */}
               <div
@@ -1111,22 +1227,22 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 </div>
               </div>
 
-              {/* Item 4: השרית פילטר / שטיפת צנרת (Line Flush) */}
+              {/* Item 4: ניקוי צנרת (עודכן לפי בקשת המשתמש) */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   openItemModal({
                     id: "deep-clean",
-                    title: "השרית פילטר / שטיפת צנרת עמוקה",
-                    subtitle: "סימון שטיפת פלאש לצנרת, השרית פילטר בחומר ייעודי ותדירות",
+                    title: "ניקוי צנרת (Line Flush)",
+                    subtitle: "סימון שטיפת פלאש לצנרת לפני ריקון מים, קביעת תדירות ומועד הבא",
                     icon: Wrench,
                     type: "task",
-                    taskId: deepCleanTask?.id,
+                    taskId: pipeCleanTask?.id,
                     taskCategory: "MONTHLY",
-                    defaultFreqDays: 30,
-                    currentFreqDays: deepCleanTask?.frequencyDays || 30,
-                    currentLastDoneDate: lastDeepCleanDate?.toISOString() || null,
-                    currentNextDueDate: nextDeepCleanDate.toISOString(),
+                    defaultFreqDays: 90,
+                    currentFreqDays: pipeCleanTask?.frequencyDays || 90,
+                    currentLastDoneDate: lastPipeCleanDate?.toISOString() || null,
+                    currentNextDueDate: nextPipeCleanDate.toISOString(),
                   });
                 }}
                 className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -1134,23 +1250,67 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
                     <Wrench className="w-3.5 h-3.5 text-sky-400" />
-                    <span>השרית פילטר / שטיפת צנרת</span>
+                    <span>ניקוי צנרת (Line Flush)</span>
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
                     <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                    <span>כל {deepCleanTask?.frequencyDays || 30} יום</span>
+                    <span>כל {pipeCleanTask?.frequencyDays || 90} יום</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
                   <div>
                     <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
-                    <span className="text-white font-semibold">{formatDateDisplay(lastDeepCleanDate)}</span>{" "}
-                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastDeepCleanDate, true)}</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastPipeCleanDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastPipeCleanDate, true)}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextDeepCleanDate)}</span>{" "}
-                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextDeepCleanDate, false)}</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextPipeCleanDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextPipeCleanDate, false)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Item 5: החלפת פילטר (חדש לפי בקשת המשתמש!) */}
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openItemModal({
+                    id: "filter-replace",
+                    title: "החלפת פילטר (סנן חדש)",
+                    subtitle: "סימון התקנת פילטר חדש, קביעת תדירות החלפה (חצי שנתי / שנתי) ומועד הבא",
+                    icon: RefreshCw,
+                    type: "task",
+                    taskId: filterReplaceTask?.id,
+                    taskCategory: "YEARLY",
+                    defaultFreqDays: 180,
+                    currentFreqDays: filterReplaceTask?.frequencyDays || 180,
+                    currentLastDoneDate: lastFilterReplaceDate?.toISOString() || null,
+                    currentNextDueDate: nextFilterReplaceDate.toISOString(),
+                  });
+                }}
+                className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item col-span-1 sm:col-span-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
+                    <RefreshCw className="w-3.5 h-3.5 text-sky-400" />
+                    <span>החלפת פילטר (סנן חדש)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
+                    <Edit2 className="w-2.5 h-2.5 opacity-60" />
+                    <span>כל {filterReplaceTask?.frequencyDays || 180} ימים</span>
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">הוחלף לאחרונה:</span>
+                    <span className="text-white font-semibold">{formatDateDisplay(lastFilterReplaceDate)}</span>{" "}
+                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastFilterReplaceDate, true)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">החלפה הבאה:</span>
+                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextFilterReplaceDate)}</span>{" "}
+                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextFilterReplaceDate, false)}</span>
                   </div>
                 </div>
               </div>
@@ -1570,14 +1730,18 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             )}
 
             {/* SECTION 1: סימון ביצוע מיידי של הפעולה */}
-            {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill") && (
+            {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill" || activeItemModal.type === "adhoc-chemical") && (
               <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs sm:text-sm text-sky-200 flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>סימון ביצוע הפעולה עכשיו</span>
+                    <span>
+                      {activeItemModal.type === "adhoc-chemical" ? "תיעוד הוספת חומר יזומה" : "סימון ביצוע הפעולה עכשיו"}
+                    </span>
                   </span>
-                  <span className="text-[11px] text-slate-400">יעדכן יומן ויקדם תאריך הבא</span>
+                  <span className="text-[11px] text-slate-400">
+                    {activeItemModal.type === "adhoc-chemical" ? "רישום ביומן ללא תאריך יעד" : "יעדכן יומן ויקדם תאריך הבא"}
+                  </span>
                 </div>
 
                 <div className="space-y-3 pt-1">
@@ -1590,6 +1754,50 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
                     />
                   </div>
+
+                  {/* Ad-Hoc Chemical Selection */}
+                  {activeItemModal.type === "adhoc-chemical" && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[11px] text-slate-300 block mb-1">בחר חומר מהארון:</label>
+                          <select
+                            value={selectedChemId}
+                            onChange={(e) => setSelectedChemId(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                          >
+                            {chemicals.map((c: any) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name} (נותרו {c.quantity} {c.unit || "גרם"})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] text-slate-300 block mb-1">כמות שהוספה:</label>
+                          <input
+                            type="number"
+                            placeholder="כמות (לדוגמה: 30)"
+                            value={chemDeductQty}
+                            onChange={(e) => setChemDeductQty(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] text-slate-300 block mb-1">הערות / סיבת ההוספה:</label>
+                        <input
+                          type="text"
+                          placeholder="למשל: טיפול להורדת pH לאחר מילוי, מסיר קצף וכו'"
+                          value={adhocNotes}
+                          onChange={(e) => setAdhocNotes(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Partial Refill Percentage Selector */}
                   {activeItemModal.id === "partial-refill" && (
@@ -1614,7 +1822,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                   )}
 
-                  {/* Chemical Selection if Sanitizer/Shock */}
+                  {/* Chemical Selection if Sanitizer */}
                   {activeItemModal.id === "sanitizer-shock" && chemicals.length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
@@ -1653,7 +1861,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {modalSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-4 h-4" />}
-                    <span>סמן כבוצע עכשיו ועדכן מועד הבא</span>
+                    <span>
+                      {activeItemModal.type === "adhoc-chemical"
+                        ? "שמור הוספת חומר יזומה ביומן"
+                        : "סמן כבוצע עכשיו ועדכן מועד הבא"}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1679,144 +1891,146 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             )}
 
-            {/* SECTION 2: שליטה בתדירות ובתאריכים */}
-            <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-3">
-              <span className="font-bold text-xs sm:text-sm text-sky-200 flex items-center gap-1.5">
-                <Sliders className="w-4 h-4 text-sky-400" />
-                <span>הגדרת תדירות ותאריכי ביצוע</span>
-              </span>
+            {/* SECTION 2: שליטה בתדירות ובתאריכים (עבור פעולות מחזוריות) */}
+            {activeItemModal.type !== "adhoc-chemical" && (
+              <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-3">
+                <span className="font-bold text-xs sm:text-sm text-sky-200 flex items-center gap-1.5">
+                  <Sliders className="w-4 h-4 text-sky-400" />
+                  <span>הגדרת תדירות ותאריכי ביצוע</span>
+                </span>
 
-              {/* Volume setting */}
-              {activeItemModal.id === "volume" && (
-                <div>
-                  <label className="text-[11px] text-slate-300 block mb-1">נפח מי הג'קוזי (בליטרים):</label>
-                  <input
-                    type="number"
-                    value={editVolume}
-                    onChange={(e) => setEditVolume(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    משמש לחישוב מדויק של מינוני כימיקלים וטיפולי AI.
-                  </p>
-                </div>
-              )}
-
-              {/* Sanitizer setting */}
-              {activeItemModal.id === "sanitizer-type" && (
-                <div>
-                  <label className="text-[11px] text-slate-300 block mb-1">שיטת החיטוי הראשית:</label>
-                  <select
-                    value={editSanitization}
-                    onChange={(e) => setEditSanitization(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
-                  >
-                    <option value="BROMINE">ברום (Bromine) - מומלץ לג'קוזי חם</option>
-                    <option value="CHLORINE">כלור (Chlorine) - כלור גרגרים / טבליות</option>
-                    <option value="SALT">מלח (Salt System) - תא אלקטרוליזה</option>
-                    <option value="ACTIVE_OXYGEN">חמצן פעיל (Active Oxygen / MPS)</option>
-                  </select>
-                </div>
-              )}
-
-              {/* Frequency Days (for tasks & refill) */}
-              {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill") && (
-                <div className="space-y-2">
-                  <label className="text-[11px] text-slate-300 block">
-                    תדירות ביצוע מחזורית (בימים):
-                  </label>
-                  <div className="flex items-center gap-2">
+                {/* Volume setting */}
+                {activeItemModal.id === "volume" && (
+                  <div>
+                    <label className="text-[11px] text-slate-300 block mb-1">נפח מי הג'קוזי (בליטרים):</label>
                     <input
                       type="number"
-                      min={1}
-                      max={365}
-                      value={editFreqDays}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10) || 1;
-                        setEditFreqDays(val);
-                        if (editLastDoneDate) {
-                          const next = new Date(new Date(editLastDoneDate).getTime() + val * 24 * 3600 * 1000);
-                          setEditNextDueDate(next.toISOString().split("T")[0]);
-                        }
-                      }}
-                      className="w-24 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white text-center font-bold focus:outline-none focus:border-sky-500"
+                      value={editVolume}
+                      onChange={(e) => setEditVolume(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
                     />
-                    <span className="text-xs text-slate-300">ימים</span>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      משמש לחישוב מדויק של מינוני כימיקלים וטיפולי AI.
+                    </p>
+                  </div>
+                )}
 
-                    <div className="flex items-center gap-1.5 mr-auto">
-                      {[7, 14, 30, 90].map((d) => (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => {
-                            setEditFreqDays(d);
-                            if (editLastDoneDate) {
-                              const next = new Date(new Date(editLastDoneDate).getTime() + d * 24 * 3600 * 1000);
-                              setEditNextDueDate(next.toISOString().split("T")[0]);
-                            }
-                          }}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                            editFreqDays === d
-                              ? "bg-sky-950 text-sky-200 border-sky-500"
-                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                          }`}
-                        >
-                          {d} יום
-                        </button>
-                      ))}
+                {/* Sanitizer setting */}
+                {activeItemModal.id === "sanitizer-type" && (
+                  <div>
+                    <label className="text-[11px] text-slate-300 block mb-1">שיטת החיטוי הראשית:</label>
+                    <select
+                      value={editSanitization}
+                      onChange={(e) => setEditSanitization(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                    >
+                      <option value="BROMINE">ברום (Bromine) - מומלץ לג'קוזי חם</option>
+                      <option value="CHLORINE">כלור (Chlorine) - כלור גרגרים / טבליות</option>
+                      <option value="SALT">מלח (Salt System) - תא אלקטרוליזה</option>
+                      <option value="ACTIVE_OXYGEN">חמצן פעיל (Active Oxygen / MPS)</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Frequency Days (for tasks & refill) */}
+                {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill") && (
+                  <div className="space-y-2">
+                    <label className="text-[11px] text-slate-300 block">
+                      תדירות ביצוע מחזורית (בימים):
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={365}
+                        value={editFreqDays}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10) || 1;
+                          setEditFreqDays(val);
+                          if (editLastDoneDate) {
+                            const next = new Date(new Date(editLastDoneDate).getTime() + val * 24 * 3600 * 1000);
+                            setEditNextDueDate(next.toISOString().split("T")[0]);
+                          }
+                        }}
+                        className="w-24 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white text-center font-bold focus:outline-none focus:border-sky-500"
+                      />
+                      <span className="text-xs text-slate-300">ימים</span>
+
+                      <div className="flex items-center gap-1.5 mr-auto">
+                        {[7, 14, 30, 90, 180].map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => {
+                              setEditFreqDays(d);
+                              if (editLastDoneDate) {
+                                const next = new Date(new Date(editLastDoneDate).getTime() + d * 24 * 3600 * 1000);
+                                setEditNextDueDate(next.toISOString().split("T")[0]);
+                              }
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                              editFreqDays === d
+                                ? "bg-sky-950 text-sky-200 border-sky-500"
+                                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            {d} יום
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Date Inputs */}
-              {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill") && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                  <div>
-                    <label className="text-[11px] text-slate-300 block mb-1">תאריך ביצוע אחרון:</label>
-                    <input
-                      type="date"
-                      value={editLastDoneDate}
-                      onChange={(e) => {
-                        setEditLastDoneDate(e.target.value);
-                        if (e.target.value && editFreqDays) {
-                          const next = new Date(new Date(e.target.value).getTime() + editFreqDays * 24 * 3600 * 1000);
-                          setEditNextDueDate(next.toISOString().split("T")[0]);
-                        }
-                      }}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
-                    />
+                {/* Date Inputs */}
+                {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill") && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <div>
+                      <label className="text-[11px] text-slate-300 block mb-1">תאריך ביצוע אחרון:</label>
+                      <input
+                        type="date"
+                        value={editLastDoneDate}
+                        onChange={(e) => {
+                          setEditLastDoneDate(e.target.value);
+                          if (e.target.value && editFreqDays) {
+                            const next = new Date(new Date(e.target.value).getTime() + editFreqDays * 24 * 3600 * 1000);
+                            setEditNextDueDate(next.toISOString().split("T")[0]);
+                          }
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] text-slate-300 block mb-1">תאריך יעד ביצוע הבא:</label>
+                      <input
+                        type="date"
+                        value={editNextDueDate}
+                        onChange={(e) => setEditNextDueDate(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
                   </div>
+                )}
 
-                  <div>
-                    <label className="text-[11px] text-slate-300 block mb-1">תאריך יעד ביצוע הבא:</label>
-                    <input
-                      type="date"
-                      value={editNextDueDate}
-                      onChange={(e) => setEditNextDueDate(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="button"
-                disabled={modalSaving}
-                onClick={handleSaveModalSettings}
-                className="w-full py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
-              >
-                {modalSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-4 h-4" />}
-                <span>שמור שינויים והגדרות</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  disabled={modalSaving}
+                  onClick={handleSaveModalSettings}
+                  className="w-full py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                >
+                  {modalSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-4 h-4" />}
+                  <span>שמור שינויים והגדרות</span>
+                </button>
+              </div>
+            )}
 
             {/* Footer Close */}
             <div className="flex items-center justify-end pt-1">
               <button
                 type="button"
                 onClick={() => setActiveItemModal(null)}
-                className="px-4 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
+                className="px-4 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 סגור
               </button>
