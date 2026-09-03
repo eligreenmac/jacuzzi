@@ -614,17 +614,43 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const daysUntilNextRefill = Math.max(0, 90 - daysSinceRefill);
   const nextFullRefillDate = new Date(lastFullRefillDate.getTime() + 90 * 24 * 3600 * 1000);
 
-  // 5. Ad-Hoc / Manual Chemical Additions (ללא תאריך הבא!)
-  const adHocChemicalList = diaryEntries
-    .filter((d: any) => d.chemicalsAdded || (d.title && d.title.includes("חומר")))
-    .slice(0, 4)
+  // 5. Actual Chemicals Added to Jacuzzi Water (ללא תאריך הבא!)
+  const itemsFromInventory = chemicals
+    .filter((c: any) => c.lastUsedDate && c.lastUsedAmount && c.lastUsedAmount > 0)
+    .map((c: any) => ({
+      id: `chem-${c.id}`,
+      title: `${c.name}: ${c.lastUsedAmount} ${c.unit || "גרם"}`,
+      date: c.lastUsedDate,
+      formattedDate: formatDateDisplay(c.lastUsedDate),
+      relativeDate: getRelativeDaysDisplay(c.lastUsedDate, true),
+    }));
+
+  const itemsFromDiary = diaryEntries
+    .filter((d: any) => {
+      if (!d.chemicalsAdded) return false;
+      const t = `${d.title || ""} ${d.content || ""}`.toLowerCase();
+      if (t.includes("הזמנ") || t.includes("הגעת") || t.includes("קני") || t.includes("רכיש")) return false;
+      return true;
+    })
     .map((d: any) => ({
-      id: d.id,
-      title: d.chemicalsAdded || d.title,
+      id: `diary-${d.id}`,
+      title: d.chemicalsAdded,
       date: d.entryDate || d.createdAt,
       formattedDate: formatDateDisplay(d.entryDate || d.createdAt),
       relativeDate: getRelativeDaysDisplay(d.entryDate || d.createdAt, true),
     }));
+
+  const allAddedChemicalsMap = new Map();
+  [...itemsFromInventory, ...itemsFromDiary].forEach((item) => {
+    const key = `${item.title}-${new Date(item.date).toISOString().split("T")[0]}`;
+    if (!allAddedChemicalsMap.has(key)) {
+      allAddedChemicalsMap.set(key, item);
+    }
+  });
+
+  const adHocChemicalList = Array.from(allAddedChemicalsMap.values())
+    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
 
   // Jacuzzi Maintenance Dates
   // 6. Weekly Filter Rinse Dates
@@ -1002,12 +1028,12 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             </div>
 
-            {/* 🌟 NEW SECTION: תוספות חומרים יזומות (ללא תאריך הבא!) */}
+            {/* 🌟 NEW SECTION: חומרים שנוספו לג'קוזי (ללא תאריך הבא!) */}
             <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-xs text-white flex items-center gap-1.5">
                   <Beaker className="w-3.5 h-3.5 text-sky-400" />
-                  <span>תוספות חומרים יזומות (ללא מחזור קבוע):</span>
+                  <span>חומרים שנוספו לג'קוזי (ללא תאריך הבא):</span>
                 </span>
 
                 <button
@@ -1016,8 +1042,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     e.stopPropagation();
                     openItemModal({
                       id: "adhoc-chemical",
-                      title: "רישום תוספת חומר יזומה",
-                      subtitle: "הוספת חומר מחוץ לשגרה, גריעת כמות מהארון ותיעוד ביומן",
+                      title: "רישום תוספת חומר לג'קוזי",
+                      subtitle: "בחירת חומר מהארון, גריעת כמות ותיעוד הוספה למים",
                       icon: Beaker,
                       type: "adhoc-chemical",
                       defaultFreqDays: 0,
@@ -1029,7 +1055,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   className="px-2.5 py-1 rounded-lg bg-sky-950/90 hover:bg-sky-900 border border-sky-800/80 text-sky-200 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
                 >
                   <Plus className="w-3 h-3 text-sky-400" />
-                  <span>+ הוסף חומר יזום</span>
+                  <span>+ הוסף חומר</span>
                 </button>
               </div>
 
@@ -1044,14 +1070,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         🧪 {item.title}
                       </span>
                       <span className="text-slate-300 text-[10px] shrink-0">
-                        בוצע בתאריך {item.formattedDate} {item.relativeDate}
+                        הוסף בתאריך {item.formattedDate} {item.relativeDate}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-[11px] text-slate-400 text-center py-1">
-                  לא תועדו תוספות חומרים יזומות לאחרונה • לחץ על "+ הוסף חומר יזום" לתיעוד
+                  לא תועדו חומרים שנוספו לג'קוזי • לחץ על "+ הוסף חומר" לתיעוד הוספה
                 </div>
               )}
             </div>
