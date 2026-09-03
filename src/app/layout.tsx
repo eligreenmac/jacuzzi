@@ -19,9 +19,6 @@ export default function RootLayout({
         <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
           {children}
         </main>
-        <footer className="border-t border-slate-800/60 bg-[#0e161c]/70 py-6 text-center text-xs text-slate-400">
-          <p>© {new Date().getFullYear()} Jacuzzi Spa Master • תחזוקת מים וספא חכמה ורוגע מרבי</p>
-        </footer>
       </body>
     </html>
   );

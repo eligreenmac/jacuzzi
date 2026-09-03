@@ -59,14 +59,13 @@ export default function Navbar() {
                   👤 {user.name || user.email}
                 </span>
 
-                {/* ⚙️ הגדרות הג'קוזי */}
+                {/* ⚙️ הגדרות הג'קוזי (גלגל שיניים בלבד) */}
                 <Link
                   href="/settings"
-                  className="flex items-center gap-1.5 text-[11px] sm:text-xs text-sky-300 hover:text-white bg-sky-950/80 hover:bg-sky-900 border border-sky-800/70 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all shadow-sm"
-                  title="הגדרות הג'קוזי"
+                  className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 text-sky-300 hover:text-white bg-sky-950/80 hover:bg-sky-900 border border-sky-800/70 rounded-xl transition-all shadow-sm"
+                  title="הגדרות"
                 >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">הגדרות</span>
+                  <Settings className="w-4 h-4" />
                 </Link>
 
                 <button

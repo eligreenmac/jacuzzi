@@ -900,11 +900,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             >
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-white flex items-center gap-1.5 group-hover/strip:text-sky-300 transition-colors">
-                  <Sliders className="w-3.5 h-3.5 text-sky-400" />
-                  <span>הגדרות מקלון בדיקה ({activeParamIds.length} מדדים פעילים):</span>
+                  <Settings className="w-3.5 h-3.5 text-sky-400" />
+                  <span>מקלון בדיקה ({activeParamIds.length} מדדים פעילים):</span>
                 </span>
-                <span className="text-[11px] text-sky-300/80 flex items-center gap-1 font-bold">
-                  <Edit2 className="w-2.5 h-2.5" />
+                <span className="text-[11px] text-sky-300/80 flex items-center gap-1 font-bold bg-sky-950/60 px-2 py-0.5 rounded-lg border border-sky-800/40 group-hover/strip:border-sky-500/60 transition-colors">
+                  <Settings className="w-3 h-3 text-sky-400" />
                   <span>ערוך מקלון</span>
                 </span>
               </div>
@@ -1258,8 +1258,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-              <span>💡 לחץ על כל פריט להגדרת תדירות, עדכון תאריכים וסימון ביצוע</span>
+            <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
               <span className="text-sky-300 font-bold">1 מתוך 4 ◂</span>
             </div>
           </div>
@@ -1518,8 +1517,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-              <span>💡 לחץ על כל משימה להגדרת תדירות, עדכון תאריכים וסימון ביצוע</span>
+            <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
               <span className="text-sky-300 font-bold">2 מתוך 4 ◂</span>
             </div>
           </div>
@@ -1651,8 +1649,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               )}
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-              <span>💡 לחץ על כל חומר או על הכרטיס לעדכון כמויות, סריקת AI ומחיקה</span>
+            <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
               <span className="text-sky-300 font-bold">3 מתוך 4 ◂</span>
             </div>
           </div>
@@ -1715,8 +1712,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
-              <span>💡 לחץ להפעלת אבחון רופא המים והזנת תיאור מצב המים</span>
+            <div className="flex items-center justify-end text-xs text-slate-400 pt-2">
               <span className="text-sky-300 font-bold">4 מתוך 4 ◂</span>
             </div>
           </div>
@@ -1807,11 +1803,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             {renderCard(nextIdx)}
           </div>
         </div>
-      </div>
-
-      {/* Navigation Help Prompt */}
-      <div className="text-center text-xs text-slate-400 flex items-center justify-center gap-2 select-none">
-        <span>◂ לחץ על כל פריט להגדרות ספציפיות • גרור באצבע למעבר בין הכרטיסים ▸</span>
       </div>
 
       {/* ========================================================================= */}
