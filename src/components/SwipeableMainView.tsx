@@ -33,7 +33,7 @@ import {
   Beaker,
 } from "lucide-react";
 
-import WaterTestsPage from "@/app/water-tests/page";
+import WaterTestsPage, { getGenericDomain, extractParamValue } from "@/app/water-tests/page";
 import CalendarPage from "@/app/calendar/page";
 import InventoryPage from "@/app/inventory/page";
 import WaterDoctorPage from "@/app/water-doctor/page";
@@ -741,134 +741,69 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     return paramId.toUpperCase();
   };
 
-  // Compute Health & Equipment Dangers of Abnormal Test Parameters
+  // Compute Health & Equipment Dangers of Abnormal Test Parameters (100% Synced with Water Tests Page)
   const calculateLatestAbnormalRisks = (test: any) => {
     if (!test) return [];
+
+    const testedParamIds: string[] = (() => {
+      let list: string[] = [];
+      if (test.testedParams) {
+        try {
+          const p = JSON.parse(test.testedParams);
+          if (Array.isArray(p) && p.length > 0) list = p;
+        } catch {}
+      }
+      if (list.length === 0) {
+        ALL_PARAMS_WITH_CLARITY.forEach((param) => {
+          if (param.id === "clarity") return;
+          const { val, rangeStr } = extractParamValue(test, param.id);
+          if (val !== null || rangeStr) list.push(param.id);
+        });
+      }
+      const hasClarity = list.includes("clarity") || !!test.waterClarity;
+      const withoutClarity = list.filter((id) => id !== "clarity");
+      return hasClarity
+        ? [...withoutClarity, "clarity"]
+        : withoutClarity.length > 0
+        ? withoutClarity
+        : DEFAULT_TEST_STRIP_PARAM_IDS;
+    })();
+
     const risks: Array<{ name: string; statusLabel: string; risk: string }> = [];
 
-    // 1. Check pH
-    const phVal = test.ph ? parseFloat(test.ph) : null;
-    const phRange = test.phRange || "";
-    const phDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === "ph");
-    if (phDef) {
-      if (phVal !== null) {
-        if (phVal < 7.2) {
-          risks.push({
-            name: "חומציות (pH)",
-            statusLabel: phVal < 6.8 ? "חומצי מאוד" : "חומצי / נמוך",
-            risk: phDef.dangerLow,
-          });
-        } else if (phVal > 7.6) {
-          risks.push({
-            name: "חומציות (pH)",
-            statusLabel: phVal > 8.0 ? "בסיסי מאוד" : "בסיסי / גבוה",
-            risk: phDef.dangerHigh,
-          });
-        }
-      } else if (phRange) {
-        if (phRange.includes("LOW") || phRange.includes("נמוך") || phRange.includes("חומצי")) {
-          risks.push({
-            name: "חומציות (pH)",
-            statusLabel: "חומצי / נמוך",
-            risk: phDef.dangerLow,
-          });
-        } else if (phRange.includes("HIGH") || phRange.includes("גבוה") || phRange.includes("בסיסי")) {
-          risks.push({
-            name: "חומציות (pH)",
-            statusLabel: "בסיסי / גבוה",
-            risk: phDef.dangerHigh,
-          });
-        }
-      }
-    }
+    for (const pId of testedParamIds) {
+      const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
+      if (!pDef) continue;
 
-    // 2. Check Chlorine / Sanitizer
-    const clVal = test.freeChlorine ? parseFloat(test.freeChlorine) : test.totalChlorine ? parseFloat(test.totalChlorine) : null;
-    const clRange = test.chlorineRange || "";
-    const clDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === "chlorine");
-    if (clDef) {
-      if (clVal !== null) {
-        if (clVal < 2.0) {
+      if (pId === "clarity") {
+        const clarityMap: Record<string, string> = {
+          CLEAR: "מים צלולים",
+          SLIGHTLY_CLOUDY: "עכירות קלה",
+          CLOUDY: "עכורים",
+          FOAMY: "קצף במים",
+          ALGAE: "ירוקת / אצות",
+          BAD_SMELL: "ריח חריף",
+        };
+        if (test.waterClarity && test.waterClarity !== "CLEAR") {
           risks.push({
-            name: "כלור / חומר חיטוי",
-            statusLabel: clVal < 0.5 ? "ללא חיטוי" : "חיטוי נמוך",
-            risk: clDef.dangerLow,
-          });
-        } else if (clVal > 4.0) {
-          risks.push({
-            name: "כלור / חומר חיטוי",
-            statusLabel: clVal > 8.0 ? "עודף חמור / שוק" : "גבוה מהרצוי",
-            risk: clDef.dangerHigh,
+            name: pDef.nameHe,
+            statusLabel: clarityMap[test.waterClarity] || "נדרש טיפול",
+            risk: pDef.dangerLow,
           });
         }
-      } else if (clRange) {
-        if (clRange.includes("LOW") || clRange.includes("נמוך") || clRange.includes("ללא")) {
-          risks.push({
-            name: "כלור / חומר חיטוי",
-            statusLabel: "חיטוי נמוך",
-            risk: clDef.dangerLow,
-          });
-        } else if (clRange.includes("HIGH") || clRange.includes("גבוה") || clRange.includes("שוק")) {
-          risks.push({
-            name: "כלור / חומר חיטוי",
-            statusLabel: "גבוה מהרצוי",
-            risk: clDef.dangerHigh,
-          });
-        }
+        continue;
       }
-    }
 
-    // 3. Check Total Alkalinity (TA)
-    const taVal = test.alkalinity ? parseFloat(test.alkalinity) : null;
-    const taRange = test.alkalinityRange || "";
-    const taDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === "alkalinity");
-    if (taDef) {
-      if (taVal !== null) {
-        if (taVal < 80) {
-          risks.push({
-            name: "בסיסיות כוללת (TA)",
-            statusLabel: taVal < 40 ? "נמוכה מאוד" : "נמוכה",
-            risk: taDef.dangerLow,
-          });
-        } else if (taVal > 120) {
-          risks.push({
-            name: "בסיסיות כוללת (TA)",
-            statusLabel: taVal > 180 ? "גבוהה מאוד" : "גבוהה",
-            risk: taDef.dangerHigh,
-          });
-        }
-      } else if (taRange) {
-        if (taRange.includes("LOW") || taRange.includes("נמוך") || taRange.includes("נמוכה")) {
-          risks.push({
-            name: "בסיסיות כוללת (TA)",
-            statusLabel: "נמוכה",
-            risk: taDef.dangerLow,
-          });
-        } else if (taRange.includes("HIGH") || taRange.includes("גבוה") || taRange.includes("גבוהה")) {
-          risks.push({
-            name: "בסיסיות כוללת (TA)",
-            statusLabel: "גבוהה",
-            risk: taDef.dangerHigh,
-          });
-        }
+      const { val, rangeStr } = extractParamValue(test, pId);
+      const domain = getGenericDomain(pId, val, rangeStr);
+      if (domain.id !== "OK" && domain.id !== "UNKNOWN") {
+        const riskText = domain.id === "VERY_LOW" || domain.id === "LOW" ? pDef.dangerLow : pDef.dangerHigh;
+        risks.push({
+          name: pDef.nameHe,
+          statusLabel: domain.label,
+          risk: riskText,
+        });
       }
-    }
-
-    // 4. Check Water Clarity
-    const clarityDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === "clarity");
-    if (clarityDef && test.waterClarity && test.waterClarity !== "CLEAR") {
-      const labelMap: Record<string, string> = {
-        SLIGHTLY_CLOUDY: "עכירות קלה",
-        CLOUDY: "עכורים",
-        FOAMY: "קצף במים",
-        ALGAE: "ירוקת / אצות",
-        BAD_SMELL: "ריח חריף",
-      };
-      risks.push({
-        name: `צלילות ומראה (${labelMap[test.waterClarity] || test.waterClarity})`,
-        statusLabel: "נדרש טיפול",
-        risk: clarityDef.dangerLow,
-      });
     }
 
     return risks;
@@ -965,31 +900,19 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                 </div>
 
-                {/* 🌟 סכנות והתראות בריאות/ציוד של מדדים לא תקינים ישירות בכרטיסייה הנגללת */}
+                {/* 🌟 סכנות של מדדים שאינם תקינים (תואם 100% ליומן הבדיקות) */}
                 {latestAbnormalRisks.length > 0 ? (
-                  <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-amber-900/40 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-amber-300 flex items-center gap-1.5">
-                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>סכנות והתראות של מדדים חריגים ({latestAbnormalRisks.length}):</span>
-                      </span>
-                      <span className="text-[10px] text-amber-400/90 font-bold px-2 py-0.5 rounded-md bg-amber-950/80 border border-amber-800/60">
-                        דורש איזון
-                      </span>
+                  <div className="bg-[#180e14]/95 border border-rose-900/60 rounded-2xl p-4 space-y-2.5 text-xs text-right shadow-lg">
+                    <div className="flex items-center gap-2 text-rose-400 font-bold text-xs sm:text-sm">
+                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>סכנות של מדדים שאינם תקינים:</span>
                     </div>
 
-                    <div className="space-y-1.5 pt-1 border-t border-amber-900/30">
+                    <div className="space-y-2 pt-1 border-t border-rose-900/30">
                       {latestAbnormalRisks.map((risk, idx) => (
-                        <div key={idx} className="bg-amber-950/30 border border-amber-900/30 rounded-xl p-2.5 space-y-1">
-                          <div className="flex items-center justify-between font-bold text-xs text-amber-200">
-                            <span>⚠️ {risk.name}</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-950 text-amber-300 border border-amber-800/60 font-semibold">
-                              {risk.statusLabel}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-300 leading-relaxed">
-                            {risk.risk}
-                          </p>
+                        <div key={idx} className="leading-relaxed text-slate-200">
+                          <span className="text-rose-300 font-bold">• {risk.name} ({risk.statusLabel}):</span>{" "}
+                          <span className="text-slate-300">{risk.risk}</span>
                         </div>
                       ))}
                     </div>
