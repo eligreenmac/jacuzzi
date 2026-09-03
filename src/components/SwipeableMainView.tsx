@@ -1066,7 +1066,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
+            <div className="flex items-center justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
                   <Activity className="w-6 h-6" />
@@ -1080,11 +1080,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </p>
                 </div>
               </div>
-
-              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
-                <span>פתח יומן ומשימות</span>
-                <ArrowLeft className="w-4 h-4" />
-              </span>
             </div>
 
             {/* 1. משימות קרובות בטווח של 7 ימים */}
@@ -1315,7 +1310,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
+            <div className="flex items-center justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
                   <Droplets className="w-6 h-6" />
@@ -1324,9 +1319,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
                     תחזוקת מים
                   </h2>
-                  <p className="text-xs text-slate-300">
-                    גיל המים הנוכחי: <strong className="text-white">{daysSinceRefill} ימים</strong> • ריקון מלא בעוד {daysUntilNextRefill} יום
-                  </p>
                 </div>
               </div>
             </div>
@@ -1384,6 +1376,19 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </span>
                 ))}
               </div>
+            </div>
+
+            {/* 🌟 גיל המים הנוכחי ומועד החלפה הבא */}
+            <div className="bg-[#080e14]/90 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                <span className="text-slate-300">
+                  גיל המים הנוכחי: <strong className="text-white">{daysSinceRefill} ימים</strong>
+                </span>
+              </div>
+              <span className="text-[11px] text-sky-300/90 font-medium">
+                ריקון מלא בעוד {daysUntilNextRefill} יום
+              </span>
             </div>
 
             {/* 🌟 2. קודם: מצב איכות המים (Water Quality Status & Dangers) */}
@@ -2067,46 +2072,25 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto py-2">
-      {/* 🌟 Top Navigation: Pagination Dots & Arrows */}
-      <div className="flex items-center justify-between gap-4 bg-[#0e1823]/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-sky-900/40 shadow-md max-w-xs mx-auto">
-        <button
-          type="button"
-          onClick={prevCard}
-          className="p-2 rounded-xl bg-sky-950/80 hover:bg-sky-900/80 border border-sky-900/50 text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer shadow-sm"
-          title="העבר ימינה (קודם)"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-
-        {/* Pagination Dots Indicator */}
-        <div className="flex items-center justify-center gap-3 flex-1 h-6" dir="ltr">
-          {CARD_TABS.map((card, idx) => {
-            const isActive = idx === visualActiveIndex;
-            return (
-              <button
-                key={card.id}
-                type="button"
-                onClick={() => goToCard(idx)}
-                className={`transition-all duration-200 cursor-pointer rounded-full aspect-square flex items-center justify-center ${
-                  isActive
-                    ? "w-4.5 h-4.5 bg-sky-400 border-2 border-white/70 shadow-md shadow-sky-500/40 scale-110"
-                    : "w-2.5 h-2.5 bg-slate-700/90 hover:bg-slate-500 hover:scale-125"
-                }`}
-                title={card.title}
-                aria-label={card.title}
-              />
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={nextCard}
-          className="p-2 rounded-xl bg-sky-950/80 hover:bg-sky-900/80 border border-sky-900/50 text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer shadow-sm"
-          title="העבר שמאלה (הבא)"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
+      {/* 🌟 Top Navigation: Pagination Dots Indicator */}
+      <div className="flex items-center justify-center gap-3 bg-[#0e1823]/90 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-sky-900/40 shadow-md w-fit mx-auto" dir="ltr">
+        {CARD_TABS.map((card, idx) => {
+          const isActive = idx === visualActiveIndex;
+          return (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => goToCard(idx)}
+              className={`transition-all duration-200 cursor-pointer rounded-full aspect-square flex items-center justify-center ${
+                isActive
+                  ? "w-4.5 h-4.5 bg-sky-400 border-2 border-white/70 shadow-md shadow-sky-500/40 scale-110"
+                  : "w-2.5 h-2.5 bg-slate-700/90 hover:bg-slate-500 hover:scale-125"
+              }`}
+              title={card.title}
+              aria-label={card.title}
+            />
+          );
+        })}
       </div>
 
       {/* 🌟 Continuous Synchronized Multi-Card Viewport Track */}
