@@ -46,7 +46,6 @@ export const CARD_TABS = [
   { id: "status", title: "סטטוס", subtitle: "משימות ל-7 ימים, איכות מים, סכנות והזמנת חומרים", icon: Activity },
   { id: "water-maintenance", title: "תחזוקת מים", subtitle: "הגדרות מקלון, מצב איכות מים, שגרת טיפולים ותוספות חומרים", icon: Droplets },
   { id: "jacuzzi-maintenance", title: "תחזוקת מתקן", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה, צנרת והחלפת פילטר", icon: Wrench },
-  { id: "water-doctor", title: "רופא מים AI", subtitle: "אבחון מים מבוסס AI וחישוב מינונים", icon: Sparkles },
 ];
 
 interface SwipeableMainViewProps {
@@ -1076,7 +1075,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     סטטוס
                   </h2>
                   <p className="text-xs text-slate-300">
-                    גיל המים: <strong className="text-white">{daysSinceRefill} ימים</strong> • {sevenDaysUpcomingTasks.length} משימות ל-7 הימים הקרובים
+                    {sevenDaysUpcomingTasks.length} משימות מתוזמנות ל-7 הימים הקרובים
                   </p>
                 </div>
               </div>
@@ -1157,7 +1156,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               )}
             </div>
 
-            {/* 2. מצב המים הנוכחי וסכנות חריגים */}
+            {/* 2. מצב המים הנוכחי, גיל המים וסכנות חריגים */}
             <div className="space-y-2.5 pt-1 border-t border-sky-900/20">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-white flex items-center gap-1.5">
@@ -1166,6 +1165,19 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 </span>
                 <span className="text-[10px] text-slate-400">
                   {latestWaterLog ? `נבדק: ${new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")}` : "טרם בוצעה בדיקה"}
+                </span>
+              </div>
+
+              {/* גיל המים הנוכחי ומועד החלפה הבא */}
+              <div className="bg-[#080e14]/90 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span className="text-slate-300">
+                    גיל המים הנוכחי: <strong className="text-white">{daysSinceRefill} ימים</strong>
+                  </span>
+                </div>
+                <span className="text-[11px] text-sky-300/90 font-medium">
+                  ריקון מלא בעוד {daysUntilNextRefill} יום
                 </span>
               </div>
 
@@ -1295,7 +1307,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             {/* Footer */}
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">1 מתוך 4 ◂</span>
+              <span className="text-sky-300 font-bold">1 מתוך 3 ◂</span>
             </div>
           </div>
         );
@@ -1745,7 +1757,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             {/* Footer */}
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">2 מתוך 4 ◂</span>
+              <span className="text-sky-300 font-bold">2 מתוך 3 ◂</span>
             </div>
           </div>
         );
@@ -1754,6 +1766,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       // CARD 2: תחזוקת מתקן (כולל ניקוי צנרת והחלפת פילטר)
       // -------------------------------------------------------------
       case 2:
+      default:
         return (
           <div
             onClick={() => setOpenPageId("jacuzzi-maintenance")}
@@ -1996,70 +2009,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">3 מתוך 4 ◂</span>
-            </div>
-          </div>
-        );
-
-      // -------------------------------------------------------------
-      // CARD 3: רופא מים AI
-      // -------------------------------------------------------------
-      case 3:
-      default:
-        return (
-          <div
-            onClick={() => setOpenPageId("water-doctor")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
-          >
-            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
-                    רופא מים AI
-                  </h2>
-                  <p className="text-xs text-slate-300">
-                    אבחון מים מיידי, פענוח חריגות וחישוב מינונים מותאמים אישית
-                  </p>
-                </div>
-              </div>
-
-              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
-                <span>פתח רופא מים</span>
-                <ArrowLeft className="w-4 h-4" />
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-1">
-                <div className="font-bold text-xs text-white flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-sky-300" />
-                  <span>אבחון מים עכורים / קצף</span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-tight">זיהוי מקור העכירות וקבלת תוכנית טיפול מדורגת</p>
-              </div>
-
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-1">
-                <div className="font-bold text-xs text-white flex items-center gap-1.5">
-                  <Droplets className="w-3.5 h-3.5 text-sky-300" />
-                  <span>חישוב מינון כימי מדויק</span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-tight">חישוב כמויות בגרם/מ"ל בהתאם לנפח הג'קוזי שלך</p>
-              </div>
-
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-1">
-                <div className="font-bold text-xs text-white flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-sky-300" />
-                  <span>בדיקת מלאי אוטומטית</span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-tight">בדיקה האם החומרים הדרושים זמינים בארון שלך</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end text-xs text-slate-400 pt-2">
-              <span className="text-sky-300 font-bold">4 מתוך 4 ◂</span>
+              <span className="text-sky-300 font-bold">3 מתוך 3 ◂</span>
             </div>
           </div>
         );
