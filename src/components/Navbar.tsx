@@ -58,9 +58,20 @@ export default function Navbar() {
                 <span className="hidden lg:inline text-xs bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1 rounded-full">
                   👤 {user.name || user.email}
                 </span>
+
+                {/* ⚙️ הגדרות הג'קוזי */}
+                <Link
+                  href="/settings"
+                  className="flex items-center gap-1.5 text-[11px] sm:text-xs text-sky-300 hover:text-white bg-sky-950/80 hover:bg-sky-900 border border-sky-800/70 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all shadow-sm"
+                  title="הגדרות הג'קוזי"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">הגדרות</span>
+                </Link>
+
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-850 px-2 sm:px-2.5 py-1 rounded-lg border border-slate-800 transition-colors"
+                  className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-850 px-2 sm:px-2.5 py-1.5 rounded-xl border border-slate-800 transition-colors"
                   title="התנתק"
                 >
                   <LogOut className="w-3.5 h-3.5" />

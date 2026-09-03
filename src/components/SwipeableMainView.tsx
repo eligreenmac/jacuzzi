@@ -43,9 +43,8 @@ import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARA
 export const CARD_TABS = [
   { id: "water-maintenance", title: "תחזוקת מים", subtitle: "הגדרות מקלון, מצב איכות מים, שגרת טיפולים ותוספות חומרים", icon: Droplets },
   { id: "jacuzzi-maintenance", title: "תחזוקת מתקן", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה, צנרת והחלפת פילטר", icon: Wrench },
-  { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר וחומרים חיוניים", icon: Package },
+  { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר ופירוט מלאי חומרי טיפול", icon: Package },
   { id: "water-doctor", title: "רופא מים AI", subtitle: "אבחון מים מבוסס AI וחישוב מינונים", icon: Sparkles },
-  { id: "settings", title: "הגדרות הג'קוזי", subtitle: "נפח, שיטת חיטוי ופרטי המערכת", icon: Settings },
 ];
 
 interface SwipeableMainViewProps {
@@ -750,6 +749,37 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     return paramId.toUpperCase();
   };
 
+  const formatChemUnit = (unit: string) => {
+    switch (unit?.toUpperCase()) {
+      case "GRAMS":
+      case "GR":
+        return 'גרם';
+      case "ML":
+      case "MILLILITERS":
+        return 'מ"ל';
+      case "LITERS":
+        return 'ליטר';
+      case "TABLETS":
+        return 'טבליות';
+      default:
+        return unit || 'יח׳';
+    }
+  };
+
+  const formatChemCategory = (cat: string) => {
+    switch (cat?.toUpperCase()) {
+      case "SANITIZER": return "חיטוי";
+      case "SHOCK": return "שוק / חמצון";
+      case "PH_INCREASER": return "מעלה pH";
+      case "PH_DECREASER": return "מוריד pH";
+      case "ALKALINITY": return "בסיסיות (TA)";
+      case "CLARIFIER": return "מבהיר מים";
+      case "ANTIFOAM": return "מונע קצף";
+      case "SCALE_INHIBITOR": return "מונע אבנית";
+      default: return "חומר טיפול";
+    }
+  };
+
   // Compute Health & Equipment Dangers of Abnormal Test Parameters (100% Synced with Water Tests Page)
   const calculateLatestAbnormalRisks = (test: any) => {
     if (!test) return [];
@@ -1230,7 +1260,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             {/* Footer */}
             <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
               <span>💡 לחץ על כל פריט להגדרת תדירות, עדכון תאריכים וסימון ביצוע</span>
-              <span className="text-sky-300 font-bold">1 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">1 מתוך 4 ◂</span>
             </div>
           </div>
         );
@@ -1490,19 +1520,19 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
               <span>💡 לחץ על כל משימה להגדרת תדירות, עדכון תאריכים וסימון ביצוע</span>
-              <span className="text-sky-300 font-bold">2 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">2 מתוך 4 ◂</span>
             </div>
           </div>
         );
 
       // -------------------------------------------------------------
-      // CARD 2: ארון חומרים ומלאי
+      // CARD 2: ארון חומרים ומלאי (כולל פירוט מלא של החומרים בארון)
       // -------------------------------------------------------------
       case 2:
         return (
           <div
             onClick={() => setOpenPageId("inventory")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
             <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
@@ -1514,7 +1544,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     ארון חומרים ומלאי
                   </h2>
                   <p className="text-xs text-slate-300">
-                    מעקב כמויות, התראות חוסר ומלאי חומרי טיפול
+                    סך הכל <strong className="text-white">{chemicals.length} חומרים בארון</strong> • {lowStockChems.length > 0 ? <span className="text-rose-400 font-bold">{lowStockChems.length} בהתראת חוסר</span> : <span className="text-emerald-300">כל המלאי תקין ✓</span>}
                   </p>
                 </div>
               </div>
@@ -1525,17 +1555,18 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </span>
             </div>
 
+            {/* Quick Summary Strip */}
             <div className="grid grid-cols-2 gap-3">
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   setOpenPageId("inventory");
                 }}
-                className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all text-center space-y-0.5 cursor-pointer"
               >
-                <span className="text-[11px] text-slate-400">סך הכל חומרים</span>
-                <div className="text-xl font-black text-white">{chemicals.length} פריטים</div>
-                <span className="text-[10px] text-sky-300/80">לחץ לניהול מלאי בארון</span>
+                <span className="text-[10px] text-slate-400">סך הכל חומרים</span>
+                <div className="text-lg font-black text-white">{chemicals.length} פריטים</div>
+                <span className="text-[9px] text-sky-300/80">בארון החומרים</span>
               </div>
 
               <div
@@ -1543,19 +1574,86 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   e.stopPropagation();
                   setOpenPageId("inventory");
                 }}
-                className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                className={`p-3 rounded-2xl border transition-all text-center space-y-0.5 cursor-pointer ${
+                  lowStockChems.length > 0
+                    ? "bg-rose-950/30 border-rose-900/50 hover:border-rose-500/60 text-rose-300"
+                    : "bg-[#080e14]/90 border-sky-900/30 hover:border-sky-500/60 text-emerald-300"
+                }`}
               >
-                <span className="text-[11px] text-slate-400">התראות חוסר</span>
-                <div className="text-xl font-black text-white">
-                  {lowStockChems.length} פריטים
-                </div>
-                <span className="text-[10px] text-sky-300/80">{lowStockChems.length > 0 ? "נדרשת רכישה" : "מלאי מספק ✓"}</span>
+                <span className="text-[10px] text-slate-400">התראות חוסר</span>
+                <div className="text-lg font-black text-white">{lowStockChems.length} פריטים</div>
+                <span className="text-[9px]">{lowStockChems.length > 0 ? "נדרשת רכישה ⚠️" : "מלאי מספק ✓"}</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
-              <span>💡 לחץ לפתיחת ארון החומרים המלא, הוספת פריטים וסריקת תמונות</span>
-              <span className="text-sky-300 font-bold">3 מתוך 5 ◂</span>
+            {/* 🌟 רשימת פירוט החומרים שבארון */}
+            <div className="space-y-2 pt-1 border-t border-sky-900/20">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-sky-400" />
+                  <span>פירוט החומרים בארון:</span>
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {chemicals.length} חומרים רשומים
+                </span>
+              </div>
+
+              {chemicals.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-0.5">
+                  {chemicals.map((chem: any) => {
+                    const isLow = (chem.quantity || 0) <= (chem.minThreshold || 100);
+                    return (
+                      <div
+                        key={chem.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenPageId("inventory");
+                        }}
+                        className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all flex items-center justify-between gap-3 cursor-pointer group/chem"
+                      >
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-white text-xs truncate group-hover/chem:text-sky-300 transition-colors">
+                              {chem.name}
+                            </span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-sky-950 text-sky-300 border border-sky-800/60 shrink-0 font-medium">
+                              {formatChemCategory(chem.category)}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                            {chem.brand && <span className="truncate">{chem.brand} •</span>}
+                            <span>סף מינימום: {chem.minThreshold || 100} {formatChemUnit(chem.unit)}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-left shrink-0 space-y-0.5">
+                          <div className="text-xs sm:text-sm font-black text-white">
+                            {chem.quantity} <span className="text-[10px] font-normal text-slate-300">{formatChemUnit(chem.unit)}</span>
+                          </div>
+                          {isLow ? (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-950/80 text-rose-300 border border-rose-800/70 inline-block">
+                              חוסר ⚠️
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 inline-block">
+                              תקין ✓
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-[11px] text-slate-400 text-center py-4 bg-[#080e14]/60 rounded-2xl border border-sky-900/20">
+                  לא קיימים חומרים בארון • לחץ כאן להוספת חומר ראשון או צילום חומר
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+              <span>💡 לחץ על כל חומר או על הכרטיס לעדכון כמויות, סריקת AI ומחיקה</span>
+              <span className="text-sky-300 font-bold">3 מתוך 4 ◂</span>
             </div>
           </div>
         );
@@ -1564,6 +1662,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       // CARD 3: רופא מים AI
       // -------------------------------------------------------------
       case 3:
+      default:
         return (
           <div
             onClick={() => setOpenPageId("water-doctor")}
@@ -1618,117 +1717,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
               <span>💡 לחץ להפעלת אבחון רופא המים והזנת תיאור מצב המים</span>
-              <span className="text-sky-300 font-bold">4 מתוך 5 ◂</span>
-            </div>
-          </div>
-        );
-
-      // -------------------------------------------------------------
-      // CARD 4: הגדרות הג'קוזי
-      // -------------------------------------------------------------
-      case 4:
-      default:
-        return (
-          <div
-            onClick={() => setOpenPageId("settings")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
-          >
-            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
-                  <Settings className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
-                    הגדרות הג'קוזי
-                  </h2>
-                  <p className="text-xs text-slate-300">
-                    {jacuzzi?.name || "הג'קוזי שלי"} • {jacuzzi?.volumeLiters || 1200} ליטר • {jacuzzi?.sanitizationType === "BROMINE" ? "ברום" : "כלור"}
-                  </p>
-                </div>
-              </div>
-
-              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
-                <span>פתח הגדרות</span>
-                <ArrowLeft className="w-4 h-4" />
-              </span>
-            </div>
-
-            {/* Jacuzzi Quick Specs */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {/* Tile 1: Volume */}
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openItemModal({
-                    id: "volume",
-                    title: "נפח מים בג'קוזי",
-                    subtitle: "עדכון כמות המים בליטרים לצורך חישוב מינונים מדויק",
-                    icon: Droplets,
-                    type: "jacuzzi",
-                    defaultFreqDays: 0,
-                    currentFreqDays: 0,
-                    currentLastDoneDate: null,
-                    currentNextDueDate: null,
-                    volumeLiters: jacuzzi?.volumeLiters || 1200,
-                  });
-                }}
-                className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer group/spec"
-              >
-                <span className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
-                  <span>נפח מים</span>
-                  <Edit2 className="w-2.5 h-2.5 opacity-60 group-hover/spec:opacity-100 text-sky-300" />
-                </span>
-                <div className="text-lg font-black text-white">{jacuzzi?.volumeLiters || 1200} ליטר</div>
-                <span className="text-[10px] text-sky-300/80">לחץ לעדכון נפח</span>
-              </div>
-
-              {/* Tile 2: Sanitization Type */}
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openItemModal({
-                    id: "sanitizer-type",
-                    title: "שיטת חיטוי ראשית",
-                    subtitle: "בחירת חומר החיטוי העיקרי בג'קוזי (ברום, כלור או מלח)",
-                    icon: ShieldCheck,
-                    type: "jacuzzi",
-                    defaultFreqDays: 0,
-                    currentFreqDays: 0,
-                    currentLastDoneDate: null,
-                    currentNextDueDate: null,
-                    sanitizationType: jacuzzi?.sanitizationType || "BROMINE",
-                  });
-                }}
-                className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer group/spec"
-              >
-                <span className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
-                  <span>שיטת חיטוי</span>
-                  <Edit2 className="w-2.5 h-2.5 opacity-60 group-hover/spec:opacity-100 text-sky-300" />
-                </span>
-                <div className="text-lg font-black text-white">
-                  {jacuzzi?.sanitizationType === "BROMINE" ? "ברום" : jacuzzi?.sanitizationType === "SALT" ? "מלח" : "כלור"}
-                </div>
-                <span className="text-[10px] text-sky-300/80">לחץ לשינוי שיטה</span>
-              </div>
-
-              {/* Tile 3: Email Reminders */}
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenPageId("settings");
-                }}
-                className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 col-span-2 sm:col-span-1 cursor-pointer"
-              >
-                <span className="text-[11px] text-slate-400">התראות במייל</span>
-                <div className="text-lg font-black text-white">פעיל ✓</div>
-                <span className="text-[10px] text-sky-300/80">תזכורות למשימות</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
-              <span>💡 לחץ על כל פרמטר להגדרה ספציפית או על הכרטיס לפתיחה מלאה</span>
-              <span className="text-sky-300 font-bold">5 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">4 מתוך 4 ◂</span>
             </div>
           </div>
         );
