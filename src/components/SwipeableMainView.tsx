@@ -879,6 +879,19 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
             </div>
 
+            {/* 🌟 כפתור הזנת בדיקת מקלון חדשה */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenPageId("water-tests");
+              }}
+              className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer group/btn"
+            >
+              <FlaskConical className="w-4 h-4 text-sky-100 group-hover/btn:scale-110 transition-transform" />
+              <span>הזן בדיקת מקלון חדשה</span>
+            </button>
+
             {/* 🌟 1. מעליו: הגדרות מקלון (Test Strip Settings) */}
             <div
               onClick={(e) => {
@@ -1018,6 +1031,20 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   לחץ כאן כדי להזין את בדיקת המקלון הראשונה שלך
                 </div>
               )}
+
+              {/* כפתור היסטוריית בדיקות שמעביר ליומן בדיקות איכות המים */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenPageId("water-tests");
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-sky-950/70 hover:bg-sky-900/90 border border-sky-800/60 hover:border-sky-500/80 text-sky-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+              >
+                <History className="w-3.5 h-3.5 text-sky-400" />
+                <span>היסטוריית בדיקות איכות המים</span>
+                <ChevronLeft className="w-3.5 h-3.5 opacity-60 mr-auto" />
+              </button>
             </div>
 
             {/* 🌟 3. תחתיו: שגרת טיפולי מים ותוספות חומרים */}
