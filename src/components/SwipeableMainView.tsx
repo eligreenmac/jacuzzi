@@ -1741,15 +1741,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             {/* Footer */}
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">1 מתוך 4 ◂</span>
+              <span className="text-sky-300 font-bold">2 מתוך 5 ◂</span>
             </div>
           </div>
         );
 
       // -------------------------------------------------------------
-      // CARD 1: תחזוקת מתקן (כולל ניקוי צנרת והחלפת פילטר)
+      // CARD 2: תחזוקת מתקן (כולל ניקוי צנרת והחלפת פילטר)
       // -------------------------------------------------------------
-      case 1:
+      case 2:
         return (
           <div
             onClick={() => setOpenPageId("jacuzzi-maintenance")}
@@ -1800,12 +1800,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                    <RefreshCw className="w-3.5 h-3.5 text-sky-400" />
-                    <span>שטיפת פילטר שבועית</span>
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
-                    <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                    <span>כל {filterRinseTask?.frequencyDays || 7} ימים</span>
                     <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
                     <span>שטיפת פילטר</span>
                   </span>
@@ -2006,7 +2000,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">2 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">3 מתוך 5 ◂</span>
             </div>
           </div>
         );
