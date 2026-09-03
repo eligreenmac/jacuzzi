@@ -41,8 +41,8 @@ import SettingsPage from "@/app/settings/page";
 import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARAM_IDS } from "@/lib/test-strip-params";
 
 export const CARD_TABS = [
-  { id: "water-maintenance", title: "תחזוקת מים וגיל המים", subtitle: "הגדרות מקלון, מצב איכות מים, שגרת טיפולים ותוספות חומרים", icon: Droplets },
-  { id: "jacuzzi-maintenance", title: "תחזוקת הג'קוזי", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה, צנרת והחלפת פילטר", icon: Wrench },
+  { id: "water-maintenance", title: "תחזוקת מים", subtitle: "הגדרות מקלון, מצב איכות מים, שגרת טיפולים ותוספות חומרים", icon: Droplets },
+  { id: "jacuzzi-maintenance", title: "תחזוקת מתקן", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה, צנרת והחלפת פילטר", icon: Wrench },
   { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר וחומרים חיוניים", icon: Package },
   { id: "water-doctor", title: "רופא מים AI", subtitle: "אבחון מים מבוסס AI וחישוב מינונים", icon: Sparkles },
   { id: "settings", title: "הגדרות הג'קוזי", subtitle: "נפח, שיטת חיטוי ופרטי המערכת", icon: Settings },
@@ -814,7 +814,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const renderCard = (cardIdx: number) => {
     switch (cardIdx) {
       // -------------------------------------------------------------
-      // CARD 0: תחזוקת מים וגיל המים (הגדרות מקלון מעל + איכות מים קודם + שגרת טיפולים ותוספות תחתיו)
+      // CARD 0: תחזוקת מים (הגדרות מקלון מעל + איכות מים קודם + שגרת טיפולים ותוספות תחתיו)
       // -------------------------------------------------------------
       case 0:
         return (
@@ -830,18 +830,13 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 </div>
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
-                    תחזוקת מים וגיל המים
+                    תחזוקת מים
                   </h2>
                   <p className="text-xs text-slate-300">
                     גיל המים הנוכחי: <strong className="text-white">{daysSinceRefill} ימים</strong> • ריקון מלא בעוד {daysUntilNextRefill} יום
                   </p>
                 </div>
               </div>
-
-              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
-                <span>פתח יומן מים ובדיקות</span>
-                <ArrowLeft className="w-4 h-4" />
-              </span>
             </div>
 
             {/* 🌟 1. מעליו: הגדרות מקלון (Test Strip Settings) */}
@@ -1220,7 +1215,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         );
 
       // -------------------------------------------------------------
-      // CARD 1: תחזוקת הג'קוזי (כולל ניקוי צנרת והחלפת פילטר)
+      // CARD 1: תחזוקת מתקן (כולל ניקוי צנרת והחלפת פילטר)
       // -------------------------------------------------------------
       case 1:
         return (
@@ -1235,7 +1230,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 </div>
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
-                    תחזוקת הג'קוזי
+                    תחזוקת מתקן
                   </h2>
                   <p className="text-xs text-slate-300">
                     שטיפת פילטר, ניקוי דפנות, כיסוי, ניקוי צנרת והחלפת פילטר
@@ -1244,7 +1239,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
 
               <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
-                <span>פתח משימות ג'קוזי</span>
+                <span>פתח משימות מתקן</span>
                 <ArrowLeft className="w-4 h-4" />
               </span>
             </div>
@@ -1707,37 +1702,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <span className="text-[11px] text-slate-400">התראות במייל</span>
                 <div className="text-lg font-black text-white">פעיל ✓</div>
                 <span className="text-[10px] text-sky-300/80">תזכורות למשימות</span>
-              </div>
-            </div>
-
-            {/* Active Test Strip Parameters Chip List */}
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpenPageId("settings");
-              }}
-              className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/params"
-            >
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-white flex items-center gap-1.5 group-hover/params:text-sky-300 transition-colors">
-                  <Sliders className="w-3.5 h-3.5 text-sky-400" />
-                  <span>מדדי מקלון פעילים לבדיקה:</span>
-                </span>
-                <span className="text-[11px] text-sky-300/80 flex items-center gap-1">
-                  <span>{activeParamIds.length} מדדים</span>
-                  <Edit2 className="w-2.5 h-2.5" />
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {activeParamIds.map((paramId) => (
-                  <span
-                    key={paramId}
-                    className="text-[11px] font-mono font-bold bg-sky-950/90 text-sky-200 border border-sky-800/60 px-2.5 py-1 rounded-lg"
-                  >
-                    {getShortParamLabel(paramId)}
-                  </span>
-                ))}
               </div>
             </div>
 
