@@ -7,7 +7,10 @@ import {
   Sparkles,
   Settings,
   LogOut,
-  LayoutDashboard,
+  FlaskConical,
+  Calendar,
+  Package,
+  Droplets,
 } from "lucide-react";
 
 export default function Navbar() {
@@ -34,9 +37,11 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { href: "/dashboard", label: "לוח בקרה", icon: LayoutDashboard },
-    { href: "/water-doctor", label: "רופא מים AI", icon: Sparkles },
-    { href: "/settings", label: "הגדרות", icon: Settings },
+    { href: "/?tab=water-tests", label: "בדיקות מים", icon: FlaskConical },
+    { href: "/?tab=calendar", label: "יומן תחזוקה", icon: Calendar },
+    { href: "/?tab=inventory", label: "ארון חומרים", icon: Package },
+    { href: "/?tab=water-doctor", label: "רופא מים AI", icon: Sparkles },
+    { href: "/?tab=settings", label: "הגדרות", icon: Settings },
   ];
 
   // Don't show full navigation on login/register/landing pages if not logged in

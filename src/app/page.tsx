@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Droplets,
@@ -10,9 +13,39 @@ import {
   ArrowLeft,
   Flame,
   Zap,
+  RefreshCw,
 } from "lucide-react";
+import SwipeableMainView from "@/components/SwipeableMainView";
 
 export default function HomePage() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => {
+        if (res.ok) return res.json();
+        return null;
+      })
+      .then((data) => {
+        if (data?.user) setUser(data.user);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh] text-cyan-400">
+        <RefreshCw className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // 🌟 If user is logged in, show the Infinite Swipeable Application (One page at a time)
+  if (user) {
+    return <SwipeableMainView />;
+  }
   return (
     <div className="space-y-16 py-6">
       {/* Hero Section */}
