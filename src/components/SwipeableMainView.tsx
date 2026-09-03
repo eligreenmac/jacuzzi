@@ -31,11 +31,11 @@ import SettingsPage from "@/app/settings/page";
 import { ALL_PARAMS_WITH_CLARITY, DEFAULT_TEST_STRIP_PARAM_IDS } from "@/lib/test-strip-params";
 
 export const CARD_TABS = [
-  { id: "water-tests", title: "מצב איכות המים", subtitle: "בדיקת מקלון אחרונה, איזון ומדדים", icon: FlaskConical, color: "text-cyan-400", badgeBg: "bg-cyan-950/60 border-cyan-500/50 text-cyan-200" },
-  { id: "calendar", title: "שגרת תחזוקה וגיל המים", subtitle: "משימות לביצוע, שטיפות והחלפות", icon: Calendar, color: "text-purple-400", badgeBg: "bg-purple-950/60 border-purple-500/50 text-purple-200" },
-  { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר וחומרים חיוניים", icon: Package, color: "text-blue-400", badgeBg: "bg-blue-950/60 border-blue-500/50 text-blue-200" },
-  { id: "water-doctor", title: "רופא מים AI", subtitle: "אבחון מים מבוסס AI וחישוב מינונים", icon: Sparkles, color: "text-emerald-400", badgeBg: "bg-emerald-950/60 border-emerald-500/50 text-emerald-200" },
-  { id: "settings", title: "הגדרות הג'קוזי והמקלון", subtitle: "נפח, סוג חיטוי ומדדים פעילים", icon: Settings, color: "text-slate-300", badgeBg: "bg-slate-800 border-slate-600 text-white" },
+  { id: "water-tests", title: "מצב איכות המים", subtitle: "בדיקת מקלון אחרונה, איזון ומדדים", icon: FlaskConical },
+  { id: "calendar", title: "שגרת תחזוקה וגיל המים", subtitle: "משימות לביצוע, שטיפות והחלפות", icon: Calendar },
+  { id: "inventory", title: "ארון חומרים ומלאי", subtitle: "מעקב כמויות, התראות חוסר וחומרים חיוניים", icon: Package },
+  { id: "water-doctor", title: "רופא מים AI", subtitle: "אבחון מים מבוסס AI וחישוב מינונים", icon: Sparkles },
+  { id: "settings", title: "הגדרות הג'קוזי והמקלון", subtitle: "נפח, סוג חיטוי ומדדים פעילים", icon: Settings },
 ];
 
 interface SwipeableMainViewProps {
@@ -164,7 +164,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 8) {
         hasMovedHorizontal.current = true;
       } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 8) {
-        // Vertical scroll - release horizontal drag
         setIsDragging(false);
         return;
       }
@@ -182,11 +181,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     const width = getContainerWidth();
     setIsDragging(false);
 
-    // Threshold to trigger swipe (45px or 12% of card width)
     const threshold = Math.min(60, width * 0.15);
 
     if (offset < -threshold) {
-      // Swiped left in RTL -> animate next card into view
       setIsAnimating(true);
       setDragOffset(-width);
       setTimeout(() => {
@@ -195,7 +192,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         setCurrentIndex((prev) => (prev + 1) % CARD_TABS.length);
       }, 350);
     } else if (offset > threshold) {
-      // Swiped right in RTL -> animate prev card into view
       setIsAnimating(true);
       setDragOffset(width);
       setTimeout(() => {
@@ -204,7 +200,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         setCurrentIndex((prev) => (prev - 1 + CARD_TABS.length) % CARD_TABS.length);
       }, 350);
     } else {
-      // Snap back to current card with spring bounce
       setIsBouncing(true);
       setDragOffset(0);
       setTimeout(() => setIsBouncing(false), 380);
@@ -226,25 +221,25 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentIndex, openPageId, isAnimating]);
 
-  // If a full page is opened, render it with a smooth return bar
+  // If a full page is opened, render it with a calm ocean return bar
   if (openPageId) {
     return (
       <div className="space-y-4 animate-fade-in">
         {/* Floating Top Return Bar */}
-        <div className="sticky top-14 sm:top-16 z-50 bg-slate-900/95 backdrop-blur-md -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 border-b border-cyan-800/60 shadow-xl flex items-center justify-between">
+        <div className="sticky top-14 sm:top-16 z-50 bg-[#0e1823]/95 backdrop-blur-md -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 border-b border-sky-900/50 shadow-xl flex items-center justify-between">
           <button
             type="button"
             onClick={() => {
               setOpenPageId(null);
               loadSummaryData();
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs sm:text-sm shadow-md transition-all hover:scale-105 cursor-pointer select-none"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all hover:scale-105 cursor-pointer select-none"
           >
             <ChevronRight className="w-4 h-4" />
             <span>חזרה לכרטיסי הבקרה</span>
           </button>
 
-          <span className="text-xs font-semibold text-slate-300 hidden sm:inline">
+          <span className="text-xs font-semibold text-sky-100 hidden sm:inline">
             {CARD_TABS.find((t) => t.id === openPageId)?.title}
           </span>
         </div>
@@ -280,25 +275,25 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   // Low Stock Chemicals
   const lowStockChems = chemicals.filter((c: any) => (c.quantity || 0) <= (c.minThreshold || 100));
 
-  // Render a specific card by its index (0..4)
+  // Harmonized Card Render (Unified Serene Blue & White Palette)
   const renderCard = (cardIdx: number) => {
     switch (cardIdx) {
       case 0:
         return (
           <div
             onClick={() => setOpenPageId("water-tests")}
-            className="bg-slate-900/90 border border-slate-800 hover:border-cyan-500/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-cyan-950/30"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-cyan-950/80 border border-cyan-800/80 flex items-center justify-center text-cyan-400 shadow-inner group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
                   <FlaskConical className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-cyan-300 transition-colors">
+                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
                     מצב איכות המים
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-300">
                     {latestWaterLog
                       ? `בדיקה אחרונה: ${new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")} (${new Date(latestWaterLog.testedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })})`
                       : "טרם בוצעה בדיקת מים"}
@@ -306,7 +301,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 </div>
               </div>
 
-              <span className="text-xs font-bold text-cyan-400 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-cyan-950/80 px-3 py-1.5 rounded-xl border border-cyan-800/60">
+              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
                 <span>פתח יומן בדיקות</span>
                 <ArrowLeft className="w-4 h-4" />
               </span>
@@ -314,41 +309,41 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             {latestWaterLog ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                   <span className="text-[11px] text-slate-400">חומציות (pH)</span>
-                  <div className="text-lg font-bold text-cyan-300">{latestWaterLog.ph || latestWaterLog.phRange || "7.4"}</div>
-                  <span className="text-[10px] text-slate-500">אידיאלי: 7.2 - 7.6</span>
+                  <div className="text-lg font-black text-white">{latestWaterLog.ph || latestWaterLog.phRange || "7.4"}</div>
+                  <span className="text-[10px] text-sky-300/80">יעד: 7.2 - 7.6</span>
                 </div>
 
-                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                   <span className="text-[11px] text-slate-400">כלור / חיטוי</span>
-                  <div className="text-lg font-bold text-sky-300">{latestWaterLog.freeChlorine || latestWaterLog.chlorineRange || "3.0"}</div>
-                  <span className="text-[10px] text-slate-500">אידיאלי: 2.0 - 4.0 ppm</span>
+                  <div className="text-lg font-black text-white">{latestWaterLog.freeChlorine || latestWaterLog.chlorineRange || "3.0"}</div>
+                  <span className="text-[10px] text-sky-300/80">יעד: 2.0 - 4.0 ppm</span>
                 </div>
 
-                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                   <span className="text-[11px] text-slate-400">בסיסיות כוללת (TA)</span>
-                  <div className="text-lg font-bold text-blue-300">{latestWaterLog.alkalinity || latestWaterLog.alkalinityRange || "90"}</div>
-                  <span className="text-[10px] text-slate-500">אידיאלי: 80 - 120 ppm</span>
+                  <div className="text-lg font-black text-white">{latestWaterLog.alkalinity || latestWaterLog.alkalinityRange || "90"}</div>
+                  <span className="text-[10px] text-sky-300/80">יעד: 80 - 120 ppm</span>
                 </div>
 
-                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                   <span className="text-[11px] text-slate-400">צלילות ומראה</span>
-                  <div className="text-lg font-bold text-emerald-300">
+                  <div className="text-lg font-black text-white">
                     {latestWaterLog.waterClarity === "CLEAR" ? "צלול ונקי" : "נדרש טיפול"}
                   </div>
-                  <span className="text-[10px] text-slate-500">בדיקה ויזואלית</span>
+                  <span className="text-[10px] text-sky-300/80">בדיקה ויזואלית</span>
                 </div>
               </div>
             ) : (
-              <div className="p-6 rounded-2xl bg-slate-950/60 border border-slate-800 text-center text-slate-400 text-xs">
+              <div className="p-6 rounded-2xl bg-[#080e14]/90 border border-sky-900/30 text-center text-slate-300 text-xs">
                 לחץ כאן כדי להזין את בדיקת המקלון הראשונה שלך
               </div>
             )}
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
               <span>💡 לחץ בכל מקום בכרטיס לפתיחת יומן הבדיקות המלא והזנת בדיקה</span>
-              <span className="text-cyan-400 font-bold">1 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">1 מתוך 5 ◂</span>
             </div>
           </div>
         );
@@ -357,54 +352,54 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         return (
           <div
             onClick={() => setOpenPageId("calendar")}
-            className="bg-slate-900/90 border border-slate-800 hover:border-purple-500/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-purple-950/30"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-purple-950/80 border border-purple-800/80 flex items-center justify-center text-purple-400 shadow-inner group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
                   <Calendar className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-purple-300 transition-colors">
-                    שגרת תחזוקה ויומן
+                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
+                    שגרת תחזוקה וגיל המים
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-300">
                     גיל המים: {daysSinceRefill} ימים במערכת • {overdueTasks.length > 0 ? `${overdueTasks.length} משימות באיחור` : "כל המשימות מעודכנות"}
                   </p>
                 </div>
               </div>
 
-              <span className="text-xs font-bold text-purple-400 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-purple-950/80 px-3 py-1.5 rounded-xl border border-purple-800/60">
+              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
                 <span>פתח יומן תחזוקה</span>
                 <ArrowLeft className="w-4 h-4" />
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">גיל המים הנוכחי</span>
-                <div className="text-lg font-bold text-purple-300">{daysSinceRefill} ימים</div>
-                <span className="text-[10px] text-slate-500">ריקון בעוד {daysUntilNextRefill} יום</span>
+                <div className="text-lg font-black text-white">{daysSinceRefill} ימים</div>
+                <span className="text-[10px] text-sky-300/80">ריקון בעוד {daysUntilNextRefill} יום</span>
               </div>
 
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">משימות פתוחות</span>
-                <div className={`text-lg font-bold ${overdueTasks.length > 0 ? "text-rose-400" : "text-emerald-300"}`}>
+                <div className="text-lg font-black text-white">
                   {pendingTasks.length} משימות
                 </div>
-                <span className="text-[10px] text-slate-500">{overdueTasks.length} דורשות ביצוע היום</span>
+                <span className="text-[10px] text-sky-300/80">{overdueTasks.length > 0 ? `${overdueTasks.length} דורשות ביצוע היום` : "הכל מעודכן ✓"}</span>
               </div>
 
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1 col-span-2 sm:col-span-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1 col-span-2 sm:col-span-1">
                 <span className="text-[11px] text-slate-400">שטיפת פילטר שבועית</span>
-                <div className="text-lg font-bold text-cyan-300">כל 7 ימים</div>
-                <span className="text-[10px] text-slate-500">שמירה על סירקולציה</span>
+                <div className="text-lg font-black text-white">כל 7 ימים</div>
+                <span className="text-[10px] text-sky-300/80">שמירה על סירקולציה</span>
               </div>
             </div>
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
               <span>💡 לחץ לפתיחת יומן הטיפולים, פעולות אחזקה יזומות ותיעוד משימות</span>
-              <span className="text-purple-400 font-bold">2 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">2 מתוך 5 ◂</span>
             </div>
           </div>
         );
@@ -413,54 +408,54 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         return (
           <div
             onClick={() => setOpenPageId("inventory")}
-            className="bg-slate-900/90 border border-slate-800 hover:border-blue-500/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-blue-950/30"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-950/80 border border-blue-800/80 flex items-center justify-center text-blue-400 shadow-inner group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
                   <Package className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-blue-300 transition-colors">
+                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
                     ארון חומרים ומלאי
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-300">
                     {chemicals.length} חומרים במלאי • {lowStockChems.length > 0 ? `${lowStockChems.length} חומרים במלאי נמוך` : "מלאי החומרים תקין"}
                   </p>
                 </div>
               </div>
 
-              <span className="text-xs font-bold text-blue-400 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-blue-950/80 px-3 py-1.5 rounded-xl border border-blue-800/60">
+              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
                 <span>פתח ארון חומרים</span>
                 <ArrowLeft className="w-4 h-4" />
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">סך הכל חומרים</span>
-                <div className="text-lg font-bold text-blue-300">{chemicals.length} פריטים</div>
-                <span className="text-[10px] text-slate-500">בארון הג'קוזי</span>
+                <div className="text-lg font-black text-white">{chemicals.length} פריטים</div>
+                <span className="text-[10px] text-sky-300/80">בארון הג'קוזי</span>
               </div>
 
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">התראות חוסר</span>
-                <div className={`text-lg font-bold ${lowStockChems.length > 0 ? "text-amber-400" : "text-emerald-300"}`}>
+                <div className="text-lg font-black text-white">
                   {lowStockChems.length} פריטים
                 </div>
-                <span className="text-[10px] text-slate-500">{lowStockChems.length > 0 ? "נדרשת רכישה" : "מלאי מספק"}</span>
+                <span className="text-[10px] text-sky-300/80">{lowStockChems.length > 0 ? "נדרשת רכישה" : "מלאי מספק ✓"}</span>
               </div>
 
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1 col-span-2 sm:col-span-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1 col-span-2 sm:col-span-1">
                 <span className="text-[11px] text-slate-400">זיהוי צילום AI</span>
-                <div className="text-lg font-bold text-cyan-300">פעיל ✓</div>
-                <span className="text-[10px] text-slate-500">סריקה ופענוח אריזות</span>
+                <div className="text-lg font-black text-white">פעיל ✓</div>
+                <span className="text-[10px] text-sky-300/80">סריקה ופענוח אריזות</span>
               </div>
             </div>
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
               <span>💡 לחץ לפתיחת ארון החומרים המלא, הוספת פריטים וסריקת תמונות</span>
-              <span className="text-blue-400 font-bold">3 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">3 מתוך 5 ◂</span>
             </div>
           </div>
         );
@@ -469,49 +464,49 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         return (
           <div
             onClick={() => setOpenPageId("water-doctor")}
-            className="bg-slate-900/90 border border-slate-800 hover:border-emerald-500/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-emerald-950/30"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-950/80 border border-emerald-800/80 flex items-center justify-center text-emerald-400 shadow-inner group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-emerald-300 transition-colors">
+                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
                     רופא מים AI
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-300">
                     אבחון מים מיידי, פענוח חריגות וחישוב מינונים מותאמים אישית
                   </p>
                 </div>
               </div>
 
-              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-emerald-950/80 px-3 py-1.5 rounded-xl border border-emerald-800/60">
+              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
                 <span>פתח רופא מים</span>
                 <ArrowLeft className="w-4 h-4" />
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 space-y-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-1">
                 <div className="font-bold text-xs text-white flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <Zap className="w-3.5 h-3.5 text-sky-300" />
                   <span>אבחון מים עכורים / קצף</span>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-tight">זיהוי מקור העכירות וקבלת תוכנית טיפול מדורגת</p>
               </div>
 
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 space-y-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-1">
                 <div className="font-bold text-xs text-white flex items-center gap-1.5">
-                  <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+                  <Droplets className="w-3.5 h-3.5 text-sky-300" />
                   <span>חישוב מינון כימי מדויק</span>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-tight">חישוב כמויות בגרם/מ"ל בהתאם לנפח הג'קוזי שלך</p>
               </div>
 
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 space-y-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-1">
                 <div className="font-bold text-xs text-white flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-sky-300" />
                   <span>בדיקת מלאי אוטומטית</span>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-tight">בדיקה האם החומרים הדרושים זמינים בארון שלך</p>
@@ -520,7 +515,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
               <span>💡 לחץ להפעלת אבחון רופא המים והזנת תיאור מצב המים</span>
-              <span className="text-emerald-400 font-bold">4 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">4 מתוך 5 ◂</span>
             </div>
           </div>
         );
@@ -530,54 +525,54 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         return (
           <div
             onClick={() => setOpenPageId("settings")}
-            className="bg-slate-900/90 border border-slate-800 hover:border-slate-500/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-slate-900/40"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 shadow-inner group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
                   <Settings className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-slate-200 transition-colors">
+                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
                     הגדרות הג'קוזי והמקלון
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-300">
                     {jacuzzi?.name || "הג'קוזי שלי"} • {jacuzzi?.volumeLiters || 1200} ליטר • {jacuzzi?.sanitizationType === "BROMINE" ? "ברום" : "כלור"}
                   </p>
                 </div>
               </div>
 
-              <span className="text-xs font-bold text-slate-300 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+              <span className="text-xs font-bold text-sky-200 flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform bg-sky-950/80 px-3 py-1.5 rounded-xl border border-sky-800/60">
                 <span>פתח הגדרות</span>
                 <ArrowLeft className="w-4 h-4" />
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">נפח מים</span>
-                <div className="text-lg font-bold text-white">{jacuzzi?.volumeLiters || 1200} ליטר</div>
-                <span className="text-[10px] text-slate-500">לחישוב מינונים</span>
+                <div className="text-lg font-black text-white">{jacuzzi?.volumeLiters || 1200} ליטר</div>
+                <span className="text-[10px] text-sky-300/80">לחישוב מינונים</span>
               </div>
 
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1">
                 <span className="text-[11px] text-slate-400">שיטת חיטוי</span>
-                <div className="text-lg font-bold text-cyan-300">
+                <div className="text-lg font-black text-white">
                   {jacuzzi?.sanitizationType === "BROMINE" ? "ברום" : jacuzzi?.sanitizationType === "SALT" ? "מלח" : "כלור"}
                 </div>
-                <span className="text-[10px] text-slate-500">חומר חיטוי ראשי</span>
+                <span className="text-[10px] text-sky-300/80">חומר חיטוי ראשי</span>
               </div>
 
-              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80 text-center space-y-1 col-span-2 sm:col-span-1">
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 text-center space-y-1 col-span-2 sm:col-span-1">
                 <span className="text-[11px] text-slate-400">התראות במייל</span>
-                <div className="text-lg font-bold text-emerald-300">פעיל ✓</div>
-                <span className="text-[10px] text-slate-500">תזכורות למשימות</span>
+                <div className="text-lg font-black text-white">פעיל ✓</div>
+                <span className="text-[10px] text-sky-300/80">תזכורות למשימות</span>
               </div>
             </div>
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
               <span>💡 לחץ לפתיחת ההגדרות, שינוי מאפייני הג'קוזי ובחירת מדדי מקלון הבדיקה</span>
-              <span className="text-slate-400 font-bold">5 מתוך 5 ◂</span>
+              <span className="text-sky-300 font-bold">5 מתוך 5 ◂</span>
             </div>
           </div>
         );
@@ -590,19 +585,19 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto py-2">
-      {/* 🌟 Top Navigation: Pagination Dots (Active is wider/fatter) & Arrows */}
-      <div className="flex items-center justify-between gap-4 bg-slate-900/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-800 shadow-md max-w-md mx-auto">
+      {/* 🌟 Top Navigation: Pagination Dots (Same round shape, selected is a larger circle) & Arrows */}
+      <div className="flex items-center justify-between gap-4 bg-[#0e1823]/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-sky-900/40 shadow-md max-w-xs mx-auto">
         <button
           type="button"
           onClick={prevCard}
-          className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-cyan-300 transition-all shrink-0 cursor-pointer shadow-sm"
+          className="p-2 rounded-xl bg-sky-950/80 hover:bg-sky-900/80 border border-sky-900/50 text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer shadow-sm"
           title="העבר ימינה (קודם)"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
 
-        {/* Pagination Dots Indicator */}
-        <div className="flex items-center justify-center gap-2 flex-1" dir="rtl">
+        {/* Pagination Dots Indicator - Same Round Shape, Selected is Larger */}
+        <div className="flex items-center justify-center gap-3 flex-1 h-6" dir="rtl">
           {CARD_TABS.map((card, idx) => {
             const isActive = idx === currentIndex;
             return (
@@ -610,9 +605,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 key={card.id}
                 type="button"
                 onClick={() => goToCard(idx)}
-                className={`transition-all duration-300 cursor-pointer rounded-full ${
+                className={`transition-all duration-300 cursor-pointer rounded-full aspect-square flex items-center justify-center ${
                   isActive
-                    ? "w-8 h-2.5 bg-gradient-to-r from-cyan-400 to-sky-400 shadow-md shadow-cyan-500/40"
+                    ? "w-4.5 h-4.5 bg-sky-400 border-2 border-white/60 shadow-md shadow-sky-500/40 scale-110"
                     : "w-2.5 h-2.5 bg-slate-700/90 hover:bg-slate-500 hover:scale-125"
                 }`}
                 title={card.title}
@@ -625,7 +620,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         <button
           type="button"
           onClick={nextCard}
-          className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-cyan-300 transition-all shrink-0 cursor-pointer shadow-sm"
+          className="p-2 rounded-xl bg-sky-950/80 hover:bg-sky-900/80 border border-sky-900/50 text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer shadow-sm"
           title="העבר שמאלה (הבא)"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -670,8 +665,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       </div>
 
       {/* Navigation Help Prompt */}
-      <div className="text-center text-xs text-slate-500 flex items-center justify-center gap-2 select-none">
-        <span>◂ גרור באצבע ימינה ושמאלה לתנועה רציפה וסנכרון מלא • לחץ על כרטיס לפתיחה מלאה ▸</span>
+      <div className="text-center text-xs text-slate-400 flex items-center justify-center gap-2 select-none">
+        <span>◂ החלק באצבע ימינה ושמאלה למעבר בין הכרטיסים • לחץ על כרטיס לפתיחה מלאה ▸</span>
       </div>
     </div>
   );
@@ -681,7 +676,7 @@ export default function SwipeableMainView(props: SwipeableMainViewProps) {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-[50vh] text-cyan-400">
+        <div className="flex items-center justify-center min-h-[50vh] text-sky-400">
           <RefreshCw className="w-8 h-8 animate-spin" />
         </div>
       }

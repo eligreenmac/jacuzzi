@@ -63,11 +63,11 @@ export default function Navbar() {
                     href={link.href}
                     className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 ${
                       isActive
-                        ? "bg-slate-800 text-teal-300 border border-slate-700 font-bold shadow-sm"
+                        ? "bg-sky-950/80 text-sky-200 border border-sky-800/80 font-bold shadow-sm"
                         : "text-slate-300 hover:text-white hover:bg-slate-800/60"
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? "text-teal-300" : "text-slate-400"}`} />
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? "text-sky-300" : "text-slate-400"}`} />
                     <span>{link.label}</span>
                   </Link>
                 );
