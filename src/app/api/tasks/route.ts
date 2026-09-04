@@ -242,22 +242,13 @@ export async function PUT(req: NextRequest) {
       });
     }
 
-    // Guard: Prevent marking future tasks as done before their due date
-    if (markDoneAndReschedule) {
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
-      if (new Date(existing.nextDueDate).getTime() > todayEnd.getTime()) {
-        return NextResponse.json({
-          error: `משימה זו מתוכננת לתאריך ${new Date(existing.nextDueDate).toLocaleDateString("he-IL")}. סימון ביצוע ועדכון נתונים ייפתחו החל מתאריך היעד המתוכנן.`,
-        }, { status: 400 });
-      }
-    }
-
     let updateData: any = {};
     let deductedChemicalName = "";
     let deductedInventoryId: string | null = null;
     let actualDeductNum: number | null = null;
     let safetyCheck = null;
+
+    const actionDateObj = body.actionDate ? new Date(body.actionDate) : new Date();
 
     // Deduct chemical from inventory if selected
     if (markDoneAndReschedule && chemicalInventoryId && deductAmount && parseFloat(deductAmount) > 0) {
@@ -275,7 +266,7 @@ export async function PUT(req: NextRequest) {
           where: { id: chem.id },
           data: {
             quantity: newQuantity,
-            lastUsedDate: new Date(),
+            lastUsedDate: actionDateObj,
             lastUsedAmount: actualDeductNum,
           },
         });
@@ -292,7 +283,6 @@ export async function PUT(req: NextRequest) {
     }
 
     if (markDoneAndReschedule) {
-      const now = new Date();
       const rawFreq = frequencyDays ? parseInt(frequencyDays, 10) : existing.frequencyDays;
       const isOneTime =
         existing.category === "CUSTOM" ||
@@ -306,13 +296,13 @@ export async function PUT(req: NextRequest) {
         ? Math.max(7, rawFreq || 7)
         : Math.max(1, rawFreq || 7);
 
-      const nextDate = new Date(now.getTime() + freq * 24 * 60 * 60 * 1000);
+      const nextDate = new Date(actionDateObj.getTime() + freq * 24 * 60 * 60 * 1000);
 
       const effectiveChemical = deductedChemicalName || chemicalUsed || null;
       const effectiveAmount = amountAdded || (actualDeductNum ? `${actualDeductNum} גרם/מ"ל` : null);
 
       updateData = {
-        lastDoneDate: now,
+        lastDoneDate: actionDateObj,
         nextDueDate: nextDate,
         frequencyDays: freq,
         isCompleted: isOneTime ? true : false,
@@ -340,6 +330,7 @@ export async function PUT(req: NextRequest) {
           valueAfter: valueAfter || null,
           chemicalsAdded: effectiveChemical ? `${effectiveChemical}: ${effectiveAmount || ""}` : null,
           waterQualityRating: 5,
+          entryDate: actionDateObj,
         },
       });
 
@@ -352,8 +343,8 @@ export async function PUT(req: NextRequest) {
         await prisma.jacuzzi.updateMany({
           where: { userId: user.id },
           data: {
-            lastDeepCleanDate: now,
-            lastRefillDate: now,
+            lastDeepCleanDate: actionDateObj,
+            lastRefillDate: actionDateObj,
           },
         });
       }
@@ -365,10 +356,10 @@ export async function PUT(req: NextRequest) {
       ) {
         if (jacuzzi?.lastRefillDate) {
           const oldRefill = new Date(jacuzzi.lastRefillDate).getTime();
-          const currentWaterAgeDays = Math.max(0, Math.floor((now.getTime() - oldRefill) / (1000 * 60 * 60 * 24)));
+          const currentWaterAgeDays = Math.max(0, Math.floor((actionDateObj.getTime() - oldRefill) / (1000 * 60 * 60 * 24)));
           // Weighted age after ~25% refill: age * 0.75
           const newAgeDays = Math.round(currentWaterAgeDays * 0.75);
-          const newRefillDate = new Date(now.getTime() - newAgeDays * 24 * 60 * 60 * 1000);
+          const newRefillDate = new Date(actionDateObj.getTime() - newAgeDays * 24 * 60 * 60 * 1000);
           await prisma.jacuzzi.updateMany({
             where: { userId: user.id },
             data: { lastRefillDate: newRefillDate },

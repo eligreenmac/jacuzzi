@@ -326,7 +326,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     try {
       if (activeItemModal.id === "water-test" || activeItemModal.type === "water-test") {
         if (activeItemModal.taskId) {
-          await fetch("/api/tasks", {
+          const res = await fetch("/api/tasks", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -334,8 +334,12 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               frequencyDays: editFreqDays,
             }),
           });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "שגיאה בעדכון משימה");
+          }
         } else {
-          await fetch("/api/tasks", {
+          const res = await fetch("/api/tasks", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -345,11 +349,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               nextDueDate: new Date(Date.now() + editFreqDays * 24 * 3600 * 1000),
             }),
           });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "שגיאה ביצירת משימה");
+          }
         }
       } else if (activeItemModal.type === "task") {
         // Find or create task
         if (activeItemModal.taskId) {
-          await fetch("/api/tasks", {
+          const res = await fetch("/api/tasks", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -359,9 +367,13 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               nextDueDate: editNextDueDate ? new Date(editNextDueDate) : undefined,
             }),
           });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "שגיאה בעדכון משימה");
+          }
         } else {
           // Create task if didn't exist
-          await fetch("/api/tasks", {
+          const res = await fetch("/api/tasks", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -371,17 +383,25 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               nextDueDate: editNextDueDate ? new Date(editNextDueDate) : new Date(Date.now() + editFreqDays * 24 * 3600 * 1000),
             }),
           });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "שגיאה ביצירת משימה");
+          }
         }
       } else if (activeItemModal.id === "full-refill") {
-        await fetch("/api/jacuzzi", {
+        const res = await fetch("/api/jacuzzi", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             lastRefillDate: editLastDoneDate ? new Date(editLastDoneDate) : new Date(),
           }),
         });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "שגיאה בעדכון גיל המים");
+        }
       } else if (activeItemModal.id === "volume" || activeItemModal.id === "sanitizer-type") {
-        await fetch("/api/jacuzzi", {
+        const res = await fetch("/api/jacuzzi", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -389,14 +409,22 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             sanitizationType: editSanitization,
           }),
         });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "שגיאה בעדכון הגדרות ג'קוזי");
+        }
       } else if (activeItemModal.type === "strip-settings" || activeItemModal.id === "test-strip-settings") {
-        await fetch("/api/jacuzzi", {
+        const res = await fetch("/api/jacuzzi", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             testStripParams: modalSelectedParams,
           }),
         });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "שגיאה בשמירת הגדרות מקלון");
+        }
         setActiveParamIds(modalSelectedParams);
       }
 
@@ -457,11 +485,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         });
       } else if (activeItemModal.id === "full-refill") {
         // Full refill (100%)
-        await fetch("/api/jacuzzi", {
+        const res = await fetch("/api/jacuzzi", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ lastRefillDate: actionDateObj }),
         });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "שגיאה בעדכון ריקון מים");
+        }
         await fetch("/api/log", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -471,6 +503,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             entryDate: actionDateObj,
           }),
         });
+        setEditLastDoneDate(actionDateObj.toISOString().slice(0, 10));
       } else if (activeItemModal.id === "partial-refill") {
         // Partial Refill (25% / 30% / 50%)
         await fetch("/api/log", {
@@ -484,7 +517,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         });
       } else if (activeItemModal.type === "task") {
         if (activeItemModal.taskId) {
-          await fetch("/api/tasks", {
+          const res = await fetch("/api/tasks", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -496,10 +529,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               frequencyDays: editFreqDays,
             }),
           });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "שגיאה בסימון ביצוע משימה");
+          }
         } else {
           // Create task and log done
           const nextDue = new Date(actionDateObj.getTime() + editFreqDays * 24 * 3600 * 1000);
-          await fetch("/api/tasks", {
+          const res = await fetch("/api/tasks", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -509,6 +546,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               nextDueDate: nextDue,
             }),
           });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "שגיאה ביצירת משימה");
+          }
           await fetch("/api/log", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -519,6 +560,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             }),
           });
         }
+
+        // Immediately sync local modal inputs
+        setEditLastDoneDate(actionDateObj.toISOString().slice(0, 10));
+        const newNextDue = new Date(actionDateObj.getTime() + editFreqDays * 24 * 3600 * 1000);
+        setEditNextDueDate(newNextDue.toISOString().slice(0, 10));
       }
 
       setModalNotice("הפעולה נרשמה בהצלחה!");
