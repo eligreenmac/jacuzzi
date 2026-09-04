@@ -365,3 +365,181 @@ export function parseTestStripParams(val: any): string[] {
   }
   return DEFAULT_TEST_STRIP_PARAM_IDS;
 }
+
+export function getGenericDomain(
+  paramId: string,
+  val: number | null | undefined,
+  rangeStr?: string | null
+) {
+  if (rangeStr) {
+    const s = rangeStr.toUpperCase();
+    if (
+      s.includes("VERY_LOW") ||
+      s.includes("VERY LOW") ||
+      s.includes("חומצי מאוד") ||
+      s.includes("ללא חיטוי") ||
+      s.includes("נמוכה מאוד") ||
+      s.includes("נמוך מאוד")
+    ) {
+      return { id: "VERY_LOW", label: "נמוך מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    }
+    if (
+      s.includes("VERY_HIGH") ||
+      s.includes("VERY HIGH") ||
+      s.includes("בסיסי מאוד") ||
+      s.includes("שוק") ||
+      s.includes("עודף") ||
+      s.includes("גבוהה מאוד") ||
+      s.includes("גבוה מאוד") ||
+      s.includes("נעילת כלור") ||
+      s.includes("מסוכן") ||
+      s.includes("זיהום חמור")
+    ) {
+      return { id: "VERY_HIGH", label: "חריג / מסוכן", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    }
+    if (s.includes("LOW") || s.includes("נמוך") || s.includes("נמוכה") || s.includes("רכים")) {
+      return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    }
+    if (s.includes("HIGH") || s.includes("גבוה") || s.includes("גבוהה") || s.includes("קשים") || s.includes("כלורמינים") || s.includes("נוכחות")) {
+      return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    }
+    if (s.includes("OK") || s.includes("תקין") || s.includes("אידיאלי") || s.includes("תקינה") || s.includes("נקי")) {
+      return { id: "OK", label: "תקין / אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    }
+  }
+
+  if (val === null || val === undefined || isNaN(val)) {
+    return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700" };
+  }
+
+  if (paramId === "ph") {
+    if (val < 6.8) return { id: "VERY_LOW", label: "חומצי מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 7.2) return { id: "LOW", label: "חומצי / נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 7.6) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 8.0) return { id: "HIGH", label: "בסיסי / גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "בסיסי מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "chlorine") {
+    if (val < 0.5) return { id: "VERY_LOW", label: "ללא חיטוי", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 2.0) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 4.0) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 8.0) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "שוק / עודף", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "alkalinity") {
+    if (val < 40) return { id: "VERY_LOW", label: "נמוכה מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 80) return { id: "LOW", label: "נמוכה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 120) return { id: "OK", label: "אידיאלית", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 180) return { id: "HIGH", label: "גבוהה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "גבוהה מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "calcium") {
+    if (val < 100) return { id: "VERY_LOW", label: "רכים מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 150) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 250) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 400) return { id: "HIGH", label: "קשים", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "קשים מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "carbonate") {
+    if (val <= 10) return { id: "OK", label: "תקין / נמוך", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 25) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "גבוה מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "totalChlorine") {
+    if (val <= 4.0) return { id: "OK", label: "תקין", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "HIGH", label: "גבוה / כלור קשור", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+  }
+  if (paramId === "bromine") {
+    if (val < 1.0) return { id: "VERY_LOW", label: "ללא חיטוי", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 3.0) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 5.0) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 9.0) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "גבוה מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "cya") {
+    if (val < 20) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 50) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 100) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "נעילת כלור", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "salt") {
+    if (val < 1500) return { id: "LOW", label: "נמוך", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 2500) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+  }
+  if (paramId === "waterTemp") {
+    if (val < 35) return { id: "LOW", label: "נמוך / קר", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 39) return { id: "OK", label: "אידיאלי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "VERY_HIGH", label: "חם מאוד / מסוכן", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "nitrate") {
+    if (val <= 10) return { id: "OK", label: "תקין / נקי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 50) return { id: "HIGH", label: "בינוני-גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "עומס חריג", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "nitrite") {
+    if (val <= 0.1) return { id: "OK", label: "תקין / ללא נוכחות", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 1.0) return { id: "HIGH", label: "נוכחות ניטריט", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "זיהום חמור", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "iron" || paramId === "copper") {
+    if (val <= 0.2) return { id: "OK", label: "תקין / נקי", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 1.0) return { id: "HIGH", label: "נוכחות מתכת", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "גבוה / כתמים", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "chromium") {
+    if (val <= 0.05) return { id: "OK", label: "תקין", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "VERY_HIGH", label: "נוכחות כרום", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "lead") {
+    if (val <= 0.01) return { id: "OK", label: "תקין / אפס", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "VERY_HIGH", label: "עופרת (מסוכן!)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "mercury") {
+    if (val <= 0.002) return { id: "OK", label: "תקין / אפס", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    return { id: "VERY_HIGH", label: "כספית (רעלן!)", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+  if (paramId === "fluoride") {
+    if (val <= 1.5) return { id: "OK", label: "תקין", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 4.0) return { id: "HIGH", label: "גבוה", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "חריג מאוד", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+  }
+
+  return { id: "UNKNOWN", label: "לא נבדק", badgeClass: "bg-slate-800 text-slate-400 border-slate-700" };
+}
+
+export function extractParamValue(test: any, paramId: string): { val: number | null; rangeStr: string | null } {
+  if (!test) return { val: null, rangeStr: null };
+  if (paramId === "ph") return { val: test.ph, rangeStr: test.phRange };
+  if (paramId === "chlorine") return { val: test.freeChlorine, rangeStr: test.chlorineRange };
+  if (paramId === "alkalinity") return { val: test.alkalinity, rangeStr: test.alkalinityRange };
+  if (paramId === "calcium") return { val: test.calcium, rangeStr: test.calciumRange };
+  if (paramId === "totalChlorine") return { val: test.totalChlorine, rangeStr: test.totalChlorineRange };
+  if (paramId === "cya") return { val: test.cya, rangeStr: test.cyaRange };
+  if (paramId === "salt") return { val: test.salt, rangeStr: test.saltRange };
+  if (paramId === "waterTemp") return { val: test.waterTemp, rangeStr: test.waterTempRange };
+  if (paramId === "carbonate") return { val: test.carbonate, rangeStr: test.carbonateRange };
+  if (paramId === "bromine") return { val: test.bromine, rangeStr: test.bromineRange };
+  if (paramId === "nitrate") return { val: test.nitrate, rangeStr: test.nitrateRange };
+  if (paramId === "nitrite") return { val: test.nitrite, rangeStr: test.nitriteRange };
+  if (paramId === "iron") return { val: test.iron, rangeStr: test.ironRange };
+  if (paramId === "copper") return { val: test.copper, rangeStr: test.copperRange };
+  if (paramId === "chromium") return { val: test.chromium, rangeStr: test.chromiumRange };
+  if (paramId === "lead") return { val: test.lead, rangeStr: test.leadRange };
+  if (paramId === "mercury") return { val: test.mercury, rangeStr: test.mercuryRange };
+  if (paramId === "fluoride") return { val: test.fluoride, rangeStr: test.fluorideRange };
+
+  if (test.extendedMetrics) {
+    try {
+      const ext = typeof test.extendedMetrics === "string" ? JSON.parse(test.extendedMetrics) : test.extendedMetrics;
+      if (ext && ext[paramId]) {
+        return {
+          val: typeof ext[paramId].val === "number" ? ext[paramId].val : null,
+          rangeStr: ext[paramId].range || null,
+        };
+      }
+    } catch {}
+  }
+  return { val: null, rangeStr: null };
+}
+

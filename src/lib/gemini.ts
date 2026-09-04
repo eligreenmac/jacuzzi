@@ -5,6 +5,11 @@ import {
   calculateShockDose,
   ESSENTIAL_CHEMICAL_CATEGORIES,
 } from "./jacuzzi-calc";
+import {
+  ALL_TEST_STRIP_PARAMS,
+  getGenericDomain,
+  extractParamValue,
+} from "./test-strip-params";
 
 const preferredModel = process.env.GEMINI_MODEL || "gemini-3.7-flash";
 
@@ -1783,6 +1788,7 @@ export interface FullJacuzziDiagnosticRequest {
     waterOdor?: string | null;
     clarityOdorNotes?: string | null;
     description?: string | null;
+    [key: string]: any;
   } | null;
   tasks: Array<{
     id: string;
@@ -1855,11 +1861,12 @@ export function generateRuleBasedFullDiagnostic(req: FullJacuzziDiagnosticReques
 
   // 1. Water Analysis
   let waterStatus: "OK" | "WARNING" | "CRITICAL" = "OK";
-  let waterLabel = "איכות מים מאוזנת ותקינה";
+  let criticalDangersCount = 0;
+  let warningDangersCount = 0;
+  let totalParamEvaluated = 0;
 
   if (!test) {
     waterStatus = "WARNING";
-    waterLabel = "טרם בוצעה בדיקת מים";
     waterPoints.push("לא קיימת בדיקת מים מתועדת במערכת");
     actionItems.push({
       priority: "HIGH",
@@ -1867,12 +1874,13 @@ export function generateRuleBasedFullDiagnostic(req: FullJacuzziDiagnosticReques
       title: "בצע בדיקת מקלון ראשונה",
       description: "טבול מקלון בדיקה במים ותעד את המדדים לקבלת אבחון מדויק.",
     });
-    score -= 20;
+    score -= 25;
   } else {
     // Water Age
     if (req.jacuzzi.waterAgeDays > 90) {
       if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
-      waterPoints.push(`גיל המים גבוה (${req.jacuzzi.waterAgeDays} ימים) - עומס מלחים ו-TDS גבוה`);
+      warningDangersCount++;
+      waterPoints.push(`גיל המים גבוה (${req.jacuzzi.waterAgeDays} ימים) - עומס מוצקים מומסים (TDS)`);
       actionItems.push({
         priority: "MEDIUM",
         category: "WATER",
@@ -1884,84 +1892,92 @@ export function generateRuleBasedFullDiagnostic(req: FullJacuzziDiagnosticReques
       waterPoints.push(`גיל המים: ${req.jacuzzi.waterAgeDays} ימים (בטווח המומלץ)`);
     }
 
-    // pH Check
-    const ph = typeof test.ph === "number" ? test.ph : null;
-    if (ph !== null) {
-      if (ph < 7.2) {
-        if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
-        waterPoints.push(`חומציות נמוכה (pH ${ph}) - סכנת קורוזיה וגירוי בעיניים`);
-        actionItems.push({
-          priority: "HIGH",
-          category: "WATER",
-          title: "הוסף מעלה pH (pH Plus)",
-          description: "העלה את רמת ה-pH לטווח האידיאלי של 7.2 - 7.6.",
-        });
-        score -= 12;
-      } else if (ph > 7.8) {
-        if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
-        waterPoints.push(`בסיסיות מים גבוהה (pH ${ph}) - פגיעה ביעילות החיטוי וסכנת אבנית`);
-        actionItems.push({
-          priority: "HIGH",
-          category: "WATER",
-          title: "הוסף מוריד pH (pH Minus)",
-          description: "הורד את רמת ה-pH לטווח האידיאלי של 7.2 - 7.6.",
-        });
-        score -= 12;
-      } else {
-        waterPoints.push(`רמת חומציות תקינה ומאוזנת (pH ${ph})`);
-      }
-    }
+    // Evaluate all tested test strip parameters using getGenericDomain & extractParamValue
+    for (const pDef of ALL_TEST_STRIP_PARAMS) {
+      const { val, rangeStr } = extractParamValue(test, pDef.id);
+      if (val === null && !rangeStr) continue;
 
-    // Sanitizer Check
-    const isBromine = req.jacuzzi.sanitizationType === "BROMINE";
-    const sanitizerVal = isBromine ? (typeof test.bromine === "number" ? test.bromine : test.freeChlorine) : test.freeChlorine;
-    if (sanitizerVal !== null && sanitizerVal !== undefined) {
-      if (sanitizerVal < 1.0) {
+      totalParamEvaluated++;
+      const domain = getGenericDomain(pDef.id, val, rangeStr);
+
+      if (domain.id === "VERY_LOW") {
         waterStatus = "CRITICAL";
-        waterPoints.push(`רמת חיטוי נמוכה מאוד / חסרה (${sanitizerVal} ppm) - סכנת התרבות בקטריות`);
+        criticalDangersCount++;
+        score -= 20;
+        waterPoints.push(`🚨 ${pDef.nameHe} (${domain.label}): ${pDef.dangerLow}`);
         actionItems.push({
           priority: "HIGH",
           category: "WATER",
-          title: `הוסף ${isBromine ? "ברום" : "כלור"} / בצע טיפול שוק מיידי`,
-          description: "רמת החיטוי אפסית או נמוכה. הוסף חומר חיטוי מיידית והפעל משאבות.",
+          title: `טיפול דחוף: ${pDef.nameHe} נמוך מאוד (${domain.label})`,
+          description: pDef.dangerLow,
         });
+      } else if (domain.id === "VERY_HIGH") {
+        waterStatus = "CRITICAL";
+        criticalDangersCount++;
         score -= 20;
-      } else if (sanitizerVal > 7.0) {
-        if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
-        waterPoints.push(`עודף חיטוי (${sanitizerVal} ppm) - מומלץ לאוורר`);
-        score -= 8;
-      } else {
-        waterPoints.push(`רמת חיטוי אידיאלית (${sanitizerVal} ppm ${isBromine ? "ברום" : "כלור"})`);
+        waterPoints.push(`🚨 ${pDef.nameHe} (${domain.label}): ${pDef.dangerHigh}`);
+        actionItems.push({
+          priority: "HIGH",
+          category: "WATER",
+          title: `טיפול דחוף: ${pDef.nameHe} בעודף/מסוכן (${domain.label})`,
+          description: pDef.dangerHigh,
+        });
+      } else if (domain.id === "LOW") {
+        if (waterStatus !== "CRITICAL") waterStatus = "WARNING";
+        warningDangersCount++;
+        score -= 10;
+        waterPoints.push(`⚠️ ${pDef.nameHe} (${domain.label}): ${pDef.dangerLow}`);
+        actionItems.push({
+          priority: "MEDIUM",
+          category: "WATER",
+          title: `כיוונון: ${pDef.nameHe} נמוך (${domain.label})`,
+          description: pDef.dangerLow,
+        });
+      } else if (domain.id === "HIGH") {
+        if (waterStatus !== "CRITICAL") waterStatus = "WARNING";
+        warningDangersCount++;
+        score -= 10;
+        waterPoints.push(`⚠️ ${pDef.nameHe} (${domain.label}): ${pDef.dangerHigh}`);
+        actionItems.push({
+          priority: "MEDIUM",
+          category: "WATER",
+          title: `כיוונון: ${pDef.nameHe} גבוה (${domain.label})`,
+          description: pDef.dangerHigh,
+        });
+      } else if (domain.id === "OK") {
+        waterPoints.push(`✓ ${pDef.nameHe}: ${rangeStr || val} (תקין ואידיאלי)`);
       }
     }
 
-    // Clarity & Odor
+    // Clarity & Odor evaluation
     if (test.waterClarity && test.waterClarity !== "CLEAR") {
-      if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
-      waterPoints.push(`מצב מראה ועכירות: ${test.waterClarity}`);
+      if (waterStatus !== "CRITICAL") waterStatus = "WARNING";
+      warningDangersCount++;
+      score -= 10;
+      waterPoints.push(`מראה המים: ${test.waterClarity} (אינו צלול לחלוטין)`);
       actionItems.push({
         priority: "MEDIUM",
         category: "WATER",
         title: "טיפול בעכירות המים ושטיפת פילטר",
-        description: "המים אינם צלולים לחלוטין. בצע שטיפת פילטר ושוק חמצון.",
+        description: "בצע שטיפת פילטר ושוק חמצון להחזרת צלילות המים.",
       });
-      score -= 10;
     } else {
-      waterPoints.push("מראה המים צלול ונקי ✨");
+      waterPoints.push("מראה המים: צלול ונקי ✨");
     }
 
     if (test.waterOdor && test.waterOdor !== "FRESH" && test.waterOdor !== "NO_ODOR") {
-      if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
-      waterPoints.push(`ריח המים: ${test.waterOdor}`);
+      waterStatus = "CRITICAL";
+      criticalDangersCount++;
+      score -= 15;
+      waterPoints.push(`ריח המים: ${test.waterOdor} (נדרש אוורור וחיטוי שוק)`);
       actionItems.push({
         priority: "HIGH",
         category: "WATER",
-        title: "אוורור הג'קוזי וטיפול שוק חמצון לנטרול ריח",
-        description: "פתח את הכיסוי, הפעל ג'טים והוסף מנת שוק לנטרול ריחות וכלורמינים.",
+        title: "אוורור הג'קוזי ונטרול ריחות לוואי",
+        description: "פתח את הכיסוי, הפעל ג'טים ובצע שוק חמצון לנטרול ריחות וכלורמינים.",
       });
-      score -= 10;
     } else {
-      waterPoints.push("ריח המים נקי ורענן 🌿");
+      waterPoints.push("ריח המים: נקי ורענן 🌿");
     }
 
     if (test.clarityOdorNotes) {
@@ -1977,7 +1993,7 @@ export function generateRuleBasedFullDiagnostic(req: FullJacuzziDiagnosticReques
   if (overdueTasks.length > 0) {
     equipStatus = overdueTasks.length >= 3 ? "CRITICAL" : "WARNING";
     equipLabel = `${overdueTasks.length} משימות תחזוקה באיחור`;
-    equipPoints.push(`נמצאו ${overdueTasks.length} משימות באיחור ביצוע`);
+    equipPoints.push(`נמצאו ${overdueTasks.length} משימות באיחור ביצוע:`);
     overdueTasks.slice(0, 3).forEach((t) => {
       equipPoints.push(`• ${t.title} (באיחור של ${t.daysOverdueOrDue} ימים)`);
       actionItems.push({
@@ -2027,31 +2043,58 @@ export function generateRuleBasedFullDiagnostic(req: FullJacuzziDiagnosticReques
     invPoints.push("כל החומרים בארון מעל סף המינימום ומלאי מלא ✓");
   }
 
-  score = Math.max(25, Math.min(100, score));
+  // Cap score appropriately if critical/warning water conditions exist
+  if (waterStatus === "CRITICAL" || criticalDangersCount > 0) {
+    score = Math.min(score, Math.max(15, 50 - criticalDangersCount * 10));
+  } else if (waterStatus === "WARNING" || warningDangersCount > 0) {
+    score = Math.min(score, Math.max(40, 72 - warningDangersCount * 6));
+  }
+
+  score = Math.max(10, Math.min(100, score));
 
   let overallStatus: "EXCELLENT" | "GOOD" | "ATTENTION" | "CRITICAL" = "GOOD";
   let statusTitle = "הג'קוזי במצב מצוין ומאוזן היטב";
-  if (score >= 90) {
+  let waterLabel = "איכות מים מאוזנת ותקינה";
+
+  if (waterStatus === "CRITICAL" || criticalDangersCount > 0) {
+    overallStatus = "CRITICAL";
+    statusTitle = `🚨 זוהו ${criticalDangersCount} חריגות קריטיות במים - נדרשת התערבות מיידית!`;
+    waterLabel = `חריגות מסוכנות במים (${criticalDangersCount} מדדים קריטיים)`;
+  } else if (waterStatus === "WARNING" || warningDangersCount > 0 || equipStatus === "CRITICAL" || overdueTasks.length > 0) {
+    overallStatus = "ATTENTION";
+    statusTitle = "⚠️ נדרשת תשומת לב לאיזון המים והשלמת שגרות תחזוקה";
+    waterLabel = warningDangersCount > 0 ? `${warningDangersCount} מדדי מים מחוץ לטווח` : "דורש כיוונון קל";
+  } else if (score >= 90) {
     overallStatus = "EXCELLENT";
     statusTitle = "מצב מושלם! הג'קוזי מאוזן ומתוחזק ברמה הגבוהה ביותר";
-  } else if (score >= 75) {
+    waterLabel = "איכות מים אידיאלית ומאוזנת ✓";
+  } else {
     overallStatus = "GOOD";
     statusTitle = "מצב טוב ויציב, נדרשות מספר פעולות שגרה קלות";
-  } else if (score >= 50) {
-    overallStatus = "ATTENTION";
-    statusTitle = "נדרשת תשומת לב לאיזון המים והשלמת שגרות תחזוקה";
-  } else {
-    overallStatus = "CRITICAL";
-    statusTitle = "נדרשת התערבות מיידית! זוהו ליקויים קריטיים במים או במתקן";
+    waterLabel = "איכות מים טובה ויציבה ✓";
   }
 
-  const executiveSummary = `הג'קוזי שלך (נפח ${req.jacuzzi.volumeLiters} ליטר, שיטת חיטוי ${req.jacuzzi.sanitizationType === "BROMINE" ? "ברום" : "כלור"}) מקבל ציון בריאות כולל של ${score}/100. ${
-    waterStatus === "OK" ? "איכות המים מצוינת ומאוזנת." : "איכות המים דורשת כיוונון ואיזון."
-  } ${
-    equipStatus === "OK" ? "שגרות התחזוקה מתבצעות בזמן." : `קיימות ${overdueTasks.length} משימות תחזוקה הממתינות לביצוע.`
-  } ${
-    invStatus === "OK" ? "ארון החומרים ערוך ומצויד במלואו." : `זוהו ${lowStock.length} חומרים הדורשים הזמנה וחידוש מלאי.`
-  }`;
+  // Construct precise executive summary
+  let executiveSummary = "";
+  if (waterStatus === "CRITICAL" || criticalDangersCount > 0) {
+    executiveSummary = `בדיקת המים האחרונה הצביעה על חריגות מסוכנות (ציון בריאות כולל: ${score}/100): זוהו ${criticalDangersCount} מדדים במצב חריג/מסוכן הדורשים טיפול מיידי. ${
+      equipStatus !== "OK" ? `בנוסף, קיימות ${overdueTasks.length} משימות תחזוקה באיחור.` : ""
+    } ${
+      invStatus !== "OK" ? `בארון החומרים זוהו ${lowStock.length} חומרים בחוסר.` : ""
+    } מומלץ לבצע את פעולות האיזון המומלצות לפני רחצה בג'קוזי!`;
+  } else if (waterStatus === "WARNING" || warningDangersCount > 0) {
+    executiveSummary = `הג'קוזי שלך מקבל ציון בריאות של ${score}/100. איכות המים דורשת כיוונון קל (${warningDangersCount} מדדים מחוץ לטווח האידיאלי). ${
+      equipStatus !== "OK" ? `קיימות ${overdueTasks.length} משימות תחזוקה הממתינות לביצוע.` : "תחזוקת המתקן מבוצעת כהלכה."
+    } ${
+      invStatus !== "OK" ? `נדרשת הזמנת חומרים עבור ${lowStock.length} פריטים בארון.` : "ארון החומרים מצויד."
+    }`;
+  } else {
+    executiveSummary = `הג'קוזי שלך (נפח ${req.jacuzzi.volumeLiters} ליטר, שיטת חיטוי ${req.jacuzzi.sanitizationType === "BROMINE" ? "ברום" : "כלור"}) מקבל ציון בריאות כולל של ${score}/100. איכות המים מצוינת ומאוזנת לחלוטין. ${
+      equipStatus === "OK" ? "שגרות התחזוקה מתבצעות בזמן." : `קיימות ${overdueTasks.length} משימות תחזוקה הממתינות לביצוע.`
+    } ${
+      invStatus === "OK" ? "ארון החומרים ערוך ומצויד במלואו." : `זוהו ${lowStock.length} חומרים הדורשים הזמנה וחידוש מלאי.`
+    }`;
+  }
 
   return {
     healthScore: score,
@@ -2097,6 +2140,20 @@ export async function generateFullJacuzziDiagnostic(req: FullJacuzziDiagnosticRe
     return generateRuleBasedFullDiagnostic(req);
   }
 
+  // Pre-evaluate test strip parameters and dangers for the AI prompt
+  const detectedWaterRisks: string[] = [];
+  if (req.latestWaterTest) {
+    for (const pDef of ALL_TEST_STRIP_PARAMS) {
+      const { val, rangeStr } = extractParamValue(req.latestWaterTest, pDef.id);
+      if (val === null && !rangeStr) continue;
+      const domain = getGenericDomain(pDef.id, val, rangeStr);
+      if (domain.id !== "UNKNOWN" && domain.id !== "OK") {
+        const riskText = domain.id === "VERY_LOW" || domain.id === "LOW" ? pDef.dangerLow : pDef.dangerHigh;
+        detectedWaterRisks.push(`- ${pDef.nameHe} (${domain.label}): ${riskText}`);
+      }
+    }
+  }
+
   const prompt = `אתה מומחה-על בינלאומי וכימאי ספא מקצועי לניהול, תפעול ותחזוקת מערכות ג'קוזי (Spa & Hot Tub Master).
 תפקידך לספק אבחון מקיף, אינטליגנטי, ממוקד ומדויק ביותר של כלל מערכת הג'קוזי של המשתמש על בסיס הנתונים שנשלפו מבסיס הנתונים בזמן אמת.
 
@@ -2112,13 +2169,17 @@ ${
   req.latestWaterTest
     ? `- תאריך בדיקה: ${req.latestWaterTest.testedAt || "לאחרונה"} (${req.latestWaterTest.daysAgo !== null && req.latestWaterTest.daysAgo !== undefined ? `לפני ${req.latestWaterTest.daysAgo} ימים` : "טרי"})
 - חומציות (pH): ${req.latestWaterTest.ph || req.latestWaterTest.phRange || "לא נבדק"}
-- כלור חופשי: ${req.latestWaterTest.freeChlorine || req.latestWaterTest.chlorineRange || "לא נבדק"} ppm
-- ברום: ${req.latestWaterTest.bromine || req.latestWaterTest.bromineRange || "לא נבדק"} ppm
-- בסיסיות כוללת (TA): ${req.latestWaterTest.alkalinity || req.latestWaterTest.alkalinityRange || "לא נבדק"} ppm
-- קשיות סידן: ${req.latestWaterTest.calcium || req.latestWaterTest.calciumRange || "לא נבדק"} ppm
+- כלור חופשי: ${req.latestWaterTest.freeChlorine || req.latestWaterTest.chlorineRange || "לא נבדק"}
+- כלור כולל / קשור: ${req.latestWaterTest.totalChlorine || (req.latestWaterTest as any).totalChlorineRange || "לא נבדק"}
+- ברום: ${req.latestWaterTest.bromine || req.latestWaterTest.bromineRange || "לא נבדק"}
+- בסיסיות כוללת (TA): ${req.latestWaterTest.alkalinity || req.latestWaterTest.alkalinityRange || "לא נבדק"}
+- קשיות סידן: ${req.latestWaterTest.calcium || req.latestWaterTest.calciumRange || "לא נבדק"}
 - צלילות ועכירות המים: ${req.latestWaterTest.waterClarity || "לא צוין"}
 - ריח המים: ${req.latestWaterTest.waterOdor || "לא צוין"}
-- הערות טקסט חופשי של המשתמש: "${req.latestWaterTest.clarityOdorNotes || req.latestWaterTest.description || "אין"}"`
+- הערות טקסט חופשי של המשתמש: "${req.latestWaterTest.clarityOdorNotes || req.latestWaterTest.description || "אין"}"
+
+סכנות וחריגות מים שזוהו בבדיקה:
+${detectedWaterRisks.length > 0 ? detectedWaterRisks.join("\n") : "כל המדדים שנבדקו תקינים."}`
     : "טרם בוצעה בדיקת מים במערכת."
 }
 
@@ -2158,19 +2219,20 @@ ${
 }
 
 הנחיות חובה:
+- אם זוהו סכנות או חריגות במים (כגון עודף כלור קיצוני, בסיסיות נמוכה מאוד, כלורמינים גבוהים וכו'), עליך להוריד את ציון הבריאות באופן משמעותי (למשל ל-20-45 במצב קריטי או 50-70 במצב אזהרה) ולהדגיש את הסכנות והפעולות הנדרשות בבירור בסיכום המנהלים!
 - ענה אך ורק בעברית קולחת, מקצועית ומעודדת בגוף שני ("הג'קוזי שלך", "עליך להוסיף").
 - ספק סיכום אינטגרטיבי חכם שמשלב מים, מתקן, ריח, צלילות ומלאי.
 - החזר אך ורק מבנה JSON תקין ללא Markdown מסביב לפי הסכמה הבאה:
 
 {
-  "healthScore": 85, // מספר שלם 0-100 המייצג את בריאות הג'קוזי הכוללת
+  "healthScore": 40, // מספר שלם 0-100 המייצג את בריאות הג'קוזי הכוללת
   "overallStatus": "EXCELLENT" | "GOOD" | "ATTENTION" | "CRITICAL",
   "statusTitle": "כותרת קצרה וממוקדת של המצב",
-  "executiveSummary": "פסקה אחת או שתיים של טקסט חופשי רציף, קולח וברור המסכם במדויק את כלל מצב הג'קוזי (איכות המים, מראה, ריח, תחזוקת המתקן ומלאי הארון)",
+  "executiveSummary": "פסקה אחת או שתיים של טקסט חופשי רציף, קולח וברור המסכם במדויק את כלל מצב הג'קוזי (איכות המים, סכנות שזוהו, מראה, ריח, תחזוקת המתקן ומלאי הארון)",
   "waterAnalysis": {
     "status": "OK" | "WARNING" | "CRITICAL",
     "statusLabel": "כותרת סטטוס המים",
-    "summary": "הסבר מפורט על איזון הכימיקלים, צלילות, ריח והערות המשתמש",
+    "summary": "הסבר מפורט על איזון הכימיקלים, סכנות שהתגלו, צלילות, ריח והערות המשתמש",
     "keyPoints": ["נקודה 1", "נקודה 2", "נקודה 3"]
   },
   "equipmentAnalysis": {
