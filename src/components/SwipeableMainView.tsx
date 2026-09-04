@@ -33,6 +33,7 @@ import {
   Beaker,
   Activity,
   ShoppingCart,
+  Trash2,
 } from "lucide-react";
 
 import WaterTestsPage, { getGenericDomain, extractParamValue } from "@/app/water-tests/page";
@@ -58,6 +59,7 @@ interface ItemModalData {
   icon: any;
   type: "task" | "jacuzzi" | "water-test" | "params" | "refill" | "chemical" | "adhoc-chemical" | "strip-settings";
   taskId?: string;
+  isCustom?: boolean;
   taskCategory?: string;
   defaultFreqDays: number;
   currentFreqDays: number;
@@ -89,6 +91,59 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const [modalSelectedParams, setModalSelectedParams] = useState<string[]>(DEFAULT_TEST_STRIP_PARAM_IDS);
   const [modalSaving, setModalSaving] = useState<boolean>(false);
   const [modalNotice, setModalNotice] = useState<string | null>(null);
+
+  // 🌟 New Custom Routine Modal State
+  const [isCreateRoutineModalOpen, setIsCreateRoutineModalOpen] = useState(false);
+  const [newRoutineTitle, setNewRoutineTitle] = useState("");
+  const [newRoutineCategory, setNewRoutineCategory] = useState<"WATER" | "JACUZZI">("WATER");
+  const [newRoutineFreqDays, setNewRoutineFreqDays] = useState<number>(7);
+  const [newRoutineLastDoneDate, setNewRoutineLastDoneDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [newRoutineNextDueDate, setNewRoutineNextDueDate] = useState<string>(
+    new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().slice(0, 10)
+  );
+  const [newRoutineSaving, setNewRoutineSaving] = useState(false);
+
+  const openCreateRoutineModal = (initialCat: "WATER" | "JACUZZI" = "WATER") => {
+    setNewRoutineTitle("");
+    setNewRoutineCategory(initialCat);
+    setNewRoutineFreqDays(7);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const nextDue = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    setNewRoutineLastDoneDate(todayStr);
+    setNewRoutineNextDueDate(nextDue);
+    setIsCreateRoutineModalOpen(true);
+  };
+
+  const handleCreateRoutine = async () => {
+    if (!newRoutineTitle.trim()) {
+      alert("נא להזין שם לשגרה");
+      return;
+    }
+    setNewRoutineSaving(true);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newRoutineTitle.trim(),
+          category: newRoutineCategory === "WATER" ? "WATER_MAINTENANCE" : "JACUZZI_MAINTENANCE",
+          frequencyDays: newRoutineFreqDays,
+          lastDoneDate: newRoutineLastDoneDate ? new Date(newRoutineLastDoneDate) : null,
+          nextDueDate: newRoutineNextDueDate ? new Date(newRoutineNextDueDate) : new Date(Date.now() + newRoutineFreqDays * 24 * 3600 * 1000),
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "שגיאה ביצירת שגרה");
+      }
+      setIsCreateRoutineModalOpen(false);
+      await loadSummaryData();
+    } catch (err: any) {
+      alert(err.message || "שגיאה ביצירת שגרה");
+    } finally {
+      setNewRoutineSaving(false);
+    }
+  };
 
   // Carousel index state (0..5 with infinite wrap)
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -580,6 +635,27 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     }
   };
 
+  const handleDeleteCustomRoutine = async (taskId?: string) => {
+    if (!taskId) return;
+    if (!confirm("האם אתה בטוח שברצונך למחוק שגרה מותאמת אישית זו?")) return;
+    setModalSaving(true);
+    try {
+      const res = await fetch(`/api/tasks?id=${taskId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "שגיאה במחיקת שגרה");
+      }
+      setActiveItemModal(null);
+      await loadSummaryData();
+    } catch (err: any) {
+      alert(err.message || "שגיאה במחיקת שגרה");
+    } finally {
+      setModalSaving(false);
+    }
+  };
+
   // If a full page is opened, render it with a calm ocean return bar
   if (openPageId) {
     return (
@@ -822,7 +898,28 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   // Compute upcoming tasks in next 7 days for the Status Card
   const nowMs = Date.now();
-  const allScheduledEvents = [
+  // Identify all custom routines created by the user
+  const standardTaskIds = new Set([
+    waterTestTask?.id,
+    sanitizerTask?.id,
+    filterRinseTask?.id,
+    waterlineTask?.id,
+    coverTask?.id,
+    pipeCleanTask?.id,
+    filterReplaceTask?.id,
+  ].filter(Boolean));
+
+  const customTasks = tasks.filter((t: any) => !standardTaskIds.has(t.id) && !t.isCompleted);
+
+  // Group custom tasks into Water Maintenance vs Jacuzzi Equipment Maintenance
+  const waterCustomTasks = customTasks.filter((t: any) =>
+    t.category === "WATER_MAINTENANCE" || t.category === "WATER" ||
+    t.title?.includes("מים") || t.title?.includes("כלור") || t.title?.includes("ברום") || t.title?.includes("חומצ") || t.title?.includes("בסיס") || t.title?.includes("מלח") || t.title?.includes("חיטוי")
+  );
+
+  const jacuzziCustomTasks = customTasks.filter((t: any) => !waterCustomTasks.includes(t));
+
+  const baseScheduledEvents = [
     {
       id: "water-test",
       title: "בדיקת איכות מים (מקלון)",
@@ -979,6 +1076,36 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         currentNextDueDate: nextFullRefillDate.toISOString(),
       }),
     },
+  ];
+
+  const customScheduledEvents = customTasks.map((t: any) => {
+    const due = t.nextDueDate ? new Date(t.nextDueDate) : new Date();
+    return {
+      id: `custom-task-${t.id}`,
+      title: t.title,
+      dueDate: due,
+      icon: Sparkles,
+      type: "task",
+      onOpen: () => openItemModal({
+        id: `custom-task-${t.id}`,
+        title: t.title,
+        subtitle: `שגרה מותאמת אישית • כל ${t.frequencyDays || 7} ימים`,
+        icon: Sparkles,
+        type: "task",
+        taskId: t.id,
+        isCustom: true,
+        taskCategory: t.category || "CUSTOM",
+        defaultFreqDays: t.frequencyDays || 7,
+        currentFreqDays: t.frequencyDays || 7,
+        currentLastDoneDate: t.lastDoneDate ? new Date(t.lastDoneDate).toISOString() : null,
+        currentNextDueDate: due.toISOString(),
+      }),
+    };
+  });
+
+  const allScheduledEvents = [
+    ...baseScheduledEvents,
+    ...customScheduledEvents,
   ];
 
   const sevenDaysUpcomingTasks = allScheduledEvents
@@ -1571,9 +1698,20 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <Droplets className="w-3.5 h-3.5 text-sky-400" />
                   <span>שגרת טיפולי מים:</span>
                 </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openCreateRoutineModal("WATER");
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-sky-950/90 hover:bg-sky-900 border border-sky-800/80 text-sky-200 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-3 h-3 text-sky-400" />
+                  <span>+ הוסף שגרה</span>
+                </button>
               </div>
 
-              {/* List of 4 Specific Water Treatments with Both Last & Next Dates */}
+              {/* List of Water Treatments with Both Last & Next Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Item 1: בדיקת איכות מים */}
                 <div
@@ -1746,6 +1884,58 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                   </div>
                 </div>
+
+                {/* 🌟 Custom Water Routines Added by User */}
+                {waterCustomTasks.map((t: any) => {
+                  const lastDate = t.lastDoneDate ? new Date(t.lastDoneDate) : null;
+                  const nextDate = t.nextDueDate ? new Date(t.nextDueDate) : new Date();
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openItemModal({
+                          id: `custom-task-${t.id}`,
+                          title: t.title,
+                          subtitle: `שגרה מותאמת אישית • כל ${t.frequencyDays || 7} ימים`,
+                          icon: Sparkles,
+                          type: "task",
+                          taskId: t.id,
+                          isCustom: true,
+                          taskCategory: t.category || "WATER_MAINTENANCE",
+                          defaultFreqDays: t.frequencyDays || 7,
+                          currentFreqDays: t.frequencyDays || 7,
+                          currentLastDoneDate: lastDate?.toISOString() || null,
+                          currentNextDueDate: nextDate.toISOString(),
+                        });
+                      }}
+                      className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
+                          <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                          <span className="truncate">{t.title}</span>
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1 shrink-0">
+                          <Edit2 className="w-2.5 h-2.5 opacity-60" />
+                          <span>כל {t.frequencyDays || 7} ימים</span>
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
+                          <span className="text-white font-semibold">{formatDateDisplay(lastDate)}</span>{" "}
+                          <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastDate, true)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                          <span className="text-sky-300 font-bold">{formatDateDisplay(nextDate)}</span>{" "}
+                          <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextDate, false)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* חומרים שנוספו לג'קוזי (ללא תאריך הבא!) */}
@@ -1831,9 +2021,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </h2>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openCreateRoutineModal("JACUZZI");
+                }}
+                className="px-3 py-1.5 rounded-xl bg-sky-950/90 hover:bg-sky-900 border border-sky-800/80 text-sky-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5 text-sky-400" />
+                <span>+ הוסף שגרה</span>
+              </button>
             </div>
 
-            {/* List of 5 Specific Jacuzzi Equipment Actions */}
+            {/* List of Specific Jacuzzi Equipment Actions */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Item 1: שטיפת פילטר שבועית */}
               <div
@@ -2054,6 +2256,63 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                 </div>
               </div>
+
+              {/* Custom Jacuzzi Equipment Routines */}
+              {jacuzziCustomTasks.map((t: any) => {
+                const lastDate = t.lastDoneDate ? new Date(t.lastDoneDate) : null;
+                const nextDate = t.nextDueDate
+                  ? new Date(t.nextDueDate)
+                  : lastDate
+                  ? new Date(lastDate.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000)
+                  : new Date(Date.now() + (t.frequencyDays || 7) * 24 * 3600 * 1000);
+
+                return (
+                  <div
+                    key={t.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openItemModal({
+                        id: `custom-task-${t.id}`,
+                        title: t.title,
+                        subtitle: "שגרת תחזוקת מתקן מותאמת אישית",
+                        icon: Wrench,
+                        type: "task",
+                        taskId: t.id,
+                        isCustom: true,
+                        taskCategory: t.category || "JACUZZI_MAINTENANCE",
+                        defaultFreqDays: t.frequencyDays || 7,
+                        currentFreqDays: t.frequencyDays || 7,
+                        currentLastDoneDate: lastDate?.toISOString() || null,
+                        currentNextDueDate: nextDate.toISOString(),
+                      });
+                    }}
+                    className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
+                        <Wrench className="w-3.5 h-3.5 text-sky-400" />
+                        <span className="truncate">{t.title}</span>
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1 shrink-0">
+                        <Edit2 className="w-2.5 h-2.5 opacity-60" />
+                        <span>כל {t.frequencyDays || 7} ימים</span>
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
+                        <span className="text-white font-semibold">{formatDateDisplay(lastDate)}</span>{" "}
+                        <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastDate, true)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
+                        <span className="text-sky-300 font-bold">{formatDateDisplay(nextDate)}</span>{" "}
+                        <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextDate, false)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
@@ -2613,6 +2872,18 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   {modalSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-4 h-4" />}
                   <span>שמור שינויים והגדרות</span>
                 </button>
+
+                {activeItemModal.isCustom && activeItemModal.taskId && (
+                  <button
+                    type="button"
+                    disabled={modalSaving}
+                    onClick={() => handleDeleteCustomRoutine(activeItemModal.taskId)}
+                    className="w-full py-2.5 rounded-xl bg-red-950/50 hover:bg-red-900/70 border border-red-800/60 text-red-200 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    <span>מחק שגרה מותאמת אישית זו</span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -2624,6 +2895,175 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 className="px-4 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 סגור
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 New Custom Routine Creation Modal */}
+      {isCreateRoutineModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setIsCreateRoutineModalOpen(false)}
+        >
+          <div
+            className="bg-[#0e1823] border border-sky-800/80 rounded-3xl p-5 sm:p-6 w-full max-w-lg shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+            dir="rtl"
+          >
+            <div className="flex items-center justify-between border-b border-sky-900/40 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-sky-950/80 border border-sky-800 flex items-center justify-center text-sky-400">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">הוספת שגרה חדשה</h3>
+                  <p className="text-xs text-sky-300/80">הגדרת שגרת תחזוקה מחזורית מותאמת אישית</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateRoutineModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Routine Name */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  שם השגרה / הפעולה: <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="לדוגמה: בדיקת משאבות, הוספת מלח, ניקוי כיסוי..."
+                  value={newRoutineTitle}
+                  onChange={(e) => setNewRoutineTitle(e.target.value)}
+                  className="w-full bg-[#080e14] border border-sky-900/60 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+              {/* Category Choice */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  קטגוריית שגרה:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewRoutineCategory("WATER")}
+                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      newRoutineCategory === "WATER"
+                        ? "bg-sky-950 text-sky-200 border-sky-500 shadow-sm"
+                        : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Droplets className="w-4 h-4 text-sky-400" />
+                    <span>תחזוקת מים</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewRoutineCategory("JACUZZI")}
+                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      newRoutineCategory === "JACUZZI"
+                        ? "bg-sky-950 text-sky-200 border-sky-500 shadow-sm"
+                        : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Wrench className="w-4 h-4 text-sky-400" />
+                    <span>תחזוקת מתקן</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Frequency */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  תדירות חזרה (כל כמה ימים תתבצע הפעולה?):
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={newRoutineFreqDays}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10) || 1;
+                      setNewRoutineFreqDays(val);
+                      if (newRoutineLastDoneDate) {
+                        const next = new Date(new Date(newRoutineLastDoneDate).getTime() + val * 24 * 3600 * 1000);
+                        setNewRoutineNextDueDate(next.toISOString().split("T")[0]);
+                      }
+                    }}
+                    className="w-24 bg-[#080e14] border border-sky-900/60 rounded-xl px-3 py-2 text-xs text-white text-center font-bold focus:outline-none focus:border-sky-500"
+                  />
+                  <span className="text-xs text-slate-300">ימים</span>
+
+                  <div className="flex items-center gap-1.5 mr-auto flex-wrap">
+                    {[3, 7, 14, 30, 90, 180].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          setNewRoutineFreqDays(d);
+                          if (newRoutineLastDoneDate) {
+                            const next = new Date(new Date(newRoutineLastDoneDate).getTime() + d * 24 * 3600 * 1000);
+                            setNewRoutineNextDueDate(next.toISOString().split("T")[0]);
+                          }
+                        }}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                          newRoutineFreqDays === d
+                            ? "bg-sky-950 text-sky-200 border-sky-500"
+                            : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        {d} יום
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                <div>
+                  <label className="text-[11px] text-slate-300 block mb-1">תאריך ביצוע אחרון (אופציונלי):</label>
+                  <input
+                    type="date"
+                    value={newRoutineLastDoneDate}
+                    onChange={(e) => {
+                      setNewRoutineLastDoneDate(e.target.value);
+                      if (e.target.value && newRoutineFreqDays) {
+                        const next = new Date(new Date(e.target.value).getTime() + newRoutineFreqDays * 24 * 3600 * 1000);
+                        setNewRoutineNextDueDate(next.toISOString().split("T")[0]);
+                      }
+                    }}
+                    className="w-full bg-[#080e14] border border-sky-900/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-slate-300 block mb-1">תאריך ביצוע ראשון / הבא:</label>
+                  <input
+                    type="date"
+                    value={newRoutineNextDueDate}
+                    onChange={(e) => setNewRoutineNextDueDate(e.target.value)}
+                    className="w-full bg-[#080e14] border border-sky-900/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={newRoutineSaving || !newRoutineTitle.trim()}
+                onClick={handleCreateRoutine}
+                className="w-full py-3 rounded-xl bg-sky-700 hover:bg-sky-600 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
+              >
+                {newRoutineSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                <span>צור שגרה חדשה</span>
               </button>
             </div>
           </div>

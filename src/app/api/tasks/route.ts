@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     const user = await getSessionUser(req);
     if (!user) return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
 
-    const { title, description, category, frequencyDays, nextDueDate, priority } = await req.json();
+    const { title, description, category, frequencyDays, nextDueDate, lastDoneDate, priority } = await req.json();
 
     if (!title) {
       return NextResponse.json({ error: "כותרת משימה היא שדה חובה" }, { status: 400 });
@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
         category: category || "CUSTOM",
         frequencyDays: frequencyDays ? parseInt(frequencyDays, 10) : 7,
         nextDueDate: nextDueDate ? new Date(nextDueDate) : new Date(),
+        lastDoneDate: lastDoneDate ? new Date(lastDoneDate) : null,
         priority: priority || "MEDIUM",
         isCompleted: false,
       },
