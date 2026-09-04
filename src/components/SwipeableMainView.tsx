@@ -26,6 +26,7 @@ import {
   ShieldAlert,
   CalendarDays,
   Edit2,
+  Edit3,
   Check,
   Info,
   Layers,
@@ -53,6 +54,38 @@ export const CARD_TABS = [
   { id: "water-maintenance", title: "תחזוקת מים", subtitle: "הגדרות מקלון, מצב איכות מים, שגרת טיפולים ותוספות חומרים", icon: Droplets },
   { id: "jacuzzi-maintenance", title: "תחזוקת מתקן", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה, צנרת והחלפת פילטר", icon: Wrench },
 ];
+
+export const CLARITY_OPTIONS = [
+  { id: "CLEAR", label: "צלולים ונקיים", icon: "✨", isOk: true, desc: "מים צלולים, נקיים ומבריקים" },
+  { id: "SLIGHTLY_CLOUDY", label: "עכירות קלה (מעט חלבי)", icon: "🌫️", isOk: false, risk: "הצטברות חלקיקים אורגניים או פילטר סתום. מומלץ לשטוף פילטר ולבצע טיפול שוק.", desc: "עכירות קלה הדורשת סינון ושוק" },
+  { id: "CLOUDY", label: "עכורים / חלביים", icon: "☁️", isOk: false, risk: "עומס אורגני גבוה, פילטרציה לקויה או חוסר חיטוי. דורש בדיקת חיטוי ושוק דחוף.", desc: "ראות לקויה במים, עומס לכלוך גבוה" },
+  { id: "FOAMY", label: "קצף מוגזם במים", icon: "🫧", isOk: false, risk: "שאריות סבונים, שמנים, קוסמטיקה או TDS גבוה. מומלץ להוסיף מונע קצף / להחליף מים חלקית.", desc: "הצטברות קצף על פני המים" },
+  { id: "ALGAE", label: "ירקרקים / אצות", icon: "🟢", isOk: false, risk: "התפתחות אצות בעקבות מחסור ממושך בחיטוי. דורש שוק חיטוי מיידי וניקוי פילטר.", desc: "גוון ירוק ונוכחות אצות" },
+  { id: "DIRT", label: "משקעים ולכלוך", icon: "🍂", isOk: false, risk: "לכלוך פיזי שהצטבר בקרקעית או מרחף. מומלץ שאיבה / רשת ושטיפת סנן.", desc: "חלקיקים ומשקעים נראים לעין" },
+];
+
+export const ODOR_OPTIONS = [
+  { id: "FRESH", label: "ריח נקי ורענן", icon: "🌿", isOk: true, desc: "ריח טבעי ונעים של מים נקיים" },
+  { id: "NO_ODOR", label: "ללא ריח לוואי", icon: "💧", isOk: true, desc: "ניטרלי לחלוטין וללא ריח" },
+  { id: "CHLORINE", label: "ריח כלור / ברום חריף", icon: "🧪", isOk: false, risk: "ריח חריף מעיד על כלורמינים (כלור קשור) ולא על עודף כלור. מומלץ לבצע שוק חמצון / לאוורר את הג'קוזי.", desc: "ריח חריף של כלורמינים קשורים" },
+  { id: "MUSTY", label: "ריח עובש / טחב", icon: "🪵", isOk: false, risk: "ריח עבש עלול להעיד על הצטברות חיידקים בכיסוי או בצנרת. מומלץ אוורור כיסוי ופלאש צנרת.", desc: "ריח לחות ועובש מהכיסוי או הצנרת" },
+  { id: "FOUL", label: "ריח לא נעים / ריקבון", icon: "⚠️", isOk: false, risk: "עומס חיידקי גבוה או הצטברות ביופילם. נדרש חיטוי שוק מיידי ושטיפת צנרת.", desc: "ריח כבד ולא נעים הדורש טיפול דחוף" },
+  { id: "CHEMICAL", label: "ריח כימי חריף", icon: "⚠️", isOk: false, risk: "מינון יתר של כימיקלים או חוסר אוורור. פתח את כיסוי הג'קוזי והפעל ג'טים לאוורור.", desc: "ריח כימי מרוכז הדורש אוורור" },
+];
+
+export function getClarityDisplay(val?: string | null) {
+  const found = CLARITY_OPTIONS.find((c) => c.id === val);
+  if (found) return found;
+  if (!val || val === "CLEAR") return CLARITY_OPTIONS[0];
+  return { id: val, label: val, icon: "💧", isOk: true, desc: val };
+}
+
+export function getOdorDisplay(val?: string | null) {
+  const found = ODOR_OPTIONS.find((o) => o.id === val);
+  if (found) return found;
+  if (!val || val === "FRESH") return ODOR_OPTIONS[0];
+  return { id: val, label: val, icon: "🌿", isOk: true, desc: val };
+}
 
 interface SwipeableMainViewProps {
   initialTab?: string;
@@ -107,6 +140,79 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().slice(0, 10)
   );
   const [newRoutineSaving, setNewRoutineSaving] = useState(false);
+
+  // 🌟 Water Clarity & Odor Modal State
+  const [isClarityOdorModalOpen, setIsClarityOdorModalOpen] = useState(false);
+  const [editClarity, setEditClarity] = useState("CLEAR");
+  const [editOdor, setEditOdor] = useState("FRESH");
+  const [editClarityOdorNotes, setEditClarityOdorNotes] = useState("");
+  const [savingClarityOdor, setSavingClarityOdor] = useState(false);
+
+  const openClarityOdorModal = () => {
+    setEditClarity(latestWaterLog?.waterClarity || "CLEAR");
+    setEditOdor(latestWaterLog?.waterOdor || "FRESH");
+    setEditClarityOdorNotes(latestWaterLog?.clarityOdorNotes || latestWaterLog?.description || "");
+    setIsClarityOdorModalOpen(true);
+  };
+
+  const handleSaveClarityOdor = async () => {
+    setSavingClarityOdor(true);
+    try {
+      const notes = editClarityOdorNotes.trim();
+      const clarityObj = getClarityDisplay(editClarity);
+      const odorObj = getOdorDisplay(editOdor);
+
+      if (latestWaterLog?.id) {
+        const res = await fetch("/api/water-tests", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: latestWaterLog.id,
+            waterClarity: editClarity,
+            waterOdor: editOdor,
+            clarityOdorNotes: notes,
+            description: notes,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || "שגיאה בעדכון צלילות וריח");
+        }
+      } else {
+        const res = await fetch("/api/water-tests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            waterClarity: editClarity,
+            waterOdor: editOdor,
+            clarityOdorNotes: notes,
+            description: notes,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || "שגיאה בשמירת צלילות וריח");
+        }
+      }
+
+      await fetch("/api/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `תיעוד צלילות וריח: ${clarityObj.label} • ${odorObj.label}`,
+          content: `צלילות: ${clarityObj.label} | ריח: ${odorObj.label}.${notes ? ` הערות: ${notes}` : ""}`,
+          entryDate: new Date(),
+        }),
+      });
+
+      setIsClarityOdorModalOpen(false);
+      await loadSummaryData();
+    } catch (err: any) {
+      alert(err.message || "שגיאה בשמירת נתוני צלילות וריח");
+    } finally {
+      setSavingClarityOdor(false);
+    }
+  };
 
   const openCreateRoutineModal = () => {
     setNewRoutineTitle("");
@@ -1195,19 +1301,12 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       if (!pDef) continue;
 
       if (pId === "clarity") {
-        const clarityMap: Record<string, string> = {
-          CLEAR: "מים צלולים",
-          SLIGHTLY_CLOUDY: "עכירות קלה",
-          CLOUDY: "עכורים",
-          FOAMY: "קצף במים",
-          ALGAE: "ירוקת / אצות",
-          BAD_SMELL: "ריח חריף",
-        };
         if (test.waterClarity && test.waterClarity !== "CLEAR") {
+          const clarityObj = getClarityDisplay(test.waterClarity);
           risks.push({
-            name: pDef.nameHe,
-            statusLabel: clarityMap[test.waterClarity] || "נדרש טיפול",
-            risk: pDef.dangerLow,
+            name: "צלילות המים",
+            statusLabel: clarityObj.label,
+            risk: clarityObj.risk || pDef.dangerLow,
           });
         }
         continue;
@@ -1223,6 +1322,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
           risk: riskText,
         });
       }
+    }
+
+    if (test.waterOdor && test.waterOdor !== "FRESH" && test.waterOdor !== "NO_ODOR") {
+      const odorObj = getOdorDisplay(test.waterOdor);
+      risks.push({
+        name: "ריח המים",
+        statusLabel: odorObj.label,
+        risk: odorObj.risk || "נוכחות ריח לוואי או כלורמינים - מומלץ אוורור וחיטוי שוק",
+      });
     }
 
     return risks;
@@ -1383,10 +1491,36 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-sky-900/30 text-center space-y-0.5">
                       <span className="text-[10px] text-slate-400">צלילות ומראה</span>
                       <div className="text-sm font-black text-white">
-                        {latestWaterLog.waterClarity === "CLEAR" ? "צלול ונקי" : "נדרש טיפול"}
+                        {getClarityDisplay(latestWaterLog.waterClarity).label}
                       </div>
-                      <span className="text-[9px] text-sky-300/80">בדיקה ויזואלית</span>
+                      <span className="text-[9px] text-sky-300/80">בדיקה חושית</span>
                     </div>
+                  </div>
+
+                  {/* צלילות, עכירות, ריח והערות בסטטוס */}
+                  <div className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 space-y-2 text-xs">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-slate-300 font-bold text-xs flex items-center gap-1.5">
+                        <Droplets className="w-3.5 h-3.5 text-sky-400" />
+                        <span>צלילות ועכירות & ריח המים:</span>
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-sky-950 text-sky-200 border border-sky-800 flex items-center gap-1">
+                          <span>{getClarityDisplay(latestWaterLog.waterClarity).icon}</span>
+                          <span>{getClarityDisplay(latestWaterLog.waterClarity).label}</span>
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-sky-950 text-sky-200 border border-sky-800 flex items-center gap-1">
+                          <span>{getOdorDisplay(latestWaterLog.waterOdor).icon}</span>
+                          <span>{getOdorDisplay(latestWaterLog.waterOdor).label}</span>
+                        </span>
+                      </div>
+                    </div>
+                    {(latestWaterLog.clarityOdorNotes || latestWaterLog.description) && (
+                      <div className="text-[11px] text-slate-300 bg-sky-950/40 p-2.5 rounded-xl border border-sky-900/30 flex items-start gap-1.5">
+                        <span className="text-sky-400 font-bold shrink-0">הערות:</span>
+                        <span className="leading-snug text-slate-200">{latestWaterLog.clarityOdorNotes || latestWaterLog.description}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* סכנות המופיעות מבדיקת מים אחרונה */}
@@ -1637,15 +1771,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     <div
                       onClick={(e) => {
                         e.stopPropagation();
-                        setOpenPageId("water-tests");
+                        openClarityOdorModal();
                       }}
                       className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
                     >
                       <span className="text-[10px] text-slate-400">צלילות ומראה</span>
                       <div className="text-base sm:text-lg font-black text-white">
-                        {latestWaterLog.waterClarity === "CLEAR" ? "צלול ונקי" : "נדרש טיפול"}
+                        {getClarityDisplay(latestWaterLog.waterClarity).label}
                       </div>
-                      <span className="text-[9px] text-sky-300/80">בדיקה ויזואלית</span>
+                      <span className="text-[9px] text-sky-300/80">בדיקה חושית</span>
                     </div>
                   </div>
 
@@ -1678,6 +1812,48 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   לחץ כאן כדי להזין את בדיקת המקלון הראשונה שלך
                 </div>
               )}
+
+              {/* 🌟 קטגוריית צלילות ועכירות & ריח המים (בדיקה חושית והערות חופשיות) */}
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openClarityOdorModal();
+                }}
+                className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/clarity"
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-white flex items-center gap-1.5 group-hover/clarity:text-sky-300 transition-colors">
+                    <Droplets className="w-3.5 h-3.5 text-sky-400" />
+                    <span>צלילות ועכירות & ריח המים (בדיקה חושית):</span>
+                  </span>
+                  <span className="text-[11px] text-sky-300/90 flex items-center gap-1 font-bold bg-sky-950/80 px-2.5 py-1 rounded-lg border border-sky-800/50 group-hover/clarity:border-sky-500/60 transition-colors shadow-sm">
+                    <Edit3 className="w-3 h-3 text-sky-400" />
+                    <span>ערוך צלילות וריח</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                  <span className="text-[11px] font-bold bg-sky-950/90 text-sky-200 border border-sky-800/70 px-2.5 py-1 rounded-xl flex items-center gap-1">
+                    <span>{getClarityDisplay(latestWaterLog?.waterClarity).icon}</span>
+                    <span>צלילות: {getClarityDisplay(latestWaterLog?.waterClarity).label}</span>
+                  </span>
+                  <span className="text-[11px] font-bold bg-sky-950/90 text-sky-200 border border-sky-800/70 px-2.5 py-1 rounded-xl flex items-center gap-1">
+                    <span>{getOdorDisplay(latestWaterLog?.waterOdor).icon}</span>
+                    <span>ריח: {getOdorDisplay(latestWaterLog?.waterOdor).label}</span>
+                  </span>
+                </div>
+
+                {(latestWaterLog?.clarityOdorNotes || latestWaterLog?.description) ? (
+                  <div className="text-[11px] text-slate-300 bg-sky-950/50 p-2.5 rounded-xl border border-sky-900/40 flex items-start gap-1.5">
+                    <span className="text-sky-400 font-bold shrink-0">הערות:</span>
+                    <span className="leading-snug text-slate-200">{latestWaterLog?.clarityOdorNotes || latestWaterLog?.description}</span>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-slate-400 italic">
+                    לחץ כאן כדי להוסיף הערות חופשיות או לעדכן את ריח וצלילות המים
+                  </p>
+                )}
+              </div>
 
               {/* כפתור היסטוריית בדיקות שמעביר ליומן בדיקות איכות המים */}
               <button
@@ -2973,6 +3149,127 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <span>צור שגרה חדשה</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 Clarity & Odor Edit Modal */}
+      {isClarityOdorModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsClarityOdorModalOpen(false);
+          }}
+        >
+          <div
+            className="bg-[#0e1823] border border-sky-800/80 w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 text-right relative overflow-hidden max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-sky-900/40 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-950/80 border border-sky-800/60 flex items-center justify-center text-sky-300">
+                  <Droplets className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white">צלילות, עכירות וריח המים</h3>
+                  <p className="text-xs text-slate-300">תיעוד מראה המים, ריח והערות חופשיות</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsClarityOdorModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Clarity Selection */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span>צלילות ועכירות המים:</span>
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {CLARITY_OPTIONS.map((c) => {
+                  const isSelected = editClarity === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setEditClarity(c.id)}
+                      className={`p-2.5 rounded-xl border text-right transition-all flex flex-col gap-1 cursor-pointer ${
+                        isSelected
+                          ? "bg-sky-950/90 border-sky-400 shadow-md ring-1 ring-sky-400"
+                          : "bg-[#080e14]/90 border-sky-900/40 hover:border-sky-700 text-slate-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-white">
+                        <span>{c.icon}</span>
+                        <span className={isSelected ? "text-sky-300 font-bold" : ""}>{c.label}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 leading-tight">{c.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Odor Selection */}
+            <div className="space-y-2 pt-2 border-t border-sky-900/30">
+              <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span>ריח המים:</span>
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {ODOR_OPTIONS.map((o) => {
+                  const isSelected = editOdor === o.id;
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => setEditOdor(o.id)}
+                      className={`p-2.5 rounded-xl border text-right transition-all flex flex-col gap-1 cursor-pointer ${
+                        isSelected
+                          ? "bg-sky-950/90 border-sky-400 shadow-md ring-1 ring-sky-400"
+                          : "bg-[#080e14]/90 border-sky-900/40 hover:border-sky-700 text-slate-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-white">
+                        <span>{o.icon}</span>
+                        <span className={isSelected ? "text-sky-300 font-bold" : ""}>{o.label}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 leading-tight">{o.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Free Notes Text Input */}
+            <div className="space-y-1.5 pt-2 border-t border-sky-900/30">
+              <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Edit3 className="w-3.5 h-3.5 text-sky-400" />
+                <span>הערות וטקסט חופשי (עכירות, תחושה, ריח וכו'):</span>
+              </label>
+              <textarea
+                rows={3}
+                value={editClarityOdorNotes}
+                onChange={(e) => setEditClarityOdorNotes(e.target.value)}
+                placeholder="הזן כאן פירוט חופשי על מצב המים, הערות מיוחדות, פעולות שבוצעו וכו'..."
+                className="w-full bg-[#080e14] border border-sky-900/60 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors resize-none"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="button"
+              disabled={savingClarityOdor}
+              onClick={handleSaveClarityOdor}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
+            >
+              {savingClarityOdor ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              <span>שמור נתוני צלילות, ריח והערות</span>
+            </button>
           </div>
         </div>
       )}

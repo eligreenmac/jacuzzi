@@ -87,6 +87,8 @@ export async function ensureDbSchema() {
         ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "fluorideRange" TEXT;
         ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "extendedMetrics" TEXT;
         ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "testedParams" TEXT;
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "waterOdor" TEXT DEFAULT 'FRESH';
+        ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "clarityOdorNotes" TEXT;
       `);
     });
     isSchemaEnsured = true;

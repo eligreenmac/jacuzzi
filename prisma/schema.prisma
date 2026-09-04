@@ -77,6 +77,8 @@ model WaterLog {
   alkalinity        Float?
   alkalinityRange   String?  // e.g. "80 - 120 ppm (אידיאלי)"
   waterClarity      String   @default("CLEAR") // CLEAR, SLIGHTLY_CLOUDY, VERY_CLOUDY, GREEN, FOAMY, BAD_ODOR
+  waterOdor         String?  @default("FRESH") // FRESH, NO_ODOR, CHLORINE, MUSTY, FOUL, CHEMICAL
+  clarityOdorNotes  String?
   calcium           Float?
   calciumRange      String?  // e.g. "150 - 250 ppm (אידיאלי)"
   totalChlorine     Float?
