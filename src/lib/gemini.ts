@@ -1751,4 +1751,515 @@ function generateRuleBasedRoutineOptimization(
   };
 }
 
+export interface FullJacuzziDiagnosticRequest {
+  jacuzzi: {
+    volumeLiters: number;
+    sanitizationType: string;
+    brand?: string | null;
+    model?: string | null;
+    lastRefillDate?: string | Date | null;
+    waterAgeDays: number;
+    lastDeepCleanDate?: string | Date | null;
+    lastFilterReplaceDate?: string | Date | null;
+  };
+  latestWaterTest: {
+    testedAt?: string | Date | null;
+    daysAgo?: number | null;
+    ph?: number | null;
+    phRange?: string | null;
+    freeChlorine?: number | null;
+    chlorineRange?: string | null;
+    alkalinity?: number | null;
+    alkalinityRange?: string | null;
+    calcium?: number | null;
+    calciumRange?: string | null;
+    bromine?: number | null;
+    bromineRange?: string | null;
+    totalChlorine?: number | null;
+    cya?: number | null;
+    salt?: number | null;
+    waterTemp?: number | null;
+    waterClarity?: string | null;
+    waterOdor?: string | null;
+    clarityOdorNotes?: string | null;
+    description?: string | null;
+  } | null;
+  tasks: Array<{
+    id: string;
+    title: string;
+    category: string;
+    frequencyDays: number;
+    lastDoneDate?: string | Date | null;
+    nextDueDate?: string | Date | null;
+    isOverdue: boolean;
+    daysOverdueOrDue: number;
+  }>;
+  inventory: Array<{
+    id: string;
+    name: string;
+    category: string;
+    quantity: number;
+    unit: string;
+    minThreshold: number;
+    isLowStock: boolean;
+  }>;
+  recentLogs?: Array<{
+    date: string | Date;
+    title: string;
+    content?: string | null;
+  }>;
+}
+
+export interface FullJacuzziDiagnosticResponse {
+  healthScore: number;
+  overallStatus: "EXCELLENT" | "GOOD" | "ATTENTION" | "CRITICAL";
+  statusTitle: string;
+  executiveSummary: string;
+  waterAnalysis: {
+    status: "OK" | "WARNING" | "CRITICAL";
+    statusLabel: string;
+    summary: string;
+    keyPoints: string[];
+  };
+  equipmentAnalysis: {
+    status: "OK" | "WARNING" | "CRITICAL";
+    statusLabel: string;
+    summary: string;
+    keyPoints: string[];
+  };
+  inventoryAnalysis: {
+    status: "OK" | "WARNING" | "CRITICAL";
+    statusLabel: string;
+    summary: string;
+    keyPoints: string[];
+  };
+  actionItems: Array<{
+    priority: "HIGH" | "MEDIUM" | "LOW";
+    category: "WATER" | "EQUIPMENT" | "INVENTORY";
+    title: string;
+    description: string;
+  }>;
+  quickTips: string[];
+}
+
+/**
+ * Intelligent Rule-Based Diagnostic Generator (Fallback)
+ */
+export function generateRuleBasedFullDiagnostic(req: FullJacuzziDiagnosticRequest): FullJacuzziDiagnosticResponse {
+  let score = 100;
+  const test = req.latestWaterTest;
+  const waterPoints: string[] = [];
+  const equipPoints: string[] = [];
+  const invPoints: string[] = [];
+  const actionItems: Array<{ priority: "HIGH" | "MEDIUM" | "LOW"; category: "WATER" | "EQUIPMENT" | "INVENTORY"; title: string; description: string }> = [];
+
+  // 1. Water Analysis
+  let waterStatus: "OK" | "WARNING" | "CRITICAL" = "OK";
+  let waterLabel = "איכות מים מאוזנת ותקינה";
+
+  if (!test) {
+    waterStatus = "WARNING";
+    waterLabel = "טרם בוצעה בדיקת מים";
+    waterPoints.push("לא קיימת בדיקת מים מתועדת במערכת");
+    actionItems.push({
+      priority: "HIGH",
+      category: "WATER",
+      title: "בצע בדיקת מקלון ראשונה",
+      description: "טבול מקלון בדיקה במים ותעד את המדדים לקבלת אבחון מדויק.",
+    });
+    score -= 20;
+  } else {
+    // Water Age
+    if (req.jacuzzi.waterAgeDays > 90) {
+      if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
+      waterPoints.push(`גיל המים גבוה (${req.jacuzzi.waterAgeDays} ימים) - עומס מלחים ו-TDS גבוה`);
+      actionItems.push({
+        priority: "MEDIUM",
+        category: "WATER",
+        title: "תכנן ריקון ומילוי מים מחדש",
+        description: `המים בג'קוזי בני ${req.jacuzzi.waterAgeDays} ימים. מומלץ לבצע ריקון מלא ושטיפת צנרת.`,
+      });
+      score -= 15;
+    } else {
+      waterPoints.push(`גיל המים: ${req.jacuzzi.waterAgeDays} ימים (בטווח המומלץ)`);
+    }
+
+    // pH Check
+    const ph = typeof test.ph === "number" ? test.ph : null;
+    if (ph !== null) {
+      if (ph < 7.2) {
+        if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
+        waterPoints.push(`חומציות נמוכה (pH ${ph}) - סכנת קורוזיה וגירוי בעיניים`);
+        actionItems.push({
+          priority: "HIGH",
+          category: "WATER",
+          title: "הוסף מעלה pH (pH Plus)",
+          description: "העלה את רמת ה-pH לטווח האידיאלי של 7.2 - 7.6.",
+        });
+        score -= 12;
+      } else if (ph > 7.8) {
+        if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
+        waterPoints.push(`בסיסיות מים גבוהה (pH ${ph}) - פגיעה ביעילות החיטוי וסכנת אבנית`);
+        actionItems.push({
+          priority: "HIGH",
+          category: "WATER",
+          title: "הוסף מוריד pH (pH Minus)",
+          description: "הורד את רמת ה-pH לטווח האידיאלי של 7.2 - 7.6.",
+        });
+        score -= 12;
+      } else {
+        waterPoints.push(`רמת חומציות תקינה ומאוזנת (pH ${ph})`);
+      }
+    }
+
+    // Sanitizer Check
+    const isBromine = req.jacuzzi.sanitizationType === "BROMINE";
+    const sanitizerVal = isBromine ? (typeof test.bromine === "number" ? test.bromine : test.freeChlorine) : test.freeChlorine;
+    if (sanitizerVal !== null && sanitizerVal !== undefined) {
+      if (sanitizerVal < 1.0) {
+        waterStatus = "CRITICAL";
+        waterPoints.push(`רמת חיטוי נמוכה מאוד / חסרה (${sanitizerVal} ppm) - סכנת התרבות בקטריות`);
+        actionItems.push({
+          priority: "HIGH",
+          category: "WATER",
+          title: `הוסף ${isBromine ? "ברום" : "כלור"} / בצע טיפול שוק מיידי`,
+          description: "רמת החיטוי אפסית או נמוכה. הוסף חומר חיטוי מיידית והפעל משאבות.",
+        });
+        score -= 20;
+      } else if (sanitizerVal > 7.0) {
+        if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
+        waterPoints.push(`עודף חיטוי (${sanitizerVal} ppm) - מומלץ לאוורר`);
+        score -= 8;
+      } else {
+        waterPoints.push(`רמת חיטוי אידיאלית (${sanitizerVal} ppm ${isBromine ? "ברום" : "כלור"})`);
+      }
+    }
+
+    // Clarity & Odor
+    if (test.waterClarity && test.waterClarity !== "CLEAR") {
+      if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
+      waterPoints.push(`מצב מראה ועכירות: ${test.waterClarity}`);
+      actionItems.push({
+        priority: "MEDIUM",
+        category: "WATER",
+        title: "טיפול בעכירות המים ושטיפת פילטר",
+        description: "המים אינם צלולים לחלוטין. בצע שטיפת פילטר ושוק חמצון.",
+      });
+      score -= 10;
+    } else {
+      waterPoints.push("מראה המים צלול ונקי ✨");
+    }
+
+    if (test.waterOdor && test.waterOdor !== "FRESH" && test.waterOdor !== "NO_ODOR") {
+      if ((waterStatus as string) !== "CRITICAL") waterStatus = "WARNING";
+      waterPoints.push(`ריח המים: ${test.waterOdor}`);
+      actionItems.push({
+        priority: "HIGH",
+        category: "WATER",
+        title: "אוורור הג'קוזי וטיפול שוק חמצון לנטרול ריח",
+        description: "פתח את הכיסוי, הפעל ג'טים והוסף מנת שוק לנטרול ריחות וכלורמינים.",
+      });
+      score -= 10;
+    } else {
+      waterPoints.push("ריח המים נקי ורענן 🌿");
+    }
+
+    if (test.clarityOdorNotes) {
+      waterPoints.push(`הערת משתמש: "${test.clarityOdorNotes}"`);
+    }
+  }
+
+  // 2. Equipment Analysis
+  let equipStatus: "OK" | "WARNING" | "CRITICAL" = "OK";
+  let equipLabel = "תחזוקת המתקן והפילטרים תקינה";
+  const overdueTasks = req.tasks.filter((t) => t.isOverdue);
+
+  if (overdueTasks.length > 0) {
+    equipStatus = overdueTasks.length >= 3 ? "CRITICAL" : "WARNING";
+    equipLabel = `${overdueTasks.length} משימות תחזוקה באיחור`;
+    equipPoints.push(`נמצאו ${overdueTasks.length} משימות באיחור ביצוע`);
+    overdueTasks.slice(0, 3).forEach((t) => {
+      equipPoints.push(`• ${t.title} (באיחור של ${t.daysOverdueOrDue} ימים)`);
+      actionItems.push({
+        priority: "HIGH",
+        category: "EQUIPMENT",
+        title: `בצע: ${t.title}`,
+        description: `משימה זו נמצאת באיחור של ${t.daysOverdueOrDue} ימים. סמן ביצוע לאחר השלמתה.`,
+      });
+    });
+    score -= overdueTasks.length * 8;
+  } else {
+    equipPoints.push("כל משימות התחזוקה והשגרות מבוצעות בזמן ✓");
+    equipPoints.push(`נפח מתקן: ${req.jacuzzi.volumeLiters} ליטר | שיטת חיטוי: ${req.jacuzzi.sanitizationType}`);
+  }
+
+  // 3. Inventory Analysis
+  let invStatus: "OK" | "WARNING" | "CRITICAL" = "OK";
+  let invLabel = "מלאי החומרים מספק ומאורגן";
+  const lowStock = req.inventory.filter((i) => i.isLowStock || i.quantity <= i.minThreshold);
+  const outOfStock = req.inventory.filter((i) => i.quantity <= 0);
+
+  if (outOfStock.length > 0) {
+    invStatus = "CRITICAL";
+    invLabel = `${outOfStock.length} חומרים אזלו לחלוטין מהארון`;
+    invPoints.push(`אזלו לחלוטין: ${outOfStock.map((i) => i.name).join(", ")}`);
+    outOfStock.forEach((i) => {
+      actionItems.push({
+        priority: "HIGH",
+        category: "INVENTORY",
+        title: `הזמן בדחיפות: ${i.name}`,
+        description: `חומר זה אזל לחלוטין (כמות: 0 ${i.unit}). נדרשת הזמנה מיידית לשמירה על איכות המים.`,
+      });
+    });
+    score -= outOfStock.length * 10;
+  } else if (lowStock.length > 0) {
+    invStatus = "WARNING";
+    invLabel = `${lowStock.length} חומרים מתחת לסף המינימום`;
+    invPoints.push(`חומרים בחוסר: ${lowStock.map((i) => `${i.name} (${i.quantity} ${i.unit})`).join(", ")}`);
+    actionItems.push({
+      priority: "MEDIUM",
+      category: "INVENTORY",
+      title: `הזמנת חומרים בארון (${lowStock.length} מוצרים בחסר)`,
+      description: `המוצרים הבאים מתחת לסף המינימום: ${lowStock.map((i) => i.name).join(", ")}. מומלץ להצטייד מראש.`,
+    });
+    score -= lowStock.length * 5;
+  } else {
+    invPoints.push("כל החומרים בארון מעל סף המינימום ומלאי מלא ✓");
+  }
+
+  score = Math.max(25, Math.min(100, score));
+
+  let overallStatus: "EXCELLENT" | "GOOD" | "ATTENTION" | "CRITICAL" = "GOOD";
+  let statusTitle = "הג'קוזי במצב מצוין ומאוזן היטב";
+  if (score >= 90) {
+    overallStatus = "EXCELLENT";
+    statusTitle = "מצב מושלם! הג'קוזי מאוזן ומתוחזק ברמה הגבוהה ביותר";
+  } else if (score >= 75) {
+    overallStatus = "GOOD";
+    statusTitle = "מצב טוב ויציב, נדרשות מספר פעולות שגרה קלות";
+  } else if (score >= 50) {
+    overallStatus = "ATTENTION";
+    statusTitle = "נדרשת תשומת לב לאיזון המים והשלמת שגרות תחזוקה";
+  } else {
+    overallStatus = "CRITICAL";
+    statusTitle = "נדרשת התערבות מיידית! זוהו ליקויים קריטיים במים או במתקן";
+  }
+
+  const executiveSummary = `הג'קוזי שלך (נפח ${req.jacuzzi.volumeLiters} ליטר, שיטת חיטוי ${req.jacuzzi.sanitizationType === "BROMINE" ? "ברום" : "כלור"}) מקבל ציון בריאות כולל של ${score}/100. ${
+    waterStatus === "OK" ? "איכות המים מצוינת ומאוזנת." : "איכות המים דורשת כיוונון ואיזון."
+  } ${
+    equipStatus === "OK" ? "שגרות התחזוקה מתבצעות בזמן." : `קיימות ${overdueTasks.length} משימות תחזוקה הממתינות לביצוע.`
+  } ${
+    invStatus === "OK" ? "ארון החומרים ערוך ומצויד במלואו." : `זוהו ${lowStock.length} חומרים הדורשים הזמנה וחידוש מלאי.`
+  }`;
+
+  return {
+    healthScore: score,
+    overallStatus,
+    statusTitle,
+    executiveSummary,
+    waterAnalysis: {
+      status: waterStatus,
+      statusLabel: waterLabel,
+      summary: waterPoints.join(". "),
+      keyPoints: waterPoints,
+    },
+    equipmentAnalysis: {
+      status: equipStatus,
+      statusLabel: equipLabel,
+      summary: equipPoints.join(". "),
+      keyPoints: equipPoints,
+    },
+    inventoryAnalysis: {
+      status: invStatus,
+      statusLabel: invLabel,
+      summary: invPoints.join(". "),
+      keyPoints: invPoints,
+    },
+    actionItems,
+    quickTips: [
+      "שטיפת פילטר במים זורמים אחת לשבוע מאריכה את חיי המשאבה וחוסכת עד 40% בכימיקלים.",
+      "תמיד הקפד לאזן בסיסיות (TA) לפני כיוונון ה-pH לקבלת יציבות כימית מרבית.",
+      "אוורור הג'קוזי עם מכסה פתוח וג'טים פעילים למשך 15 דקות לאחר הוספת חיטוי מונע הצטברות ריחות.",
+    ],
+  };
+}
+
+/**
+ * Generate Comprehensive Jacuzzi Diagnostic using Gemini AI
+ */
+export async function generateFullJacuzziDiagnostic(req: FullJacuzziDiagnosticRequest): Promise<FullJacuzziDiagnosticResponse> {
+  const ai = getAiClient();
+  const apiKeyStr = (process.env.GEMINI_API_KEY || "").trim();
+
+  // If no Gemini AI key is configured, instantly use high-precision rule-based engine
+  if (!ai && !apiKeyStr) {
+    return generateRuleBasedFullDiagnostic(req);
+  }
+
+  const prompt = `אתה מומחה-על בינלאומי וכימאי ספא מקצועי לניהול, תפעול ותחזוקת מערכות ג'קוזי (Spa & Hot Tub Master).
+תפקידך לספק אבחון מקיף, אינטליגנטי, ממוקד ומדויק ביותר של כלל מערכת הג'קוזי של המשתמש על בסיס הנתונים שנשלפו מבסיס הנתונים בזמן אמת.
+
+נתוני המערכת שנאספו:
+1. פרטי הג'קוזי:
+- נפח: ${req.jacuzzi.volumeLiters} ליטר
+- שיטת חיטוי עיקרית: ${req.jacuzzi.sanitizationType}
+- גיל המים הנוכחי: ${req.jacuzzi.waterAgeDays} ימים מאז המילוי האחרון
+${req.jacuzzi.brand ? `- מותג ודגם: ${req.jacuzzi.brand} ${req.jacuzzi.model || ""}` : ""}
+
+2. בדיקת איכות המים האחרונה:
+${
+  req.latestWaterTest
+    ? `- תאריך בדיקה: ${req.latestWaterTest.testedAt || "לאחרונה"} (${req.latestWaterTest.daysAgo !== null && req.latestWaterTest.daysAgo !== undefined ? `לפני ${req.latestWaterTest.daysAgo} ימים` : "טרי"})
+- חומציות (pH): ${req.latestWaterTest.ph || req.latestWaterTest.phRange || "לא נבדק"}
+- כלור חופשי: ${req.latestWaterTest.freeChlorine || req.latestWaterTest.chlorineRange || "לא נבדק"} ppm
+- ברום: ${req.latestWaterTest.bromine || req.latestWaterTest.bromineRange || "לא נבדק"} ppm
+- בסיסיות כוללת (TA): ${req.latestWaterTest.alkalinity || req.latestWaterTest.alkalinityRange || "לא נבדק"} ppm
+- קשיות סידן: ${req.latestWaterTest.calcium || req.latestWaterTest.calciumRange || "לא נבדק"} ppm
+- צלילות ועכירות המים: ${req.latestWaterTest.waterClarity || "לא צוין"}
+- ריח המים: ${req.latestWaterTest.waterOdor || "לא צוין"}
+- הערות טקסט חופשי של המשתמש: "${req.latestWaterTest.clarityOdorNotes || req.latestWaterTest.description || "אין"}"`
+    : "טרם בוצעה בדיקת מים במערכת."
+}
+
+3. משימות תחזוקה ושגרות מתקן:
+${
+  req.tasks.length > 0
+    ? req.tasks
+        .map(
+          (t) =>
+            `- משימה: ${t.title} | תדירות: כל ${t.frequencyDays} ימים | סטטוס: ${
+              t.isOverdue ? `באיחור של ${t.daysOverdueOrDue} ימים ⚠️` : `מועד ביצוע בעוד ${t.daysOverdueOrDue} ימים`
+            }`
+        )
+        .join("\n")
+    : "אין משימות מוגדרות."
+}
+
+4. ארון חומרים ומלאי כימיקלים:
+${
+  req.inventory.length > 0
+    ? req.inventory
+        .map(
+          (i) =>
+            `- ${i.name}: כמות נוכחית ${i.quantity} ${i.unit} (סף מינימום: ${i.minThreshold} ${i.unit})${
+              i.isLowStock || i.quantity <= i.minThreshold ? " [⚠️ בחוסר/מתחת לסף]" : " [תקין]"
+            }`
+        )
+        .join("\n")
+    : "אין מוצרים רשומים בארון."
+}
+
+5. פעולות ואירועים אחרונים מהיומן:
+${
+  req.recentLogs && req.recentLogs.length > 0
+    ? req.recentLogs.map((l) => `- ${new Date(l.date).toLocaleDateString("he-IL")}: ${l.title} (${l.content || ""})`).join("\n")
+    : "אין רישומים אחרונים."
+}
+
+הנחיות חובה:
+- ענה אך ורק בעברית קולחת, מקצועית ומעודדת בגוף שני ("הג'קוזי שלך", "עליך להוסיף").
+- ספק סיכום אינטגרטיבי חכם שמשלב מים, מתקן, ריח, צלילות ומלאי.
+- החזר אך ורק מבנה JSON תקין ללא Markdown מסביב לפי הסכמה הבאה:
+
+{
+  "healthScore": 85, // מספר שלם 0-100 המייצג את בריאות הג'קוזי הכוללת
+  "overallStatus": "EXCELLENT" | "GOOD" | "ATTENTION" | "CRITICAL",
+  "statusTitle": "כותרת קצרה וממוקדת של המצב",
+  "executiveSummary": "פסקה אחת או שתיים של טקסט חופשי רציף, קולח וברור המסכם במדויק את כלל מצב הג'קוזי (איכות המים, מראה, ריח, תחזוקת המתקן ומלאי הארון)",
+  "waterAnalysis": {
+    "status": "OK" | "WARNING" | "CRITICAL",
+    "statusLabel": "כותרת סטטוס המים",
+    "summary": "הסבר מפורט על איזון הכימיקלים, צלילות, ריח והערות המשתמש",
+    "keyPoints": ["נקודה 1", "נקודה 2", "נקודה 3"]
+  },
+  "equipmentAnalysis": {
+    "status": "OK" | "WARNING" | "CRITICAL",
+    "statusLabel": "כותרת סטטוס המתקן והפילטרים",
+    "summary": "הסבר על שטיפת פילטר, ניקיון צנרת ודפנות, שגרות באיחור וכו'",
+    "keyPoints": ["נקודה 1", "נקודה 2"]
+  },
+  "inventoryAnalysis": {
+    "status": "OK" | "WARNING" | "CRITICAL",
+    "statusLabel": "כותרת סטטוס המלאי",
+    "summary": "הסבר על מצב החומרים בארון, חוסרים ודחיפות הזמנה",
+    "keyPoints": ["נקודה 1", "נקודה 2"]
+  },
+  "actionItems": [
+    {
+      "priority": "HIGH" | "MEDIUM" | "LOW",
+      "category": "WATER" | "EQUIPMENT" | "INVENTORY",
+      "title": "כותרת הפעולה",
+      "description": "הסבר מדויק כיצד וכמה לבצע"
+    }
+  ],
+  "quickTips": ["טיפ 1", "טיפ 2"]
+}`;
+
+  const modelsToTry = [
+    preferredModel,
+    "gemini-2.5-flash",
+    "gemini-3.7-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+  ];
+
+  if (ai) {
+    for (const model of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model: model,
+          contents: prompt,
+        });
+
+        const text = response.text || "";
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]) as FullJacuzziDiagnosticResponse;
+          if (parsed.executiveSummary && parsed.healthScore !== undefined) {
+            return parsed;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`Gemini SDK model ${model} full diagnostic attempt failed:`, err?.message || err);
+      }
+    }
+  }
+
+  if (apiKeyStr) {
+    for (const model of modelsToTry) {
+      try {
+        const restRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKeyStr}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+            }),
+          }
+        );
+
+        if (restRes.ok) {
+          const data = await restRes.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]) as FullJacuzziDiagnosticResponse;
+            if (parsed.executiveSummary && parsed.healthScore !== undefined) {
+              return parsed;
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn(`Direct REST fallback for model ${model} full diagnostic failed:`, err?.message || err);
+      }
+    }
+  }
+
+  // Fallback to rule-based analysis
+  return generateRuleBasedFullDiagnostic(req);
+}
+
+
 
