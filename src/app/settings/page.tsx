@@ -115,6 +115,10 @@ export default function SettingsPage() {
         throw new Error(d.error || "שגיאה בשמירת הגדרות");
       }
 
+      if (formData.testStripParams && typeof window !== "undefined") {
+        localStorage.setItem("active_test_strip_params", JSON.stringify(formData.testStripParams));
+      }
+
       setSuccessMsg("ההגדרות עודכנו בהצלחה!");
       setTimeout(() => {
         handleClose();

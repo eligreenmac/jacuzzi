@@ -279,6 +279,18 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
         throw new Error("שגיאה בשמירת הגדרות מקלון");
       }
       setActiveParams(tempParams);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("active_test_strip_params", JSON.stringify(tempParams));
+      }
+      setParamSelections((prev) => {
+        const next = { ...prev };
+        for (const pId of tempParams) {
+          if (!next[pId]) {
+            next[pId] = { rangeId: "OK", noNumeric: true, manualVal: "" };
+          }
+        }
+        return next;
+      });
       setIsSettingsModalOpen(false);
       setActionNotice("הגדרות מקלון הבדיקה נשמרו בהצלחה!");
       setTimeout(() => setActionNotice(null), 4000);

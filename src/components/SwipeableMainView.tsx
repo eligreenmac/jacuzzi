@@ -40,7 +40,13 @@ import WaterTestsPage, { getGenericDomain, extractParamValue } from "@/app/water
 import CalendarPage from "@/app/calendar/page";
 import InventoryPage from "@/app/inventory/page";
 import SettingsPage from "@/app/settings/page";
-import { ALL_PARAMS_WITH_CLARITY, ALL_TEST_STRIP_PARAMS, DEFAULT_TEST_STRIP_PARAM_IDS, PARAM_CATEGORIES } from "@/lib/test-strip-params";
+import {
+  ALL_PARAMS_WITH_CLARITY,
+  ALL_TEST_STRIP_PARAMS,
+  DEFAULT_TEST_STRIP_PARAM_IDS,
+  PARAM_CATEGORIES,
+  parseTestStripParams,
+} from "@/lib/test-strip-params";
 
 export const CARD_TABS = [
   { id: "status", title: "סטטוס", subtitle: "משימות ל-7 ימים, איכות מים, סכנות והזמנת חומרים", icon: Activity },
@@ -166,26 +172,27 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         const json = await res.json();
         setData(json.user);
 
-        // Load active test strip params from user jacuzzi / localStorage
-        if (json.user?.jacuzzi?.activeTestStripParams) {
-          try {
-            const parsed = JSON.parse(json.user.jacuzzi.activeTestStripParams);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setActiveParamIds(parsed);
-              return;
-            }
-          } catch {}
+        // Load active test strip params from user jacuzzi
+        const userParams = parseTestStripParams(json.user?.jacuzzi?.testStripParams);
+        if (userParams && userParams.length > 0) {
+          setActiveParamIds(userParams);
+          setModalSelectedParams(userParams);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("active_test_strip_params", JSON.stringify(userParams));
+          }
+          return;
         }
       }
 
-      const saved = localStorage.getItem("active_test_strip_params");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("active_test_strip_params");
+        if (saved) {
+          const parsed = parseTestStripParams(saved);
+          if (parsed && parsed.length > 0) {
             setActiveParamIds(parsed);
+            setModalSelectedParams(parsed);
           }
-        } catch {}
+        }
       }
     } catch (err) {
       console.error(err);
@@ -369,6 +376,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     setRefillPercent(modalData.id === "partial-refill" ? (parseInt(latestPartialPercent, 10) || 50) : 50);
     setEditVolume(modalData.volumeLiters ? String(modalData.volumeLiters) : "1200");
     setEditSanitization(modalData.sanitizationType || "BROMINE");
+    if (modalData.type === "strip-settings" || modalData.id === "test-strip-settings") {
+      setModalSelectedParams([...activeParamIds]);
+    }
     setModalNotice(null);
   };
 
@@ -481,6 +491,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
           throw new Error(errData.error || "שגיאה בשמירת הגדרות מקלון");
         }
         setActiveParamIds(modalSelectedParams);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("active_test_strip_params", JSON.stringify(modalSelectedParams));
+        }
       }
 
       setModalNotice("ההגדרות עודכנו בהצלחה!");
