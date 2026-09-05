@@ -3,6 +3,9 @@ import { getSessionUser, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { prisma, ensureDbSchema, withRetry } from "@/lib/prisma";
 import { getUserSubscriptionInfo, isAdminUser } from "@/lib/subscription";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     await ensureDbSchema();
@@ -53,7 +56,16 @@ export async function GET(req: NextRequest) {
       );
     });
 
-    return NextResponse.json({ user: safeUser });
+    return NextResponse.json(
+      { user: safeUser },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Auth Me Error:", error);
     return NextResponse.json({ error: "שגיאה בטעינת נתוני משתמש" }, { status: 500 });

@@ -473,6 +473,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     }
     setNewRoutineSaving(true);
     try {
+      const nextDueObj = newRoutineNextDueDate
+        ? new Date(newRoutineNextDueDate)
+        : new Date(Date.now() + newRoutineFreqDays * 24 * 3600 * 1000);
+      const lastDoneObj = newRoutineLastDoneDate ? new Date(newRoutineLastDoneDate) : null;
+
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -480,14 +485,28 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
           title: newRoutineTitle.trim(),
           category: "JACUZZI_MAINTENANCE",
           frequencyDays: newRoutineFreqDays,
-          lastDoneDate: newRoutineLastDoneDate ? new Date(newRoutineLastDoneDate) : null,
-          nextDueDate: newRoutineNextDueDate ? new Date(newRoutineNextDueDate) : new Date(Date.now() + newRoutineFreqDays * 24 * 3600 * 1000),
+          lastDoneDate: lastDoneObj,
+          nextDueDate: nextDueObj,
         }),
       });
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || "שגיאה ביצירת שגרה");
       }
+      const dataJson = await res.json();
+
+      // Immediate optimistic update to state
+      if (dataJson?.task) {
+        setData((prev: any) => {
+          if (!prev) return prev;
+          const currentTasks = prev.tasks || [];
+          return {
+            ...prev,
+            tasks: [...currentTasks.filter((t: any) => t.id !== dataJson.task.id), dataJson.task],
+          };
+        });
+      }
+
       setIsCreateRoutineModalOpen(false);
       await loadSummaryData();
     } catch (err: any) {
@@ -532,31 +551,36 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   const loadSummaryData = async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      const res = await fetch(`/api/auth/me?t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
       if (res.ok) {
         const json = await res.json();
-        setData(json.user);
+        if (json.user) {
+          setData(json.user);
 
-        // Check if new user who never entered data
-        const isBrandNew = checkIsBrandNewUser(json.user);
+          // Check if new user who never entered data
+          const isBrandNew = checkIsBrandNewUser(json.user);
 
-        if (typeof window !== "undefined" && isBrandNew) {
-          const welcomeKey = getWelcomeStorageKey(json.user?.id);
-          const hasSeenWelcome = localStorage.getItem(welcomeKey);
-          if (!hasSeenWelcome) {
-            setShowWelcomeBlessing(true);
+          if (typeof window !== "undefined" && isBrandNew) {
+            const welcomeKey = getWelcomeStorageKey(json.user?.id);
+            const hasSeenWelcome = localStorage.getItem(welcomeKey);
+            if (!hasSeenWelcome) {
+              setShowWelcomeBlessing(true);
+            }
           }
-        }
 
-        // Load active test strip params from user jacuzzi
-        const userParams = parseTestStripParams(json.user?.jacuzzi?.testStripParams);
-        if (userParams && userParams.length > 0) {
-          setActiveParamIds(userParams);
-          setModalSelectedParams(userParams);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("active_test_strip_params", JSON.stringify(userParams));
+          // Load active test strip params from user jacuzzi
+          const userParams = parseTestStripParams(json.user?.jacuzzi?.testStripParams);
+          if (userParams && userParams.length > 0) {
+            setActiveParamIds(userParams);
+            setModalSelectedParams(userParams);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("active_test_strip_params", JSON.stringify(userParams));
+            }
+            return;
           }
-          return;
         }
       }
 
@@ -1071,6 +1095,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     if (!confirm("האם אתה בטוח שברצונך למחוק שגרה מותאמת אישית זו?")) return;
     setModalSaving(true);
     try {
+      // Immediate optimistic removal from state
+      setData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          tasks: (prev.tasks || []).filter((t: any) => t.id !== taskId),
+        };
+      });
+
       const res = await fetch(`/api/tasks?id=${taskId}`, {
         method: "DELETE",
       });
@@ -1082,6 +1115,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       await loadSummaryData();
     } catch (err: any) {
       alert(err.message || "שגיאה במחיקת שגרה");
+      await loadSummaryData();
     } finally {
       setModalSaving(false);
     }
@@ -1576,9 +1610,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   const customScheduledEvents = customTasks.map((t: any) => {
     const lastDone = t.lastDoneDate ? new Date(t.lastDoneDate) : null;
-    const due = lastDone
-      ? (t.nextDueDate ? new Date(t.nextDueDate) : new Date(lastDone.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000))
-      : null;
+    const due = t.nextDueDate
+      ? new Date(t.nextDueDate)
+      : (lastDone ? new Date(lastDone.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000) : null);
 
     return {
       id: `custom-task-${t.id}`,
