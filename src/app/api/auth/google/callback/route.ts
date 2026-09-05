@@ -4,12 +4,26 @@ import { signToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { getDefaultMaintenanceTasks } from "@/lib/jacuzzi-calc";
 import bcrypt from "bcryptjs";
 
+function getCanonicalOrigin(req: NextRequest): string {
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  if (host.includes("localhost") || host.includes("127.0.0.1")) {
+    const protocol = req.headers.get("x-forwarded-proto") || "http";
+    return `${protocol}://${host}`;
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost")) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+  if (host) {
+    const protocol = req.headers.get("x-forwarded-proto") || "https";
+    return `${protocol}://${host}`;
+  }
+  return "https://jacuzzi-five.vercel.app";
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
-  const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-  const appUrl = host ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+  const appUrl = getCanonicalOrigin(req);
 
   if (!code) {
     return NextResponse.redirect(`${appUrl}/login?error=missing_code`);
