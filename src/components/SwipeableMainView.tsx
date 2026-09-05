@@ -352,6 +352,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     }
   };
 
+  const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressActiveRef = useRef(false);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const hasMovedRef = useRef(false);
+
   const onDragStartSection = (cardIndex: number, sectionId: string, index: number, e: React.DragEvent) => {
     e.stopPropagation();
     setDraggedSectionInfo({ cardIndex, sectionId, index });
@@ -362,7 +367,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const onDragOverSection = (cardIndex: number, index: number, e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (draggedSectionInfo && draggedSectionInfo.cardIndex === cardIndex) {
+    if (draggedSectionInfo && draggedSectionInfo.cardIndex === cardIndex && dragOverIndex !== index) {
       setDragOverIndex(index);
     }
   };
@@ -378,24 +383,54 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   };
 
   const onTouchStartSection = (cardIndex: number, index: number, e: React.TouchEvent) => {
-    e.stopPropagation();
-    touchDragRef.current = {
-      cardIndex,
-      startIndex: index,
-      targetIndex: index,
-    };
-    setDraggedSectionInfo({ cardIndex, sectionId: "", index });
+    if (longPressTimeoutRef.current) clearTimeout(longPressTimeoutRef.current);
+    isLongPressActiveRef.current = false;
+    hasMovedRef.current = false;
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+
+    longPressTimeoutRef.current = setTimeout(() => {
+      isLongPressActiveRef.current = true;
+      touchDragRef.current = {
+        cardIndex,
+        startIndex: index,
+        targetIndex: index,
+      };
+      setDraggedSectionInfo({ cardIndex, sectionId: "", index });
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try {
+          navigator.vibrate(35);
+        } catch {}
+      }
+    }, 280);
   };
 
   const onTouchMoveSection = (cardIndex: number, e: React.TouchEvent) => {
-    if (!touchDragRef.current || touchDragRef.current.cardIndex !== cardIndex) return;
-    e.stopPropagation();
     const touch = e.touches[0];
+    if (!isLongPressActiveRef.current) {
+      if (touchStartPosRef.current) {
+        const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+        const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+        if (dx > 8 || dy > 8) {
+          if (longPressTimeoutRef.current) {
+            clearTimeout(longPressTimeoutRef.current);
+            longPressTimeoutRef.current = null;
+          }
+        }
+      }
+      return;
+    }
+
+    if (!touchDragRef.current || touchDragRef.current.cardIndex !== cardIndex) return;
+    hasMovedRef.current = true;
+
+    if (e.cancelable) e.preventDefault();
+
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const container = el?.closest("[data-reorder-index]");
     if (container) {
       const idx = parseInt(container.getAttribute("data-reorder-index") || "-1", 10);
-      if (idx >= 0) {
+      if (idx >= 0 && idx !== touchDragRef.current.targetIndex) {
         touchDragRef.current.targetIndex = idx;
         setDragOverIndex(idx);
       }
@@ -403,64 +438,22 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   };
 
   const onTouchEndSection = (cardIndex: number, e: React.TouchEvent) => {
-    if (!touchDragRef.current || touchDragRef.current.cardIndex !== cardIndex) return;
-    e.stopPropagation();
-    const { startIndex, targetIndex } = touchDragRef.current;
-    if (startIndex !== targetIndex && targetIndex >= 0) {
-      handleMoveSection(cardIndex, startIndex, targetIndex);
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
     }
+
+    if (isLongPressActiveRef.current && touchDragRef.current && touchDragRef.current.cardIndex === cardIndex) {
+      const { startIndex, targetIndex } = touchDragRef.current;
+      if (startIndex !== targetIndex && targetIndex >= 0) {
+        handleMoveSection(cardIndex, startIndex, targetIndex);
+      }
+    }
+
+    isLongPressActiveRef.current = false;
     touchDragRef.current = null;
     setDraggedSectionInfo(null);
     setDragOverIndex(null);
-  };
-
-  const renderReorderControl = (cardIndex: number, sectionId: string, index: number, total: number) => {
-    return (
-      <div
-        className="flex items-center justify-between pb-1 pt-0.5 opacity-60 hover:opacity-100 transition-opacity select-none"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          draggable
-          onDragStart={(e) => onDragStartSection(cardIndex, sectionId, index, e)}
-          onTouchStart={(e) => onTouchStartSection(cardIndex, index, e)}
-          onTouchMove={(e) => onTouchMoveSection(cardIndex, e)}
-          onTouchEnd={(e) => onTouchEndSection(cardIndex, e)}
-          className="flex items-center gap-1.5 text-[10px] text-slate-400 hover:text-sky-300 cursor-grab active:cursor-grabbing bg-sky-950/40 hover:bg-sky-950/90 border border-sky-900/40 px-2 py-0.5 rounded-lg transition-all"
-          title="גרור כדי לשנות סדר"
-        >
-          <GripVertical className="w-3 h-3 text-sky-400" />
-          <span className="text-[9px] font-medium hidden sm:inline">גרור לשינוי סדר</span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            disabled={index === 0}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMoveSection(cardIndex, index, index - 1);
-            }}
-            className="p-1 rounded-md bg-slate-900/80 hover:bg-sky-900 border border-slate-800 disabled:opacity-20 text-slate-400 hover:text-sky-200 transition-all cursor-pointer"
-            title="הזז למעלה"
-          >
-            <ArrowUp className="w-2.5 h-2.5" />
-          </button>
-          <button
-            type="button"
-            disabled={index === total - 1}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMoveSection(cardIndex, index, index + 1);
-            }}
-            className="p-1 rounded-md bg-slate-900/80 hover:bg-sky-900 border border-slate-800 disabled:opacity-20 text-slate-400 hover:text-sky-200 transition-all cursor-pointer"
-            title="הזז למטה"
-          >
-            <ArrowDown className="w-2.5 h-2.5" />
-          </button>
-        </div>
-      </div>
-    );
   };
 
   const openCreateRoutineModal = () => {
@@ -1787,13 +1780,17 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <div
                     key={sectionId}
                     data-reorder-index={index}
+                    draggable
+                    onDragStart={(e) => onDragStartSection(0, sectionId, index, e)}
                     onDragOver={(e) => onDragOverSection(0, index, e)}
                     onDrop={(e) => onDropSection(0, index, e)}
-                    className={`transition-all duration-200 ${
+                    onTouchStart={(e) => onTouchStartSection(0, index, e)}
+                    onTouchMove={(e) => onTouchMoveSection(0, e)}
+                    onTouchEnd={(e) => onTouchEndSection(0, e)}
+                    className={`transition-all duration-200 cursor-grab active:cursor-grabbing ${
                       isDragOver ? "border-t-2 border-sky-400 pt-1 scale-[1.01]" : ""
-                    } ${isItemDragging ? "opacity-40" : ""}`}
+                    } ${isItemDragging ? "opacity-40 scale-95 ring-2 ring-sky-500/50 rounded-2xl" : ""}`}
                   >
-                    {renderReorderControl(0, sectionId, index, card0Order.length)}
 
                     {/* Section: משימות קרובות */}
                     {sectionId === "upcoming-tasks" && (
@@ -2148,13 +2145,17 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <div
                     key={sectionId}
                     data-reorder-index={index}
+                    draggable
+                    onDragStart={(e) => onDragStartSection(1, sectionId, index, e)}
                     onDragOver={(e) => onDragOverSection(1, index, e)}
                     onDrop={(e) => onDropSection(1, index, e)}
-                    className={`transition-all duration-200 ${
+                    onTouchStart={(e) => onTouchStartSection(1, index, e)}
+                    onTouchMove={(e) => onTouchMoveSection(1, e)}
+                    onTouchEnd={(e) => onTouchEndSection(1, e)}
+                    className={`transition-all duration-200 cursor-grab active:cursor-grabbing ${
                       isDragOver ? "border-t-2 border-sky-400 pt-1 scale-[1.01]" : ""
-                    } ${isItemDragging ? "opacity-40" : ""}`}
+                    } ${isItemDragging ? "opacity-40 scale-95 ring-2 ring-sky-500/50 rounded-2xl" : ""}`}
                   >
-                    {renderReorderControl(1, sectionId, index, card1Order.length)}
 
                     {/* Task 1: שטיפת פילטר שבועית */}
                     {sectionId === "filter-wash" && (
@@ -2474,13 +2475,17 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <div
                     key={sectionId}
                     data-reorder-index={index}
+                    draggable
+                    onDragStart={(e) => onDragStartSection(2, sectionId, index, e)}
                     onDragOver={(e) => onDragOverSection(2, index, e)}
                     onDrop={(e) => onDropSection(2, index, e)}
-                    className={`transition-all duration-200 ${
+                    onTouchStart={(e) => onTouchStartSection(2, index, e)}
+                    onTouchMove={(e) => onTouchMoveSection(2, e)}
+                    onTouchEnd={(e) => onTouchEndSection(2, e)}
+                    className={`transition-all duration-200 cursor-grab active:cursor-grabbing ${
                       isDragOver ? "border-t-2 border-sky-400 pt-1 scale-[1.01]" : ""
-                    } ${isItemDragging ? "opacity-40" : ""}`}
+                    } ${isItemDragging ? "opacity-40 scale-95 ring-2 ring-sky-500/50 rounded-2xl" : ""}`}
                   >
-                    {renderReorderControl(2, sectionId, index, card2Order.length)}
 
                     {/* Section 1: מצב איכות המים */}
                     {sectionId === "water-quality" && (
