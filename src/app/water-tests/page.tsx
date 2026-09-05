@@ -21,8 +21,6 @@ import {
 
 import {
   ALL_TEST_STRIP_PARAMS,
-  ALL_PARAMS_WITH_CLARITY,
-  WATER_CLARITY_PARAM,
   DEFAULT_TEST_STRIP_PARAM_IDS,
   PARAM_CATEGORIES,
   parseTestStripParams,
@@ -178,7 +176,7 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
     for (const pId of activeParams) {
       if (pId === "clarity") continue;
       const sel = paramSelections[pId] || { rangeId: "OK", noNumeric: true, manualVal: "" };
-      const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
+      const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
       const parsedNum = !sel.noNumeric && sel.manualVal.trim() ? parseFloat(sel.manualVal) : null;
       const matchedRange = pDef?.defaultRanges?.find((r) => r.id === sel.rangeId);
       const rangeLabel = matchedRange?.label || (parsedNum ? `${parsedNum} ${pDef?.unit || ""}` : sel.rangeId);
@@ -239,7 +237,7 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
 
     const editParamMap: Record<string, { rangeId: string; noNumeric: boolean; manualVal: string }> = {};
 
-    ALL_PARAMS_WITH_CLARITY.forEach((param) => {
+    ALL_TEST_STRIP_PARAMS.forEach((param) => {
       const { val, rangeStr } = extractParamValue(test, param.id);
       const hasNum = typeof val === "number" && !isNaN(val);
       const domain = getGenericDomain(param.id, val, rangeStr);
@@ -272,7 +270,7 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
     };
 
     Object.entries(editForm.params).forEach(([pId, sel]) => {
-      const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
+      const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
       const parsedNum = !sel.noNumeric && sel.manualVal.trim() ? parseFloat(sel.manualVal) : null;
       const matchedRange = pDef?.defaultRanges?.find((r) => r.id === sel.rangeId);
       const rangeLabel = matchedRange?.label || (parsedNum ? `${parsedNum} ${pDef?.unit || ""}` : sel.rangeId);
@@ -485,38 +483,21 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
                   } catch {}
                 }
                 if (list.length === 0) {
-                  ALL_PARAMS_WITH_CLARITY.forEach((param) => {
-                    if (param.id === "clarity") return;
+                  ALL_TEST_STRIP_PARAMS.forEach((param) => {
                     const { val, rangeStr } = extractParamValue(test, param.id);
                     if (val !== null || rangeStr) list.push(param.id);
                   });
                 }
-                const hasClarity = list.includes("clarity") || !!test.waterClarity;
-                const withoutClarity = list.filter((id) => id !== "clarity");
-                return hasClarity
-                  ? [...withoutClarity, "clarity"]
-                  : withoutClarity.length > 0
-                  ? withoutClarity
-                  : DEFAULT_TEST_STRIP_PARAM_IDS;
+                const filtered = list.filter((id) => id !== "clarity");
+                return filtered.length > 0 ? filtered : DEFAULT_TEST_STRIP_PARAM_IDS;
               })();
 
               // Calculate Abnormal Risks dynamically
               const abnormalRisks: Array<{ name: string; risk: string }> = [];
 
               for (const pId of testedParamIds) {
-                const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
+                const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
                 if (!pDef) continue;
-
-                if (pId === "clarity") {
-                  const clarityInfo = clarityLabels[test.waterClarity] || clarityLabels.CLEAR;
-                  if (test.waterClarity && test.waterClarity !== "CLEAR") {
-                    abnormalRisks.push({
-                      name: `${pDef.nameHe} (${clarityInfo.label})`,
-                      risk: pDef.dangerLow,
-                    });
-                  }
-                  continue;
-                }
 
                 const { val, rangeStr } = extractParamValue(test, pId);
                 const domain = getGenericDomain(pId, val, rangeStr);
@@ -587,25 +568,10 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
                   </div>
 
                   {/* Dynamic Parameter Badges Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {testedParamIds.map((pId) => {
-                      const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
+                      const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
                       if (!pDef) return null;
-
-                      if (pId === "clarity") {
-                        const clarityInfo = clarityLabels[test.waterClarity] || clarityLabels.CLEAR;
-                        return (
-                          <div key={pId} className="bg-[#0a0f13] p-3.5 rounded-2xl border border-slate-800 space-y-1 text-center">
-                            <div className="text-[11px] text-slate-400 font-semibold">{pDef.nameHe} ({pDef.enName})</div>
-                            <div className={`text-sm sm:text-base font-bold ${clarityInfo.label.includes("צלול") ? "text-emerald-400" : "text-amber-400"}`}>
-                              {clarityInfo.label}
-                            </div>
-                            <div className="text-[11px] text-slate-400 font-medium pt-0.5">
-                              {clarityInfo.label.includes("צלול") ? "תקין" : "דורש טיפול"}
-                            </div>
-                          </div>
-                        );
-                      }
 
                       const { val, rangeStr } = extractParamValue(test, pId);
                       const domain = getGenericDomain(pId, val, rangeStr);

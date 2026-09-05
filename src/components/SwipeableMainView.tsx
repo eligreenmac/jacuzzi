@@ -46,7 +46,6 @@ import CalendarPage from "@/app/calendar/page";
 import InventoryPage from "@/app/inventory/page";
 import SettingsPage from "@/app/settings/page";
 import {
-  ALL_PARAMS_WITH_CLARITY,
   ALL_TEST_STRIP_PARAMS,
   DEFAULT_TEST_STRIP_PARAM_IDS,
   PARAM_CATEGORIES,
@@ -1705,38 +1704,20 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         } catch {}
       }
       if (list.length === 0) {
-        ALL_PARAMS_WITH_CLARITY.forEach((param) => {
-          if (param.id === "clarity") return;
+        ALL_TEST_STRIP_PARAMS.forEach((param) => {
           const { val, rangeStr } = extractParamValue(test, param.id);
           if (val !== null || rangeStr) list.push(param.id);
         });
       }
-      const hasClarity = list.includes("clarity") || !!test.waterClarity;
-      const withoutClarity = list.filter((id) => id !== "clarity");
-      return hasClarity
-        ? [...withoutClarity, "clarity"]
-        : withoutClarity.length > 0
-        ? withoutClarity
-        : DEFAULT_TEST_STRIP_PARAM_IDS;
+      const filtered = list.filter((id) => id !== "clarity");
+      return filtered.length > 0 ? filtered : DEFAULT_TEST_STRIP_PARAM_IDS;
     })();
 
     const risks: Array<{ name: string; statusLabel: string; risk: string }> = [];
 
     for (const pId of testedParamIds) {
-      const pDef = ALL_PARAMS_WITH_CLARITY.find((p) => p.id === pId);
+      const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
       if (!pDef) continue;
-
-      if (pId === "clarity") {
-        if (test.waterClarity && test.waterClarity !== "CLEAR") {
-          const clarityObj = getClarityDisplay(test.waterClarity);
-          risks.push({
-            name: "צלילות המים",
-            statusLabel: clarityObj.label,
-            risk: clarityObj.risk || pDef.dangerLow,
-          });
-        }
-        continue;
-      }
 
       const { val, rangeStr } = extractParamValue(test, pId);
       const domain = getGenericDomain(pId, val, rangeStr);
@@ -2548,7 +2529,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                               };
 
                               return (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div className="grid grid-cols-3 gap-3">
                                   <div
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -2585,19 +2566,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                     <span className="text-[10px] text-slate-400 block">בסיסיות כוללת (TA)</span>
                                     <div className={`text-sm sm:text-base font-black ${getStatusColorClass(taDomain.id)}`}>
                                       {taDomain.label}
-                                    </div>
-                                  </div>
-
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openClarityOdorModal();
-                                    }}
-                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                                  >
-                                    <span className="text-[10px] text-slate-400 block">צלילות ומראה</span>
-                                    <div className={`text-sm sm:text-base font-black ${latestWaterLog?.waterClarity === "CLEAR" ? "text-emerald-400" : "text-amber-400"}`}>
-                                      {clarityObj.label}
                                     </div>
                                   </div>
                                 </div>
