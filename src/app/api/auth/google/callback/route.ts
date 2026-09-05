@@ -3,6 +3,7 @@ import { prisma, ensureDbSchema, withRetry } from "@/lib/prisma";
 import { signToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { getDefaultMaintenanceTasks } from "@/lib/jacuzzi-calc";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 function getCanonicalOrigin(req: NextRequest): string {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
@@ -56,18 +57,67 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${appUrl}/login?error=${encodeURIComponent(errDetail)}`);
     }
 
-    // 2. Fetch User Profile from Google
-    const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
+    // 2. Extract User Profile (first from id_token, then from userinfo endpoints as fallback)
+    let email = "";
+    let name = "";
 
-    const googleUser = await userRes.json();
-    if (!googleUser.email) {
+    // A. Direct decode from id_token (fastest & most reliable)
+    if (tokenData.id_token) {
+      try {
+        const decoded = jwt.decode(tokenData.id_token) as any;
+        if (decoded?.email) {
+          email = decoded.email.toLowerCase().trim();
+          name = decoded.name || decoded.given_name || "";
+        }
+      } catch (e) {
+        console.error("Error decoding id_token:", e);
+      }
+    }
+
+    // B. Fetch from Google v3 userinfo endpoint if needed
+    if (!email) {
+      try {
+        const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        });
+        if (userRes.ok) {
+          const googleUser = await userRes.json();
+          if (googleUser?.email) {
+            email = googleUser.email.toLowerCase().trim();
+            if (!name) name = googleUser.name || googleUser.given_name || "";
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching v3 userinfo:", e);
+      }
+    }
+
+    // C. Fetch from Google v2 userinfo endpoint as secondary fallback
+    if (!email) {
+      try {
+        const v2Res = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        });
+        if (v2Res.ok) {
+          const v2User = await v2Res.json();
+          if (v2User?.email) {
+            email = v2User.email.toLowerCase().trim();
+            if (!name) name = v2User.name || v2User.given_name || "";
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching v2 userinfo:", e);
+      }
+    }
+
+    if (!email) {
+      console.error("Google Auth: No email found in id_token or userinfo", tokenData);
       return NextResponse.redirect(`${appUrl}/login?error=google_no_email`);
     }
 
-    const email = googleUser.email.toLowerCase().trim();
-    const name = googleUser.name || googleUser.given_name || (email.includes("eligreen") ? "אלי גרין" : email.split("@")[0]);
+    if (!name) {
+      name = email.includes("eligreen") ? "אלי גרין" : email.split("@")[0];
+    }
 
     // 3. Find or Create user in database with retry
     let user = await withRetry(async () => {
