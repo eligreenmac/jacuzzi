@@ -77,16 +77,13 @@ export function getUserSubscriptionInfo(user?: {
     };
   }
 
-  // 3. Check Free Trial status (14 days)
-  let trialEndMs: number;
-  if (user.trialEndsAt) {
-    trialEndMs = new Date(user.trialEndsAt).getTime();
-  } else if (user.createdAt) {
-    // Default 14 days from registration if trialEndsAt is not yet set
-    trialEndMs = new Date(user.createdAt).getTime() + 14 * 24 * 60 * 60 * 1000;
-  } else {
-    trialEndMs = Date.now() + 14 * 24 * 60 * 60 * 1000;
-  }
+  // 3. Check Free Trial status (14 days from registration)
+  const createdMs = user.createdAt ? new Date(user.createdAt).getTime() : Date.now();
+  const default14DaysMs = createdMs + 14 * 24 * 60 * 60 * 1000;
+  const rawTrialMs = user.trialEndsAt ? new Date(user.trialEndsAt).getTime() : default14DaysMs;
+  
+  // A user is guaranteed at least 14 days from their registration date
+  const trialEndMs = Math.max(rawTrialMs, default14DaysMs);
 
   const nowMs = Date.now();
   const msRemaining = trialEndMs - nowMs;

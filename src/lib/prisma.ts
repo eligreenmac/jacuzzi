@@ -54,6 +54,11 @@ export async function ensureDbSchema() {
         ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "stripeSubscriptionId" TEXT;
         ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "currentPeriodEnd" TIMESTAMP WITH TIME ZONE;
         UPDATE "User" SET "subscriptionStatus" = 'ADMIN' WHERE LOWER(TRIM("email")) = 'eligreenmail@gmail.com';
+        UPDATE "User" 
+        SET "trialEndsAt" = "createdAt" + INTERVAL '14 days'
+        WHERE "subscriptionStatus" != 'ACTIVE' 
+          AND "subscriptionStatus" != 'ADMIN' 
+          AND ("trialEndsAt" <= "createdAt" + INTERVAL '1 hour' OR "trialEndsAt" IS NULL);
       `);
       await prisma.$executeRawUnsafe(`
         ALTER TABLE "Jacuzzi" ADD COLUMN IF NOT EXISTS "testStripParams" TEXT DEFAULT '["ph","chlorine","alkalinity","clarity"]';
