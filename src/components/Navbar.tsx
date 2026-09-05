@@ -111,6 +111,10 @@ export default function Navbar() {
 
   const isExpired = !!(user && !user.isAdmin && user.subscriptionDetails && !user.subscriptionDetails.hasAccess);
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <>
       <header className="sticky top-0 z-50 bg-[#0e1823]/95 backdrop-blur-md border-b border-sky-900/40 text-slate-200 shadow-md">

@@ -25,13 +25,10 @@ function GoogleAuthCard() {
         <div className="absolute -top-20 -right-20 w-48 h-48 bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Logo & Header */}
-        <div className="text-center space-y-3 relative z-10">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-sky-600 via-cyan-500 to-sky-400 mx-auto flex items-center justify-center text-white text-3xl shadow-xl shadow-sky-500/30 border border-white/20">
-            🌊
-          </div>
+        {/* Header */}
+        <div className="text-center space-y-2 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black text-white">
-            ג&apos;קוזי מאסטר ✨
+            Jacuzzi Spa Master
           </h1>
           <p className="text-sky-300 font-semibold text-xs sm:text-sm">
             המערכת החכמה לשמירה על ג&apos;קוזי צלול, נקי ובטוח

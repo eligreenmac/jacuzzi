@@ -20,11 +20,8 @@ function LoginForm() {
       <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <div className="text-center space-y-3 relative z-10">
-        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-sky-600 via-cyan-500 to-sky-400 mx-auto flex items-center justify-center text-white text-3xl shadow-xl shadow-sky-500/30 border border-white/20">
-          🌊
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white">כניסה למערכת</h1>
+      <div className="text-center space-y-2 relative z-10">
+        <h1 className="text-2xl sm:text-3xl font-black text-white">Jacuzzi Spa Master</h1>
         <p className="text-sky-300 font-semibold text-xs sm:text-sm">התחברות מאובטחת באמצעות חשבון Google</p>
       </div>
 
