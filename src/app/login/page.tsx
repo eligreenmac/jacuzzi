@@ -3,13 +3,18 @@
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Droplets, Lock, Mail, ArrowLeft, AlertCircle } from "lucide-react";
+import { Droplets, Lock, Mail, ArrowLeft, AlertCircle, CheckCircle2 } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [notice, setNotice] = useState(
+    searchParams.get("notice") === "account_deleted"
+      ? "החשבון שלך וכל הנתונים נמחקו בהצלחה מהמערכת."
+      : ""
+  );
   const [error, setError] = useState(
     searchParams.get("error") === "google_not_configured"
       ? "התחברות רשמית ב-Google דורשת הזנת מזהה GOOGLE_CLIENT_ID בהגדרות הסביבה (Google Cloud). עד אז ניתן להיכנס רגיל עם אימייל וסיסמה."
@@ -59,6 +64,13 @@ function LoginForm() {
         <h1 className="text-2xl font-black text-white">כניסה למערכת</h1>
         <p className="text-sm text-slate-400">הזן פרטים לגישה לניהול הג'קוזי שלך</p>
       </div>
+
+      {notice && (
+        <div className="flex items-center gap-2 p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs leading-relaxed">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+          <span>{notice}</span>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 p-3.5 rounded-xl bg-rose-950/50 border border-rose-800 text-rose-300 text-xs leading-relaxed">

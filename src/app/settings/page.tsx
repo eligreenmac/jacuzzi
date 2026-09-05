@@ -21,6 +21,9 @@ import {
   FlaskConical,
   Sliders,
   Check,
+  Trash2,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import {
   ALL_TEST_STRIP_PARAMS,
@@ -54,6 +57,12 @@ export default function SettingsPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState<{ text: string; previewUrl?: string } | null>(null);
+
+  // Delete Account State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const loadSettings = async () => {
     try {
@@ -155,6 +164,26 @@ export default function SettingsPage() {
       setTestResult({ text: "שגיאה: " + err.message });
     } finally {
       setTestSending(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    setDeleteError("");
+    try {
+      const res = await fetch("/api/auth/me", { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "שגיאה במחיקת החשבון");
+      }
+      if (typeof window !== "undefined") {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      window.location.href = "/login?notice=account_deleted";
+    } catch (err: any) {
+      setDeleteError(err.message || "שגיאה במחיקת החשבון");
+      setDeletingAccount(false);
     }
   };
 
@@ -378,6 +407,40 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Danger Zone: Delete Account */}
+        <div className="bg-rose-950/30 border border-rose-900/60 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between gap-3 border-b border-rose-900/40 pb-3">
+            <h2 className="text-lg font-bold text-rose-300 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+              <span>אזור סכנה ומחיקת חשבון</span>
+            </h2>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1 max-w-xl">
+              <p className="text-sm font-bold text-rose-200">
+                מחיקת החשבון וכל נתוני הג'קוזי לצמיתות
+              </p>
+              <p className="text-xs text-rose-300/80 leading-relaxed">
+                פעולה זו תמחק לצמיתות את החשבון שלך, את כל היסטוריית בדיקות המים, יומן הפעולות, מלאי הכימיקלים ושגרות התחזוקה. פעולה זו היא בלתי הפיכה ולא ניתן יהיה לשחזר את הנתונים.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowDeleteModal(true);
+                setDeleteConfirmationText("");
+                setDeleteError("");
+              }}
+              className="px-5 py-2.5 rounded-2xl bg-rose-600/90 hover:bg-rose-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 border border-rose-500/50 transition-all hover:scale-105 shrink-0 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>מחק את החשבון שלי</span>
+            </button>
+          </div>
+        </div>
+
         {/* Submit & Close */}
         <div className="flex items-center justify-end gap-3">
           <button
@@ -397,6 +460,112 @@ export default function SettingsPage() {
           </button>
         </div>
       </form>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-fade-in"
+          dir="rtl"
+          onClick={() => {
+            if (!deletingAccount) setShowDeleteModal(false);
+          }}
+        >
+          <div
+            className="bg-[#180e14] border-2 border-rose-700/80 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 text-right relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-rose-900/50 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-rose-950 border border-rose-800 flex items-center justify-center text-rose-400 shadow-inner">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                    מחיקת חשבון לצמיתות
+                  </h3>
+                  <p className="text-xs text-rose-300/90 mt-0.5">פעולה בלתי הפיכה</p>
+                </div>
+              </div>
+
+              {!deletingAccount && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3 text-xs sm:text-sm text-slate-200 leading-relaxed">
+              <p className="font-bold text-rose-300">
+                האם אתה בטוח שברצונך למחוק את החשבון שלך?
+              </p>
+              <div className="bg-rose-950/60 p-3.5 rounded-2xl border border-rose-900/60 space-y-1.5 text-xs text-rose-200">
+                <p>⚠️ <strong>הנתונים הבאים יימחקו לצמיתות:</strong></p>
+                <ul className="list-disc list-inside space-y-1 text-slate-300">
+                  <li>פרטי החשבון והגדרות ההתראות במייל</li>
+                  <li>כל בדיקות איכות המים וההיסטוריה</li>
+                  <li>יומן הפעולות והטיפולים</li>
+                  <li>ארון החומרים והמלאי</li>
+                  <li>כל שגרות התחזוקה שהוגדרו</li>
+                </ul>
+              </div>
+
+              <div className="space-y-1.5 pt-2">
+                <label className="text-xs text-slate-300 block font-semibold">
+                  כדי לאשר, הקלד <span className="text-rose-400 font-bold">מחק</span> בתיבה למטה:
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmationText}
+                  onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                  placeholder="הקלד מחק לאישור"
+                  disabled={deletingAccount}
+                  className="w-full bg-slate-950 border border-rose-900/80 focus:border-rose-500 rounded-xl px-4 py-2.5 text-white text-sm text-center font-bold outline-none"
+                />
+              </div>
+
+              {deleteError && (
+                <div className="p-3 rounded-xl bg-rose-950 border border-rose-700 text-rose-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-rose-900/40">
+              <button
+                type="button"
+                disabled={deletingAccount}
+                onClick={() => setShowDeleteModal(false)}
+                className="px-5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs sm:text-sm transition-all disabled:opacity-50 cursor-pointer"
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                disabled={deletingAccount || deleteConfirmationText.trim() !== "מחק"}
+                onClick={handleDeleteAccount}
+                className="px-6 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-rose-950/70 flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {deletingAccount ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>מוחק חשבון...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>כן, מחק את החשבון שלי</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

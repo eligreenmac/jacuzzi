@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { prisma, ensureDbSchema, withRetry } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
@@ -52,5 +52,35 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("Auth Me Error:", error);
     return NextResponse.json({ error: "שגיאה בטעינת נתוני משתמש" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    await ensureDbSchema();
+    const sessionUser = await getSessionUser(req);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "לא מחובר" }, { status: 401 });
+    }
+
+    await withRetry(async () => {
+      return await prisma.user.delete({
+        where: { id: sessionUser.id },
+      });
+    });
+
+    const response = NextResponse.json({
+      success: true,
+      message: "החשבון וכל נתוניו נמחקו בהצלחה",
+    });
+
+    response.cookies.delete(SESSION_COOKIE_NAME);
+    return response;
+  } catch (error: any) {
+    console.error("Delete Account Error:", error);
+    return NextResponse.json(
+      { error: "שגיאה במחיקת החשבון. נסה שוב מאוחר יותר." },
+      { status: 500 }
+    );
   }
 }
