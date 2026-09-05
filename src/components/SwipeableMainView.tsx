@@ -2519,13 +2519,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     {sectionId === "water-quality" && (
                       <div className="space-y-3 pt-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-white flex items-center gap-1.5">
-                            <FlaskConical className="w-3.5 h-3.5 text-sky-400" />
-                            <span>מצב איכות המים</span>
-                          </span>
-                          <span className="text-[11px] text-slate-300">
+                          <span className="text-xs text-slate-300 font-semibold">
                             {latestWaterLog
-                              ? `בדיקה אחרונה: ${new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")} (${new Date(latestWaterLog.testedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })})`
+                              ? `בדיקה אחרונה: ${new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")}`
                               : "טרם בוצעה בדיקת מים"}
                           </span>
                         </div>
@@ -2538,11 +2534,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                   e.stopPropagation();
                                   setOpenPageId("water-tests");
                                 }}
-                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center flex items-center justify-center min-h-[48px] cursor-pointer"
                               >
-                                <span className="text-[10px] text-slate-400">חומציות (pH)</span>
-                                <div className="text-base sm:text-lg font-black text-white">{latestWaterLog.ph || latestWaterLog.phRange || "7.4"}</div>
-                                <span className="text-[9px] text-sky-300/80">יעד: 7.2 - 7.6</span>
+                                <span className="text-xs sm:text-sm font-bold text-white">חומציות (pH)</span>
                               </div>
 
                               <div
@@ -2550,11 +2544,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                   e.stopPropagation();
                                   setOpenPageId("water-tests");
                                 }}
-                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center flex items-center justify-center min-h-[48px] cursor-pointer"
                               >
-                                <span className="text-[10px] text-slate-400">כלור / חיטוי</span>
-                                <div className="text-base sm:text-lg font-black text-white">{latestWaterLog.freeChlorine || latestWaterLog.chlorineRange || "3.0"}</div>
-                                <span className="text-[9px] text-sky-300/80">יעד: 2.0 - 4.0 ppm</span>
+                                <span className="text-xs sm:text-sm font-bold text-white">כלור / חיטוי</span>
                               </div>
 
                               <div
@@ -2562,11 +2554,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                   e.stopPropagation();
                                   setOpenPageId("water-tests");
                                 }}
-                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center flex items-center justify-center min-h-[48px] cursor-pointer"
                               >
-                                <span className="text-[10px] text-slate-400">בסיסיות כוללת (TA)</span>
-                                <div className="text-base sm:text-lg font-black text-white">{latestWaterLog.alkalinity || latestWaterLog.alkalinityRange || "90"}</div>
-                                <span className="text-[9px] text-sky-300/80">יעד: 80 - 120 ppm</span>
+                                <span className="text-xs sm:text-sm font-bold text-white">בסיסיות כוללת (TA)</span>
                               </div>
 
                               <div
@@ -2574,21 +2564,16 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                   e.stopPropagation();
                                   openClarityOdorModal();
                                 }}
-                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center flex items-center justify-center min-h-[48px] cursor-pointer"
                               >
-                                <span className="text-[10px] text-slate-400">צלילות ומראה</span>
-                                <div className="text-base sm:text-lg font-black text-white">
-                                  {getClarityDisplay(latestWaterLog.waterClarity).label}
-                                </div>
-                                <span className="text-[9px] text-sky-300/80">בדיקה חושית</span>
+                                <span className="text-xs sm:text-sm font-bold text-white">צלילות ומראה</span>
                               </div>
                             </div>
 
                             {/* סכנות של מדדים שאינם תקינים */}
                             {latestAbnormalRisks.length > 0 ? (
                               <div className="bg-[#180e14]/95 border border-rose-900/60 rounded-2xl p-3.5 space-y-2 text-xs text-right shadow-lg">
-                                <div className="flex items-center gap-2 text-rose-400 font-bold text-xs">
-                                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                <div className="text-rose-400 font-bold text-xs">
                                   <span>סכנות של מדדים שאינם תקינים:</span>
                                 </div>
 
@@ -2602,8 +2587,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                 </div>
                               </div>
                             ) : (
-                              <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-emerald-900/30 flex items-center gap-2 text-[11px] text-emerald-300">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-emerald-900/30 text-[11px] text-emerald-300">
                                 <span className="font-bold">כל המדדים שנבדקו נמצאים בטווח האידיאלי והמים מאוזנים לחלוטין ✓</span>
                               </div>
                             )}
@@ -2620,7 +2604,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                           </div>
                         )}
 
-                        {/* 🌟 קטגוריית צלילות ועכירות & ריח המים */}
+                        {/* 🌟 נראות וריח */}
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2629,13 +2613,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                           className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/clarity"
                         >
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-white flex items-center gap-1.5 group-hover/clarity:text-sky-300 transition-colors">
-                              <Droplets className="w-3.5 h-3.5 text-sky-400" />
-                              <span>צלילות ועכירות & ריח המים (בדיקה חושית):</span>
-                            </span>
-                            <span className="text-[11px] text-sky-300/90 flex items-center gap-1 font-bold bg-sky-950/80 px-2.5 py-1 rounded-lg border border-sky-800/50 group-hover/clarity:border-sky-500/60 transition-colors shadow-sm">
-                              <Edit3 className="w-3 h-3 text-sky-400" />
-                              <span>ערוך צלילות וריח</span>
+                            <span className="font-bold text-white group-hover/clarity:text-sky-300 transition-colors">
+                              נראות וריח
                             </span>
                           </div>
 
@@ -2650,15 +2629,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             </span>
                           </div>
 
-                          {(latestWaterLog?.clarityOdorNotes || latestWaterLog?.description) ? (
+                          {(latestWaterLog?.clarityOdorNotes || latestWaterLog?.description) && (
                             <div className="text-[11px] text-slate-300 bg-sky-950/50 p-2.5 rounded-xl border border-sky-900/40 flex items-start gap-1.5">
                               <span className="text-sky-400 font-bold shrink-0">הערות:</span>
                               <span className="leading-snug text-slate-200">{latestWaterLog?.clarityOdorNotes || latestWaterLog?.description}</span>
                             </div>
-                          ) : (
-                            <p className="text-[10px] text-slate-400 italic">
-                              לחץ כאן כדי להוסיף הערות חופשיות או לעדכן את ריח וצלילות המים
-                            </p>
                           )}
                         </div>
 
@@ -2688,7 +2663,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         className="bg-[#080e14]/90 hover:bg-sky-950/40 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all flex items-center justify-between text-xs cursor-pointer group/age"
                       >
                         <div className="flex items-center gap-2">
-                          <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                           <span className="text-slate-300 group-hover/age:text-white transition-colors">
                             גיל המים הנוכחי:{" "}
                             <strong className="text-white">
@@ -2723,9 +2697,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/strip"
                       >
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-white flex items-center gap-1.5 group-hover/strip:text-sky-300 transition-colors">
-                            <Settings className="w-3.5 h-3.5 text-sky-400" />
-                            <span>מקלון בדיקה ({activeParamIds.length} מדדים פעילים):</span>
+                          <span className="font-bold text-white group-hover/strip:text-sky-300 transition-colors">
+                            מקלון בדיקה:
                           </span>
                           <span className="text-[11px] text-sky-300/80 flex items-center gap-1 font-bold bg-sky-950/60 px-2 py-0.5 rounded-lg border border-sky-800/40 group-hover/strip:border-sky-500/60 transition-colors">
                             <Settings className="w-3 h-3 text-sky-400" />
