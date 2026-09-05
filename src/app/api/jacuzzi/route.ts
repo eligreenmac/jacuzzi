@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { analyzeProactiveMaintenance } from "@/lib/gemini";
 
 export async function GET(req: NextRequest) {
   try {
@@ -93,6 +94,131 @@ export async function PUT(req: NextRequest) {
         testStripParams: testStripParamsStr !== undefined ? testStripParamsStr : undefined,
       },
     });
+
+    // Automatically synchronize & schedule the 90-day (3 months) Full Refill task and proactive adjustments
+    if (lastRefillDate) {
+      const refillDate = new Date(lastRefillDate);
+      const refillFreq = 90;
+      const nextRefillDate = new Date(refillDate.getTime() + refillFreq * 24 * 60 * 60 * 1000);
+
+      const existingRefillTask = await prisma.maintenanceTask.findFirst({
+        where: {
+          userId: user.id,
+          OR: [
+            { title: { contains: "ריקון ומילוי מים מלא" } },
+            { title: { contains: "ריקון ומילוי" } },
+            { title: { contains: "ריקון מלא" } },
+          ],
+        },
+      });
+
+      if (existingRefillTask) {
+        await prisma.maintenanceTask.update({
+          where: { id: existingRefillTask.id },
+          data: {
+            title: "ריקון ומילוי מים מלא (100%)",
+            description: "ריקון ומילוי מים מלא (100%) ללא שטיפת צנרת במים טריים (מחזור של 3 חודשים).",
+            frequencyDays: refillFreq,
+            lastDoneDate: refillDate,
+            nextDueDate: nextRefillDate,
+            isCompleted: false,
+            category: "QUARTERLY",
+            priority: "URGENT",
+          },
+        });
+      } else {
+        await prisma.maintenanceTask.create({
+          data: {
+            userId: user.id,
+            title: "ריקון ומילוי מים מלא (100%)",
+            description: "ריקון ומילוי מים מלא (100%) ללא שטיפת צנרת במים טריים (מחזור של 3 חודשים).",
+            frequencyDays: refillFreq,
+            lastDoneDate: refillDate,
+            nextDueDate: nextRefillDate,
+            isCompleted: false,
+            category: "QUARTERLY",
+            priority: "URGENT",
+          },
+        });
+      }
+
+      // Record diary entry for initial/full refill if not already recorded for that date
+      const startOfDay = new Date(refillDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(refillDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const existingDiary = await prisma.diaryEntry.findFirst({
+        where: {
+          userId: user.id,
+          title: { contains: "ריקון ומילוי מים מלא" },
+          entryDate: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+      });
+
+      if (!existingDiary) {
+        await prisma.diaryEntry.create({
+          data: {
+            userId: user.id,
+            title: "ריקון ומילוי מים מלא (100%)",
+            content: "ריקון ומילוי מים מלא (100%) ללא שטיפת צנרת במים טריים. גיל המים עודכן בהצלחה.",
+            entryDate: refillDate,
+            waterQualityRating: 5,
+          },
+        });
+      }
+
+      // Remove obsolete one-off custom tasks from previous water cycle
+      await prisma.maintenanceTask.deleteMany({
+        where: {
+          userId: user.id,
+          category: "CUSTOM",
+          isCompleted: false,
+        },
+      });
+
+      // AI Proactive Adaptation: analyze full refill and adjust calendar schedule shifts
+      try {
+        const currentTasks = await prisma.maintenanceTask.findMany({
+          where: { userId: user.id, isCompleted: false },
+        });
+
+        const proactiveAnalysis = await analyzeProactiveMaintenance({
+          freeText: "ריקון ומילוי מים מלא (100%) ללא שטיפת צנרת",
+          actionDate: refillDate,
+          volumeLiters: updatedJacuzzi.volumeLiters,
+          sanitizationType: updatedJacuzzi.sanitizationType,
+          lastRefillDate: refillDate,
+          currentTasks: currentTasks.map((t) => ({
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            category: t.category,
+            frequencyDays: t.frequencyDays,
+            nextDueDate: t.nextDueDate,
+          })),
+        });
+
+        if (proactiveAnalysis?.scheduleShifts && Array.isArray(proactiveAnalysis.scheduleShifts)) {
+          for (const shift of proactiveAnalysis.scheduleShifts) {
+            if (shift.taskId && shift.newDueDate) {
+              await prisma.maintenanceTask.updateMany({
+                where: { id: shift.taskId, userId: user.id },
+                data: {
+                  nextDueDate: new Date(shift.newDueDate),
+                  description: shift.reason ? `עודכן בעקבות מילוי מים: ${shift.reason}` : undefined,
+                },
+              });
+            }
+          }
+        }
+      } catch (aiErr) {
+        console.warn("Proactive schedule shift error on refill update:", aiErr);
+      }
+    }
 
     // Automatically synchronize & schedule the 90-day (3 months) Pipe Flush task in Calendar
     if (lastDeepCleanDate) {

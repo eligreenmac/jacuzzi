@@ -1645,17 +1645,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               <div
                 onClick={(e) => {
                   e.stopPropagation();
-                  openItemModal({
-                    id: "water-age",
-                    title: "גיל המים וריקון מלא",
-                    subtitle: "הגדרת תאריך מילוי המים האחרון ותדירות ריקון",
-                    icon: Clock,
-                    type: "refill",
-                    defaultFreqDays: jacuzzi?.refillFrequencyDays || 90,
-                    currentFreqDays: jacuzzi?.refillFrequencyDays || 90,
-                    currentLastDoneDate: lastFullRefillDate ? lastFullRefillDate.toISOString() : null,
-                    currentNextDueDate: nextFullRefillDate ? nextFullRefillDate.toISOString() : null,
-                  });
+                  setOpenPageId("settings");
                 }}
                 className="bg-[#080e14]/90 hover:bg-sky-950/40 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all flex items-center justify-between text-xs cursor-pointer group/age"
               >
@@ -1762,23 +1752,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
-                    openItemModal({
-                      id: "water-test",
-                      title: "הגדרת תדירות בדיקת איכות מים",
-                      subtitle: "קביעת מרווח הזמן הרצוי לביצוע בדיקת מקלון",
-                      icon: FlaskConical,
-                      type: "water-test",
-                      taskId: waterTestTask?.id,
-                      taskCategory: "DAILY",
-                      defaultFreqDays: 7,
-                      currentFreqDays: waterTestTask?.frequencyDays || 7,
-                      currentLastDoneDate: lastWaterTestDate?.toISOString() || null,
-                      currentNextDueDate: nextWaterTestDate ? nextWaterTestDate.toISOString() : null,
-                    });
+                    setOpenPageId("water-tests-new");
                   }}
                   className="p-3 bg-[#080e14]/90 hover:bg-sky-950/40 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 text-center text-xs text-slate-300 transition-all cursor-pointer group/test"
                 >
-                  <span className="group-hover/test:text-sky-300 transition-colors font-medium">טרם תועדה בדיקת מים במערכת (לחץ כאן להגדרה וביצוע)</span>
+                  <span className="group-hover/test:text-sky-300 transition-colors font-medium">טרם תועדה בדיקת מים במערכת (לחץ כאן להזנת תוצאות בדיקת מקלון)</span>
                 </div>
               )}
             </div>
@@ -2249,10 +2227,16 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             {/* 🌟 גיל המים הנוכחי ומועד החלפה הבא */}
-            <div className="bg-[#080e14]/90 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 flex items-center justify-between text-xs">
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenPageId("settings");
+              }}
+              className="bg-[#080e14]/90 hover:bg-sky-950/40 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all flex items-center justify-between text-xs cursor-pointer group/age"
+            >
               <div className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                <span className="text-slate-300">
+                <span className="text-slate-300 group-hover/age:text-white transition-colors">
                   גיל המים הנוכחי:{" "}
                   <strong className="text-white">
                     {daysSinceRefill !== null ? `${daysSinceRefill} ימים` : "ממתין למילוי ראשון"}

@@ -310,6 +310,30 @@ export default function SettingsPage() {
               </select>
             </div>
           </div>
+
+          {/* Water Refill Date */}
+          <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-cyan-300">
+                <Clock className="w-4 h-4 text-cyan-400" />
+                <span>תאריך בו בוצע מילוי מים לראשונה / מילוי נוכחי בג&apos;קוזי:</span>
+              </span>
+              {formData.lastRefillDate && (
+                <span className="text-[11px] text-slate-400 font-normal">
+                  גיל המים: {Math.max(0, Math.round((Date.now() - new Date(formData.lastRefillDate).getTime()) / (24 * 3600 * 1000)))} ימים
+                </span>
+              )}
+            </label>
+            <input
+              type="date"
+              value={formData.lastRefillDate}
+              onChange={(e) => setFormData({ ...formData, lastRefillDate: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-4 py-2.5 text-white text-sm font-bold"
+            />
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              שמירת תאריך זה מתעדת מילוי מים מלא (100%) ללא שטיפת צנרת, ומבצעת התאמת זימונים אוטומטית במערכת.
+            </p>
+          </div>
         </div>
 
         {/* Email Notifications Section */}
@@ -622,7 +646,7 @@ export default function SettingsPage() {
             <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 text-xs text-slate-200 leading-relaxed">
               <span className="text-sky-300 font-bold block mb-1">למה נועד מסך ההגדרות?</span>
               <p>
-                כאן תוכל לעדכן את נפח המים, סוג החיטוי, תדירויות טיפולים, הגדרת מדדי מקלון הבדיקה שברשותך וניהול תזכורות במייל.
+                כאן תוכל לעדכן את נפח המים, סוג החיטוי, תדירויות טיפולים, תאריך מילוי מים וניהול תזכורות במייל.
               </p>
             </div>
 
@@ -639,8 +663,8 @@ export default function SettingsPage() {
                   <span><strong>נפח ושיטת חיטוי:</strong> הגדרת נפח המים (בליטרים) לחישוב מינונים מדויק ובחירת שיטת חיטוי (כלור/ברום/מלח).</span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
-                  <span className="text-sky-400 font-bold shrink-0">🧪</span>
-                  <span><strong>התאמת מקלון בדיקה:</strong> בחירת מדדי המקלון שברשותך (pH, כלור חופשי, בסיסיות, קשיות ועוד).</span>
+                  <span className="text-sky-400 font-bold shrink-0">💧</span>
+                  <span><strong>תאריך מילוי וגיל המים:</strong> קביעת מועד המילוי האחרון/ראשון לסנכרון ריקון מלא והתאמת זימונים.</span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
                   <span className="text-sky-400 font-bold shrink-0">📧</span>

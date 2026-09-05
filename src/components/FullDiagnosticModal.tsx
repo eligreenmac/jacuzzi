@@ -495,10 +495,6 @@ export default function FullDiagnosticModal({ isOpen, onClose }: FullDiagnosticM
                     <span>סריקת כל שגרות הציוד והמסננים והתראה על פעולות דחופות שנדרשות.</span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
-                    <span className="text-cyan-400 font-bold shrink-0">🧪</span>
-                    <span>בדיקת יתרות מלאי בארון החומרים וחישוב מינונים מדויקים לנפח המים.</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
                     <span className="text-cyan-400 font-bold shrink-0">💡</span>
                     <span>הנחיות פעולה מידיות וברורות לייצוב המים ושמירה על הג&apos;קוזי.</span>
                   </div>
