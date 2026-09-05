@@ -3095,7 +3095,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <h3 className="text-lg sm:text-xl font-bold text-white leading-tight">
                     {activeItemModal.title}
                   </h3>
-                  <p className="text-xs text-slate-300 mt-0.5">{activeItemModal.subtitle}</p>
                 </div>
               </div>
 
@@ -3117,19 +3116,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             {/* SECTION 1: סימון ביצוע מיידי של הפעולה */}
             {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill" || activeItemModal.type === "adhoc-chemical") && activeItemModal.id !== "water-test" && activeItemModal.type !== "water-test" && (
               <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs sm:text-sm text-sky-200 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>
-                      {activeItemModal.type === "adhoc-chemical" ? "תיעוד הוספת חומר יזומה" : "סימון ביצוע הפעולה עכשיו"}
-                    </span>
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    {activeItemModal.type === "adhoc-chemical" ? "רישום ביומן ללא תאריך יעד" : "יעדכן יומן ויקדם תאריך הבא"}
-                  </span>
-                </div>
-
-                <div className="space-y-3 pt-1">
+                <div className="space-y-3">
                   <div>
                     <label className="text-[11px] text-slate-300 block mb-1">תאריך ביצוע הפעולה:</label>
                     <input
@@ -3258,43 +3245,26 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             {/* 🧪 SECTION: הגדרת תדירות בדיקת איכות מים בלבד */}
             {(activeItemModal.id === "water-test" || activeItemModal.type === "water-test") && (
-              <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-sky-200 block">
-                    תדירות בדיקת איכות מים (בימים):
-                  </label>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    קבע את מרווח הימים הרצוי בין בדיקות מקלון שגרתיות.
-                  </p>
-                </div>
+              <div className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/40 space-y-3">
+                <span className="font-bold text-xs sm:text-sm text-sky-200 block">
+                  תדירות בדיקת איכות מים
+                </span>
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={1}
-                    max={30}
-                    value={editFreqDays}
-                    onChange={(e) => setEditFreqDays(parseInt(e.target.value, 10) || 1)}
-                    className="w-24 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white text-center font-bold focus:outline-none focus:border-sky-500"
-                  />
-                  <span className="text-xs text-slate-300">ימים</span>
-
-                  <div className="flex items-center gap-1.5 mr-auto flex-wrap">
-                    {[2, 3, 5, 7, 14].map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => setEditFreqDays(d)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                          editFreqDays === d
-                            ? "bg-sky-950 text-sky-200 border-sky-500 shadow-sm"
-                            : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        {d} ימים
-                      </button>
-                    ))}
-                  </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {[3, 7, 14, 30, 90, 180].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setEditFreqDays(d)}
+                      className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        editFreqDays === d
+                          ? "bg-sky-600 text-white border-sky-400 shadow-md shadow-sky-950/80 scale-[1.02]"
+                          : "bg-slate-900/90 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700"
+                      }`}
+                    >
+                      {d} ימים
+                    </button>
+                  ))}
                 </div>
 
                 <button
@@ -3466,50 +3436,28 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
                 {/* Frequency Days (for tasks & refill) */}
                 {(activeItemModal.type === "task" || activeItemModal.id === "full-refill" || activeItemModal.id === "partial-refill") && (
-                  <div className="space-y-2">
-                    <label className="text-[11px] text-slate-300 block">
-                      תדירות ביצוע מחזורית (בימים):
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={1}
-                        max={365}
-                        value={editFreqDays}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value, 10) || 1;
-                          setEditFreqDays(val);
-                          if (editLastDoneDate) {
-                            const next = new Date(new Date(editLastDoneDate).getTime() + val * 24 * 3600 * 1000);
-                            setEditNextDueDate(next.toISOString().split("T")[0]);
-                          }
-                        }}
-                        className="w-24 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white text-center font-bold focus:outline-none focus:border-sky-500"
-                      />
-                      <span className="text-xs text-slate-300">ימים</span>
-
-                      <div className="flex items-center gap-1.5 mr-auto">
-                        {[7, 14, 30, 90, 180].map((d) => (
-                          <button
-                            key={d}
-                            type="button"
-                            onClick={() => {
-                              setEditFreqDays(d);
-                              if (editLastDoneDate) {
-                                const next = new Date(new Date(editLastDoneDate).getTime() + d * 24 * 3600 * 1000);
-                                setEditNextDueDate(next.toISOString().split("T")[0]);
-                              }
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                              editFreqDays === d
-                                ? "bg-sky-950 text-sky-200 border-sky-500"
-                                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                            }`}
-                          >
-                            {d} יום
-                          </button>
-                        ))}
-                      </div>
+                  <div className="space-y-2 pt-1">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {[3, 7, 14, 30, 90, 180].map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => {
+                            setEditFreqDays(d);
+                            if (editLastDoneDate) {
+                              const next = new Date(new Date(editLastDoneDate).getTime() + d * 24 * 3600 * 1000);
+                              setEditNextDueDate(next.toISOString().split("T")[0]);
+                            }
+                          }}
+                          className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            editFreqDays === d
+                              ? "bg-sky-600 text-white border-sky-400 shadow-md shadow-sky-950/80 scale-[1.02]"
+                              : "bg-slate-900/90 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700"
+                          }`}
+                        >
+                          {d} ימים
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -3631,48 +3579,29 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               {/* Frequency */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-slate-300 block">
-                  תדירות חזרה (כל כמה ימים תתבצע הפעולה?):
+                  תדירות חזרה:
                 </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={1}
-                    max={365}
-                    value={newRoutineFreqDays}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value, 10) || 1;
-                      setNewRoutineFreqDays(val);
-                      if (newRoutineLastDoneDate) {
-                        const next = new Date(new Date(newRoutineLastDoneDate).getTime() + val * 24 * 3600 * 1000);
-                        setNewRoutineNextDueDate(next.toISOString().split("T")[0]);
-                      }
-                    }}
-                    className="w-24 bg-[#080e14] border border-sky-900/60 rounded-xl px-3 py-2 text-xs text-white text-center font-bold focus:outline-none focus:border-sky-500"
-                  />
-                  <span className="text-xs text-slate-300">ימים</span>
-
-                  <div className="flex items-center gap-1.5 mr-auto flex-wrap">
-                    {[3, 7, 14, 30, 90, 180].map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => {
-                          setNewRoutineFreqDays(d);
-                          if (newRoutineLastDoneDate) {
-                            const next = new Date(new Date(newRoutineLastDoneDate).getTime() + d * 24 * 3600 * 1000);
-                            setNewRoutineNextDueDate(next.toISOString().split("T")[0]);
-                          }
-                        }}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                          newRoutineFreqDays === d
-                            ? "bg-sky-950 text-sky-200 border-sky-500"
-                            : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        {d} יום
-                      </button>
-                    ))}
-                  </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {[3, 7, 14, 30, 90, 180].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        setNewRoutineFreqDays(d);
+                        if (newRoutineLastDoneDate) {
+                          const next = new Date(new Date(newRoutineLastDoneDate).getTime() + d * 24 * 3600 * 1000);
+                          setNewRoutineNextDueDate(next.toISOString().split("T")[0]);
+                        }
+                      }}
+                      className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        newRoutineFreqDays === d
+                          ? "bg-sky-600 text-white border-sky-400 shadow-md shadow-sky-950/80 scale-[1.02]"
+                          : "bg-slate-900/90 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700"
+                      }`}
+                    >
+                      {d} ימים
+                    </button>
+                  ))}
                 </div>
               </div>
 
