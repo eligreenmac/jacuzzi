@@ -1144,7 +1144,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
           <span className="text-xs font-semibold text-sky-100 hidden sm:inline">
             {openPageId === "water-tests-new"
-              ? "הזנת בדיקת מקלון חדשה"
+              ? "הזנת בדיקה חדשה"
               : CARD_TABS.find((t) => t.id === openPageId)?.title || "תצוגה מלאה"}
           </span>
         </div>
@@ -1778,9 +1778,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <h2 className="text-xl sm:text-2xl font-black text-white">
                     סטטוס
                   </h2>
-                  <p className="text-xs text-slate-300">
-                    {sevenDaysUpcomingTasks.length} משימות מתוזמנות ל-7 הימים הקרובים
-                  </p>
                 </div>
               </div>
 
@@ -2042,7 +2039,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             }}
                             className="p-4 rounded-2xl bg-[#080e14]/90 hover:bg-sky-950/40 border border-sky-900/30 hover:border-sky-500/60 text-center text-slate-300 hover:text-sky-300 text-xs transition-all cursor-pointer font-medium"
                           >
-                            טרם תועדה בדיקת מים במערכת (לחץ כאן להזנת תוצאות בדיקת מקלון)
+                            טרם תועדה בדיקת מים במערכת (לחץ כאן להזנת תוצאות בדיקה)
                           </div>
                         )}
                       </div>
@@ -2133,6 +2130,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             {/* Reorderable Content Sections for Card 1 */}
             <div className="space-y-4 flex-1 overflow-y-auto pr-0.5">
+              <div className="text-xs font-bold text-white flex items-center gap-1.5 pb-0.5">
+                <span>שגרות מומלצות:</span>
+              </div>
               {card1Order.map((sectionId, index) => {
                 const isDragOver = dragOverIndex === index && draggedSectionInfo?.cardIndex === 1;
                 const isItemDragging = draggedSectionInfo?.cardIndex === 1 && draggedSectionInfo?.index === index;
@@ -2450,7 +2450,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>הזן בדיקת מקלון</span>
+                  <span>הזן בדיקה</span>
                 </button>
               </div>
             </div>
@@ -2601,7 +2601,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             }}
                             className="p-4 rounded-2xl bg-[#080e14]/90 hover:bg-sky-950/40 border border-sky-900/30 hover:border-sky-500/60 text-center text-slate-300 hover:text-sky-300 text-xs transition-all cursor-pointer font-medium"
                           >
-                            טרם תועדה בדיקת מים במערכת (לחץ כאן להזנת תוצאות בדיקת מקלון)
+                            טרם תועדה בדיקת מים במערכת (לחץ כאן להזנת תוצאות בדיקה)
                           </div>
                         )}
 
