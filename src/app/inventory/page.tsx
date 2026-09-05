@@ -519,7 +519,7 @@ export default function InventoryPage() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Camera className="w-5 h-5 text-cyan-400" />
-                <span>זיהוי חומר לפי צילום (Gemini 3.7 Vision)</span>
+                <span>זיהוי חומר לפי צילום</span>
               </h2>
               <button
                 onClick={() => {
@@ -547,20 +547,36 @@ export default function InventoryPage() {
                 </label>
 
                 {!imagePreview ? (
-                  <label className="border-2 border-dashed border-cyan-800/60 hover:border-cyan-500 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer bg-slate-950/50 hover:bg-slate-950 transition-all group">
-                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
-                      <Camera className="w-7 h-7" />
-                    </div>
-                    <div className="text-center space-y-1">
-                      <span className="text-sm font-bold text-white block">לחץ כאן לצילום או בחירת תמונה</span>
-                      <span className="text-xs text-slate-400 block">התמונה תכווץ אוטומטית לזיהוי אולטרה-מהיר ב-AI</span>
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-[11px] text-cyan-300 mt-1">
-                        <Zap className="w-3 h-3 text-amber-400" />
-                        <span>דחיסה חכמה + זיהוי OCR תווית ב-1-2 שניות בלבד</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Option 1: Direct Camera Capture */}
+                    <label className="border-2 border-dashed border-cyan-800/60 hover:border-cyan-500 rounded-2xl p-6 flex flex-col items-center justify-center gap-2.5 cursor-pointer bg-slate-950/50 hover:bg-slate-950 transition-all group text-center select-none">
+                      <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
+                        <Camera className="w-6 h-6" />
                       </div>
-                    </div>
-                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
-                  </label>
+                      <span className="text-sm font-bold text-white block">צלם במצלמה</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Option 2: Gallery / Files Picker */}
+                    <label className="border-2 border-dashed border-slate-800 hover:border-slate-600 rounded-2xl p-6 flex flex-col items-center justify-center gap-2.5 cursor-pointer bg-slate-950/50 hover:bg-slate-950 transition-all group text-center select-none">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-800/60 text-slate-300 flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <span className="text-sm font-bold text-white block">בחר מגלריה / קבצים</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 ) : (
                   <div className="relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 shadow-lg">
                     <img src={imagePreview} alt="צילום חומר" className="w-full h-52 object-contain bg-slate-950" />
@@ -985,7 +1001,7 @@ export default function InventoryPage() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
                 <Sparkles className="w-6 h-6 text-purple-400" />
-                <span>ניתוח מלאי חומרים וזיהוי חוסרים (Gemini AI)</span>
+                <span>ניתוח מלאי חומרים וזיהוי חוסרים (AI)</span>
               </h2>
               <button onClick={() => setIsAiModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />

@@ -55,12 +55,17 @@ export default function Navbar() {
 
       const data = await res.json();
       if (!res.ok) {
+        setCheckoutLoading(false);
         throw new Error(data.error || "שגיאה ביצירת קישור לתשלום");
       }
 
       if (data.url) {
         window.location.href = data.url;
+        setTimeout(() => {
+          setCheckoutLoading(false);
+        }, 3000);
       } else {
+        setCheckoutLoading(false);
         throw new Error("לא התקבל קישור תשלום");
       }
     } catch (err: any) {
@@ -69,6 +74,22 @@ export default function Navbar() {
       setCheckoutLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handlePageShow = () => {
+      setCheckoutLoading(false);
+    };
+    const handleFocus = () => {
+      setCheckoutLoading(false);
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
 
   useEffect(() => {
     fetch("/api/auth/me")
