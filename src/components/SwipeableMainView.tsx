@@ -1902,15 +1902,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         {latestWaterLog ? (
                           <>
                             {(() => {
-                              const phVal = extractParamValue(latestWaterLog, "ph");
-                              const phDomain = getGenericDomain("ph", phVal.val, phVal.rangeStr);
-
-                              const clVal = extractParamValue(latestWaterLog, "chlorine");
-                              const clDomain = getGenericDomain("chlorine", clVal.val, clVal.rangeStr);
-
-                              const taVal = extractParamValue(latestWaterLog, "alkalinity");
-                              const taDomain = getGenericDomain("alkalinity", taVal.val, taVal.rangeStr);
-
                               const getStatusColorClass = (id: string) => {
                                 if (id === "OK") return "text-emerald-400";
                                 if (id === "LOW" || id === "HIGH") return "text-amber-400";
@@ -1918,46 +1909,75 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                 return "text-slate-300";
                               };
 
+                              const displayParams: string[] = (() => {
+                                if (activeParamIds && activeParamIds.length > 0) {
+                                  const list = [...activeParamIds];
+                                  if (latestWaterLog?.testedParams) {
+                                    try {
+                                      const p = JSON.parse(latestWaterLog.testedParams);
+                                      if (Array.isArray(p)) {
+                                        p.forEach((id: string) => {
+                                          if (id !== "clarity" && !list.includes(id)) list.push(id);
+                                        });
+                                      }
+                                    } catch {}
+                                  }
+                                  return list.filter((id) => id !== "clarity");
+                                }
+
+                                let list: string[] = [];
+                                if (latestWaterLog?.testedParams) {
+                                  try {
+                                    const p = JSON.parse(latestWaterLog.testedParams);
+                                    if (Array.isArray(p) && p.length > 0) list = p;
+                                  } catch {}
+                                }
+                                if (list.length === 0 && latestWaterLog) {
+                                  ALL_TEST_STRIP_PARAMS.forEach((param) => {
+                                    const { val, rangeStr } = extractParamValue(latestWaterLog, param.id);
+                                    if (val !== null || rangeStr) list.push(param.id);
+                                  });
+                                }
+                                const filtered = list.filter((id) => id !== "clarity");
+                                return filtered.length > 0 ? filtered : DEFAULT_TEST_STRIP_PARAM_IDS;
+                              })();
+
+                              const gridColsClass =
+                                displayParams.length === 1
+                                  ? "grid-cols-1"
+                                  : displayParams.length === 2
+                                  ? "grid-cols-2"
+                                  : displayParams.length === 4
+                                  ? "grid-cols-2 sm:grid-cols-4"
+                                  : "grid-cols-3";
+
                               return (
-                                <div className="grid grid-cols-3 gap-3">
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenPageId("water-tests");
-                                    }}
-                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                                  >
-                                    <span className="text-[10px] text-slate-400 block">חומציות (pH)</span>
-                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(phDomain.id)}`}>
-                                      {phDomain.label}
-                                    </div>
-                                  </div>
+                                <div className={`grid ${gridColsClass} gap-2.5`}>
+                                  {displayParams.map((pId) => {
+                                    const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
+                                    if (!pDef) return null;
+                                    const pVal = extractParamValue(latestWaterLog, pId);
+                                    const pDomain = getGenericDomain(pId, pVal.val, pVal.rangeStr);
 
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenPageId("water-tests");
-                                    }}
-                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                                  >
-                                    <span className="text-[10px] text-slate-400 block">כלור / חיטוי</span>
-                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(clDomain.id)}`}>
-                                      {clDomain.label}
-                                    </div>
-                                  </div>
-
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenPageId("water-tests");
-                                    }}
-                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                                  >
-                                    <span className="text-[10px] text-slate-400 block">בסיסיות כוללת (TA)</span>
-                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(taDomain.id)}`}>
-                                      {taDomain.label}
-                                    </div>
-                                  </div>
+                                    return (
+                                      <div
+                                        key={pId}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenPageId("water-tests");
+                                        }}
+                                        className="bg-[#080e14]/90 p-2.5 sm:p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                        title={`${pDef.nameHe} (${pDef.enName})`}
+                                      >
+                                        <span className="text-[10px] text-slate-400 block truncate">
+                                          {pDef.nameHe}
+                                        </span>
+                                        <div className={`text-xs sm:text-sm md:text-base font-black tracking-tight ${getStatusColorClass(pDomain.id)}`}>
+                                          {pDomain.label}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               );
                             })()}
@@ -2530,17 +2550,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         {latestWaterLog ? (
                           <>
                             {(() => {
-                              const phVal = extractParamValue(latestWaterLog, "ph");
-                              const phDomain = getGenericDomain("ph", phVal.val, phVal.rangeStr);
-
-                              const clVal = extractParamValue(latestWaterLog, "chlorine");
-                              const clDomain = getGenericDomain("chlorine", clVal.val, clVal.rangeStr);
-
-                              const taVal = extractParamValue(latestWaterLog, "alkalinity");
-                              const taDomain = getGenericDomain("alkalinity", taVal.val, taVal.rangeStr);
-
-                              const clarityObj = getClarityDisplay(latestWaterLog?.waterClarity);
-
                               const getStatusColorClass = (id: string) => {
                                 if (id === "OK") return "text-emerald-400";
                                 if (id === "LOW" || id === "HIGH") return "text-amber-400";
@@ -2548,46 +2557,75 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                 return "text-slate-300";
                               };
 
+                              const displayParams: string[] = (() => {
+                                if (activeParamIds && activeParamIds.length > 0) {
+                                  const list = [...activeParamIds];
+                                  if (latestWaterLog?.testedParams) {
+                                    try {
+                                      const p = JSON.parse(latestWaterLog.testedParams);
+                                      if (Array.isArray(p)) {
+                                        p.forEach((id: string) => {
+                                          if (id !== "clarity" && !list.includes(id)) list.push(id);
+                                        });
+                                      }
+                                    } catch {}
+                                  }
+                                  return list.filter((id) => id !== "clarity");
+                                }
+
+                                let list: string[] = [];
+                                if (latestWaterLog?.testedParams) {
+                                  try {
+                                    const p = JSON.parse(latestWaterLog.testedParams);
+                                    if (Array.isArray(p) && p.length > 0) list = p;
+                                  } catch {}
+                                }
+                                if (list.length === 0 && latestWaterLog) {
+                                  ALL_TEST_STRIP_PARAMS.forEach((param) => {
+                                    const { val, rangeStr } = extractParamValue(latestWaterLog, param.id);
+                                    if (val !== null || rangeStr) list.push(param.id);
+                                  });
+                                }
+                                const filtered = list.filter((id) => id !== "clarity");
+                                return filtered.length > 0 ? filtered : DEFAULT_TEST_STRIP_PARAM_IDS;
+                              })();
+
+                              const gridColsClass =
+                                displayParams.length === 1
+                                  ? "grid-cols-1"
+                                  : displayParams.length === 2
+                                  ? "grid-cols-2"
+                                  : displayParams.length === 4
+                                  ? "grid-cols-2 sm:grid-cols-4"
+                                  : "grid-cols-3";
+
                               return (
-                                <div className="grid grid-cols-3 gap-3">
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenPageId("water-tests");
-                                    }}
-                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                                  >
-                                    <span className="text-[10px] text-slate-400 block">חומציות (pH)</span>
-                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(phDomain.id)}`}>
-                                      {phDomain.label}
-                                    </div>
-                                  </div>
+                                <div className={`grid ${gridColsClass} gap-2.5`}>
+                                  {displayParams.map((pId) => {
+                                    const pDef = ALL_TEST_STRIP_PARAMS.find((p) => p.id === pId);
+                                    if (!pDef) return null;
+                                    const pVal = extractParamValue(latestWaterLog, pId);
+                                    const pDomain = getGenericDomain(pId, pVal.val, pVal.rangeStr);
 
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenPageId("water-tests");
-                                    }}
-                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                                  >
-                                    <span className="text-[10px] text-slate-400 block">כלור / חיטוי</span>
-                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(clDomain.id)}`}>
-                                      {clDomain.label}
-                                    </div>
-                                  </div>
-
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenPageId("water-tests");
-                                    }}
-                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
-                                  >
-                                    <span className="text-[10px] text-slate-400 block">בסיסיות כוללת (TA)</span>
-                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(taDomain.id)}`}>
-                                      {taDomain.label}
-                                    </div>
-                                  </div>
+                                    return (
+                                      <div
+                                        key={pId}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenPageId("water-tests");
+                                        }}
+                                        className="bg-[#080e14]/90 p-2.5 sm:p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                        title={`${pDef.nameHe} (${pDef.enName})`}
+                                      >
+                                        <span className="text-[10px] text-slate-400 block truncate">
+                                          {pDef.nameHe}
+                                        </span>
+                                        <div className={`text-xs sm:text-sm md:text-base font-black tracking-tight ${getStatusColorClass(pDomain.id)}`}>
+                                          {pDomain.label}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               );
                             })()}
