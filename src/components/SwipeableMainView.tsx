@@ -56,6 +56,62 @@ export const CARD_TABS = [
   { id: "chemicals", title: "כימיקלים", subtitle: "היסטוריית כל החומרים והמינונים שהוספו לג'קוזי לאורך הזמן", icon: FlaskConical },
 ];
 
+export const TAB_GUIDE_DEFINITIONS = [
+  {
+    tabIndex: 0,
+    title: "ברוך הבא ללוח הבקרה והסטטוס! 📊",
+    subtitle: "תמונת המצב המרכזית של הג'קוזי שלך בזמן אמת",
+    icon: Activity,
+    description: "מסך זה מרכז במקום אחד את כל המידע הקריטי והדחוף ביותר אודות הג'קוזי שלך ברגע זה.",
+    tips: [
+      "משימות קרובות: ריכוז כל פעולות התחזוקה שמתוזמנות ל-7 הימים הקרובים.",
+      "מצב איכות המים: תצוגה מהירה של תוצאות הבדיקה האחרונה, רמת ה-pH והחיטוי.",
+      "סכנות והתראות: קבלת התראה מיידית אם יש חריגה בערכים ומה הסיכון הבריאותי או לציוד.",
+      "גיל המים: מעקב שוטף אחר מספר הימים שעברו מאז המילוי המלא האחרון ותאריך הריקון הבא.",
+    ],
+  },
+  {
+    tabIndex: 1,
+    title: "לשונית תחזוקת מתקן 🛠️",
+    subtitle: "שמירה על תקינות המערכות, המסננים והכיסוי",
+    icon: Wrench,
+    description: "כאן תוכל לנהל את כל שגרות התחזוקה הפיזיות של הג'קוזי כדי להבטיח אריכות ימים וביצועים מושלמים.",
+    tips: [
+      "שטיפת פילטר שבועית: שטיפה בזרם מים חזק לשמירה על ספיקת מים מעולה.",
+      "ניקוי קו מים ודפנות: הסרת שמני גוף ולכלוך שהצטברו על הדפנות.",
+      "ניקוי ואוורור כיסוי: מניעת עובש ושמירה על בידוד תרמי מקסימלי.",
+      "ניקוי צנרת (Flush) והחלפת סננים: טיפולים תקופתיים למניעת ביופילם וחיידקים.",
+      "שגרות מותאמות אישית: לחץ על '+ שגרה חדשה' להוספת כל משימת תחזוקה ייחודית.",
+    ],
+  },
+  {
+    tabIndex: 2,
+    title: "לשונית תחזוקת מים ובדיקות 💧",
+    subtitle: "שמירה על מים צלולים, מאוזנים ובטוחים לרחצה",
+    icon: Droplets,
+    description: "כאן מתבצע המעקב השוטף אחר איכות המים, בדיקות המקלון, בדיקות חושיות (צלילות וריח) ושגרת החיטוי.",
+    tips: [
+      "בדיקת איכות מים (מקלון): בצע בדיקה והזן את הערכים למערכת לקבלת ניתוח מיידי.",
+      "בדיקה חושית: תעד את צלילות המים וריח המים לקבלת אזהרות על עכירות או ריח לוואי.",
+      "חיטוי תקופתי וריענון חלקי: סמן ביצוע חיטוי שבועי או החלפת 25%-50% מים לפי הצורך.",
+      "התאמת מקלון בדיקה: לחץ על 'הגדרות מקלון בדיקה' כדי לבחור את המדדים של המקלון שברשותך.",
+    ],
+  },
+  {
+    tabIndex: 3,
+    title: "לשונית כימיקלים ומלאי 🧪",
+    subtitle: "מעקב אחר מלאי החומרים וכל התוספות שבוצעו",
+    icon: FlaskConical,
+    description: "כאן מנוהל ארון הכימיקלים שלך ויומן כל תוספות החומרים שבוצעו לג'קוזי לאורך הזמן.",
+    tips: [
+      "תיעוד תוספות חומרים: עקוב אחר כל מנה של כלור, ברום, מווסתי pH או מונעי אבנית שהוספת.",
+      "ניהול מלאי: ראה את הכמות שנותרה בכל אריזה וקבל התראות כשהמלאי אוזל.",
+      "הוספת חומר יזומה: לחץ על '+ הוספת חומר לג'קוזי' לרישום מהיר של תוספת מיידית.",
+      "רכישת חומרים: קישורים ישירים לרכישת חומרים איכותיים בלחיצת כפתור.",
+    ],
+  },
+];
+
 export const CLARITY_OPTIONS = [
   { id: "CLEAR", label: "צלולים ונקיים", icon: "✨", isOk: true, desc: "מים צלולים, נקיים ומבריקים" },
   { id: "SLIGHTLY_CLOUDY", label: "עכירות קלה (מעט חלבי)", icon: "🌫️", isOk: false, risk: "הצטברות חלקיקים אורגניים או פילטר סתום. מומלץ לשטוף פילטר ולבצע טיפול שוק.", desc: "עכירות קלה הדורשת סינון ושוק" },
@@ -267,6 +323,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   // Pagination for Chemicals tab (15 items per page)
   const [chemicalsPage, setChemicalsPage] = useState(0);
 
+  // New User Onboarding & Guidance Modals
+  const [showWelcomeBlessing, setShowWelcomeBlessing] = useState(false);
+  const [activeTabGuide, setActiveTabGuide] = useState<number | null>(null);
+
   // App Data for live summary cards
   const [data, setData] = useState<any>(null);
   const [loadingData, setLoadingData] = useState(true);
@@ -279,6 +339,20 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       if (res.ok) {
         const json = await res.json();
         setData(json.user);
+
+        // Check if new user who never entered data
+        const isBrandNew =
+          (json.user?.waterLogs || []).length === 0 &&
+          (json.user?.diaryEntries || []).length === 0 &&
+          (json.user?.tasks || []).every((t: any) => !t.lastDoneDate) &&
+          !json.user?.jacuzzi?.lastRefillDate;
+
+        if (typeof window !== "undefined" && isBrandNew) {
+          const hasSeenWelcome = localStorage.getItem("has_seen_welcome_blessing");
+          if (!hasSeenWelcome) {
+            setShowWelcomeBlessing(true);
+          }
+        }
 
         // Load active test strip params from user jacuzzi
         const userParams = parseTestStripParams(json.user?.jacuzzi?.testStripParams);
@@ -312,6 +386,44 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   useEffect(() => {
     loadSummaryData();
   }, []);
+
+  // Trigger tab guidance modal on first navigation to each tab for new users
+  useEffect(() => {
+    if (!data || showWelcomeBlessing) return;
+    if (typeof window !== "undefined") {
+      const isBrandNew =
+        (data.waterLogs || []).length === 0 &&
+        (data.diaryEntries || []).length === 0 &&
+        (data.tasks || []).every((t: any) => !t.lastDoneDate) &&
+        !data.jacuzzi?.lastRefillDate;
+
+      if (isBrandNew) {
+        const tabKey = `has_seen_tab_guide_${visualActiveIndex}`;
+        const hasSeenGuide = localStorage.getItem(tabKey);
+        if (!hasSeenGuide) {
+          setActiveTabGuide(visualActiveIndex);
+        }
+      }
+    }
+  }, [visualActiveIndex, data, showWelcomeBlessing]);
+
+  const handleDismissWelcome = () => {
+    setShowWelcomeBlessing(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("has_seen_welcome_blessing", "true");
+      const tabKey = `has_seen_tab_guide_${visualActiveIndex}`;
+      if (!localStorage.getItem(tabKey)) {
+        setActiveTabGuide(visualActiveIndex);
+      }
+    }
+  };
+
+  const handleDismissTabGuide = () => {
+    if (activeTabGuide !== null && typeof window !== "undefined") {
+      localStorage.setItem(`has_seen_tab_guide_${activeTabGuide}`, "true");
+    }
+    setActiveTabGuide(null);
+  };
 
   // Sync initial tab from URL if present
   useEffect(() => {
@@ -827,14 +939,23 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   // Date formatters and relative day helpers
   const formatDateDisplay = (date: Date | string | null | undefined) => {
-    if (!date) return "טרם תועד";
+    if (!date) return "טרם בוצע";
     const d = new Date(date);
-    if (isNaN(d.getTime())) return "טרם תועד";
+    if (isNaN(d.getTime())) return "טרם בוצע";
+    return d.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  };
+
+  const formatDueDateDisplay = (date: Date | string | null | undefined) => {
+    if (!date) return "ללא תאריך יעד";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "ללא תאריך יעד";
     return d.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "2-digit" });
   };
 
   const getRelativeDaysDisplay = (targetDate: Date | string | null | undefined, isPast: boolean) => {
-    if (!targetDate) return "";
+    if (!targetDate) {
+      return isPast ? "" : "(ממתין לביצוע ראשון)";
+    }
     const d = new Date(targetDate);
     if (isNaN(d.getTime())) return "";
     const diffDays = Math.round((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
@@ -853,9 +974,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   };
 
   const getDueDateColorClass = (targetDate: Date | string | null | undefined) => {
-    if (!targetDate) return "text-emerald-400";
+    if (!targetDate) return "text-slate-400 font-medium";
     const d = new Date(targetDate);
-    if (isNaN(d.getTime())) return "text-emerald-400";
+    if (isNaN(d.getTime())) return "text-slate-400 font-medium";
     const diffDays = Math.round((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return diffDays < 0 ? "text-rose-400 font-bold" : "text-emerald-400 font-semibold";
   };
@@ -874,7 +995,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(waterTestTask.nextDueDate)
     : lastWaterTestDate
     ? new Date(lastWaterTestDate.getTime() + waterTestFreqDays * 24 * 3600 * 1000)
-    : new Date();
+    : null;
 
   // 2. Sanitizer Dates (חיטוי שבועי)
   const sanitizerTask = tasks.find((t: any) =>
@@ -892,7 +1013,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(sanitizerTask.nextDueDate)
     : lastSanitizerDate
     ? new Date(lastSanitizerDate.getTime() + (sanitizerTask?.frequencyDays || 7) * 24 * 3600 * 1000)
-    : new Date(Date.now() + 2 * 24 * 3600 * 1000);
+    : null;
 
   // 3. Partial Refill Dates & Percentage
   const partialDiary = diaryEntries.find((d: any) => {
@@ -902,7 +1023,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const lastPartialRefillDate = partialDiary ? new Date(partialDiary.entryDate || partialDiary.createdAt) : null;
   const nextPartialRefillDate = lastPartialRefillDate
     ? new Date(lastPartialRefillDate.getTime() + 30 * 24 * 3600 * 1000)
-    : new Date(Date.now() + 14 * 24 * 3600 * 1000);
+    : null;
 
   // Dynamic percentage of the last recorded partial refill
   let latestPartialPercent = "50";
@@ -921,10 +1042,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   }
 
   // 4. Full Refill Dates
-  const lastFullRefillDate = jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : new Date();
-  const daysSinceRefill = Math.max(0, Math.floor((Date.now() - lastFullRefillDate.getTime()) / (1000 * 60 * 60 * 24)));
-  const daysUntilNextRefill = Math.max(0, 90 - daysSinceRefill);
-  const nextFullRefillDate = new Date(lastFullRefillDate.getTime() + 90 * 24 * 3600 * 1000);
+  const lastFullRefillDate = jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : null;
+  const daysSinceRefill = lastFullRefillDate
+    ? Math.max(0, Math.floor((Date.now() - lastFullRefillDate.getTime()) / (1000 * 60 * 60 * 24)))
+    : null;
+  const daysUntilNextRefill = daysSinceRefill !== null ? Math.max(0, 90 - daysSinceRefill) : null;
+  const nextFullRefillDate = lastFullRefillDate
+    ? new Date(lastFullRefillDate.getTime() + 90 * 24 * 3600 * 1000)
+    : null;
 
   // 5. Actual Chemicals Added to Jacuzzi Water (ללא תאריך הבא!)
   const itemsFromInventory = chemicals
@@ -982,7 +1107,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(filterRinseTask.nextDueDate)
     : lastFilterRinseDate
     ? new Date(lastFilterRinseDate.getTime() + (filterRinseTask?.frequencyDays || 7) * 24 * 3600 * 1000)
-    : new Date(Date.now() + 7 * 24 * 3600 * 1000);
+    : null;
 
   // 7. Waterline & Shell Cleaning Dates
   const waterlineTask = tasks.find((t: any) =>
@@ -992,8 +1117,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const nextWaterlineDate = waterlineTask?.nextDueDate
     ? new Date(waterlineTask.nextDueDate)
     : lastWaterlineDate
-    ? new Date(lastWaterlineDate.getTime() + (waterlineTask?.frequencyDays || 14) * 24 * 3600 * 1000)
-    : new Date(Date.now() + 14 * 24 * 3600 * 1000);
+    ? new Date(lastWaterlineDate.getTime() + (waterlineTask?.frequencyDays || 7) * 24 * 3600 * 1000)
+    : null;
 
   // 8. Cover Cleaning Dates
   const coverTask = tasks.find((t: any) =>
@@ -1004,7 +1129,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(coverTask.nextDueDate)
     : lastCoverDate
     ? new Date(lastCoverDate.getTime() + (coverTask?.frequencyDays || 30) * 24 * 3600 * 1000)
-    : new Date(Date.now() + 21 * 24 * 3600 * 1000);
+    : null;
 
   // 9. Pipe Line Cleaning (ניקוי צנרת)
   const pipeCleanTask = tasks.find((t: any) =>
@@ -1019,7 +1144,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(pipeCleanTask.nextDueDate)
     : lastPipeCleanDate
     ? new Date(lastPipeCleanDate.getTime() + (pipeCleanTask?.frequencyDays || 90) * 24 * 3600 * 1000)
-    : new Date(Date.now() + 90 * 24 * 3600 * 1000);
+    : null;
 
   // 10. Filter Replacement (החלפת פילטר)
   const filterReplaceTask = tasks.find((t: any) =>
@@ -1030,7 +1155,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     ? new Date(filterReplaceTask.nextDueDate)
     : lastFilterReplaceDate
     ? new Date(lastFilterReplaceDate.getTime() + (filterReplaceTask?.frequencyDays || 180) * 24 * 3600 * 1000)
-    : new Date(Date.now() + 180 * 24 * 3600 * 1000);
+    : null;
 
   // Active Pending Tasks & Low Stock Chemicals
   const lowStockChems = chemicals.filter((c: any) => (c.quantity || 0) <= (c.minThreshold || 100));
@@ -1066,7 +1191,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         defaultFreqDays: 3,
         currentFreqDays: waterTestFreqDays,
         currentLastDoneDate: lastWaterTestDate?.toISOString() || null,
-        currentNextDueDate: nextWaterTestDate.toISOString(),
+        currentNextDueDate: nextWaterTestDate ? nextWaterTestDate.toISOString() : null,
       }),
     },
     {
@@ -1086,7 +1211,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         defaultFreqDays: 7,
         currentFreqDays: sanitizerTask?.frequencyDays || 7,
         currentLastDoneDate: lastSanitizerDate?.toISOString() || null,
-        currentNextDueDate: nextSanitizerDate.toISOString(),
+        currentNextDueDate: nextSanitizerDate ? nextSanitizerDate.toISOString() : null,
       }),
     },
     {
@@ -1106,7 +1231,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         defaultFreqDays: 7,
         currentFreqDays: filterRinseTask?.frequencyDays || 7,
         currentLastDoneDate: lastFilterRinseDate?.toISOString() || null,
-        currentNextDueDate: nextFilterRinseDate.toISOString(),
+        currentNextDueDate: nextFilterRinseDate ? nextFilterRinseDate.toISOString() : null,
       }),
     },
     {
@@ -1126,7 +1251,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         defaultFreqDays: 7,
         currentFreqDays: waterlineTask?.frequencyDays || 7,
         currentLastDoneDate: lastWaterlineDate?.toISOString() || null,
-        currentNextDueDate: nextWaterlineDate.toISOString(),
+        currentNextDueDate: nextWaterlineDate ? nextWaterlineDate.toISOString() : null,
       }),
     },
     {
@@ -1146,7 +1271,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         defaultFreqDays: 7,
         currentFreqDays: coverTask?.frequencyDays || 7,
         currentLastDoneDate: lastCoverDate?.toISOString() || null,
-        currentNextDueDate: nextCoverDate.toISOString(),
+        currentNextDueDate: nextCoverDate ? nextCoverDate.toISOString() : null,
       }),
     },
     {
@@ -1166,7 +1291,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         defaultFreqDays: 90,
         currentFreqDays: pipeCleanTask?.frequencyDays || 90,
         currentLastDoneDate: lastPipeCleanDate?.toISOString() || null,
-        currentNextDueDate: nextPipeCleanDate.toISOString(),
+        currentNextDueDate: nextPipeCleanDate ? nextPipeCleanDate.toISOString() : null,
       }),
     },
     {
@@ -1186,7 +1311,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         defaultFreqDays: 180,
         currentFreqDays: filterReplaceTask?.frequencyDays || 180,
         currentLastDoneDate: lastFilterReplaceDate?.toISOString() || null,
-        currentNextDueDate: nextFilterReplaceDate.toISOString(),
+        currentNextDueDate: nextFilterReplaceDate ? nextFilterReplaceDate.toISOString() : null,
       }),
     },
     {
@@ -1203,14 +1328,20 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         type: "refill",
         defaultFreqDays: 90,
         currentFreqDays: 90,
-        currentLastDoneDate: lastFullRefillDate.toISOString(),
-        currentNextDueDate: nextFullRefillDate.toISOString(),
+        currentLastDoneDate: lastFullRefillDate ? lastFullRefillDate.toISOString() : null,
+        currentNextDueDate: nextFullRefillDate ? nextFullRefillDate.toISOString() : null,
       }),
     },
   ];
 
   const customScheduledEvents = customTasks.map((t: any) => {
-    const due = t.nextDueDate ? new Date(t.nextDueDate) : new Date();
+    const lastDone = t.lastDoneDate ? new Date(t.lastDoneDate) : null;
+    const due = t.nextDueDate
+      ? new Date(t.nextDueDate)
+      : lastDone
+      ? new Date(lastDone.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000)
+      : null;
+
     return {
       id: `custom-task-${t.id}`,
       title: t.title,
@@ -1228,8 +1359,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         taskCategory: t.category || "CUSTOM",
         defaultFreqDays: t.frequencyDays || 7,
         currentFreqDays: t.frequencyDays || 7,
-        currentLastDoneDate: t.lastDoneDate ? new Date(t.lastDoneDate).toISOString() : null,
-        currentNextDueDate: due.toISOString(),
+        currentLastDoneDate: lastDone ? lastDone.toISOString() : null,
+        currentNextDueDate: due ? due.toISOString() : null,
       }),
     };
   });
@@ -1240,8 +1371,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   ];
 
   const sevenDaysUpcomingTasks = allScheduledEvents
+    .filter((evt) => evt.dueDate !== null && evt.dueDate !== undefined)
     .map((evt) => {
-      const diffDays = Math.round((evt.dueDate.getTime() - nowMs) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.round(((evt.dueDate as Date).getTime() - nowMs) / (1000 * 60 * 60 * 24));
       return { ...evt, diffDays };
     })
     .filter((evt) => evt.diffDays <= 7)
@@ -1487,11 +1619,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <div className="flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                   <span className="text-slate-300">
-                    גיל המים הנוכחי: <strong className="text-white">{daysSinceRefill} ימים</strong>
+                    גיל המים הנוכחי:{" "}
+                    <strong className="text-white">
+                      {daysSinceRefill !== null ? `${daysSinceRefill} ימים` : "ממתין למילוי ראשון"}
+                    </strong>
                   </span>
                 </div>
                 <span className="text-[11px] text-sky-300/90 font-medium">
-                  ריקון מלא בעוד {daysUntilNextRefill} יום
+                  {daysUntilNextRefill !== null ? `ריקון מלא בעוד ${daysUntilNextRefill} יום` : "ללא תאריך יעד"}
                 </span>
               </div>
 
@@ -1702,7 +1837,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     defaultFreqDays: 7,
                     currentFreqDays: filterRinseTask?.frequencyDays || 7,
                     currentLastDoneDate: lastFilterRinseDate?.toISOString() || null,
-                    currentNextDueDate: nextFilterRinseDate.toISOString(),
+                    currentNextDueDate: nextFilterRinseDate ? nextFilterRinseDate.toISOString() : null,
                   });
                 }}
                 className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -1725,7 +1860,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                    <span className={`font-bold ${getDueDateColorClass(nextFilterRinseDate)}`}>{formatDateDisplay(nextFilterRinseDate)}</span>{" "}
+                    <span className={`font-bold ${getDueDateColorClass(nextFilterRinseDate)}`}>{formatDueDateDisplay(nextFilterRinseDate)}</span>{" "}
                     <span className={`text-[10px] ${getDueDateColorClass(nextFilterRinseDate)}`}>{getRelativeDaysDisplay(nextFilterRinseDate, false)}</span>
                   </div>
                 </div>
@@ -1746,7 +1881,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     defaultFreqDays: 7,
                     currentFreqDays: waterlineTask?.frequencyDays || 7,
                     currentLastDoneDate: lastWaterlineDate?.toISOString() || null,
-                    currentNextDueDate: nextWaterlineDate.toISOString(),
+                    currentNextDueDate: nextWaterlineDate ? nextWaterlineDate.toISOString() : null,
                   });
                 }}
                 className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -1769,7 +1904,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                    <span className={`font-bold ${getDueDateColorClass(nextWaterlineDate)}`}>{formatDateDisplay(nextWaterlineDate)}</span>{" "}
+                    <span className={`font-bold ${getDueDateColorClass(nextWaterlineDate)}`}>{formatDueDateDisplay(nextWaterlineDate)}</span>{" "}
                     <span className={`text-[10px] ${getDueDateColorClass(nextWaterlineDate)}`}>{getRelativeDaysDisplay(nextWaterlineDate, false)}</span>
                   </div>
                 </div>
@@ -1790,7 +1925,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     defaultFreqDays: 7,
                     currentFreqDays: coverTask?.frequencyDays || 7,
                     currentLastDoneDate: lastCoverDate?.toISOString() || null,
-                    currentNextDueDate: nextCoverDate.toISOString(),
+                    currentNextDueDate: nextCoverDate ? nextCoverDate.toISOString() : null,
                   });
                 }}
                 className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -1813,7 +1948,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                    <span className={`font-bold ${getDueDateColorClass(nextCoverDate)}`}>{formatDateDisplay(nextCoverDate)}</span>{" "}
+                    <span className={`font-bold ${getDueDateColorClass(nextCoverDate)}`}>{formatDueDateDisplay(nextCoverDate)}</span>{" "}
                     <span className={`text-[10px] ${getDueDateColorClass(nextCoverDate)}`}>{getRelativeDaysDisplay(nextCoverDate, false)}</span>
                   </div>
                 </div>
@@ -1834,7 +1969,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     defaultFreqDays: 90,
                     currentFreqDays: pipeCleanTask?.frequencyDays || 90,
                     currentLastDoneDate: lastPipeCleanDate?.toISOString() || null,
-                    currentNextDueDate: nextPipeCleanDate.toISOString(),
+                    currentNextDueDate: nextPipeCleanDate ? nextPipeCleanDate.toISOString() : null,
                   });
                 }}
                 className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -1857,7 +1992,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                    <span className={`font-bold ${getDueDateColorClass(nextPipeCleanDate)}`}>{formatDateDisplay(nextPipeCleanDate)}</span>{" "}
+                    <span className={`font-bold ${getDueDateColorClass(nextPipeCleanDate)}`}>{formatDueDateDisplay(nextPipeCleanDate)}</span>{" "}
                     <span className={`text-[10px] ${getDueDateColorClass(nextPipeCleanDate)}`}>{getRelativeDaysDisplay(nextPipeCleanDate, false)}</span>
                   </div>
                 </div>
@@ -1878,7 +2013,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     defaultFreqDays: 180,
                     currentFreqDays: filterReplaceTask?.frequencyDays || 180,
                     currentLastDoneDate: lastFilterReplaceDate?.toISOString() || null,
-                    currentNextDueDate: nextFilterReplaceDate.toISOString(),
+                    currentNextDueDate: nextFilterReplaceDate ? nextFilterReplaceDate.toISOString() : null,
                   });
                 }}
                 className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item sm:col-span-2"
@@ -1901,7 +2036,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">החלפה הבאה:</span>
-                    <span className={`font-bold ${getDueDateColorClass(nextFilterReplaceDate)}`}>{formatDateDisplay(nextFilterReplaceDate)}</span>{" "}
+                    <span className={`font-bold ${getDueDateColorClass(nextFilterReplaceDate)}`}>{formatDueDateDisplay(nextFilterReplaceDate)}</span>{" "}
                     <span className={`text-[10px] ${getDueDateColorClass(nextFilterReplaceDate)}`}>{getRelativeDaysDisplay(nextFilterReplaceDate, false)}</span>
                   </div>
                 </div>
@@ -1914,7 +2049,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   ? new Date(t.nextDueDate)
                   : lastDate
                   ? new Date(lastDate.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000)
-                  : new Date(Date.now() + (t.frequencyDays || 7) * 24 * 3600 * 1000);
+                  : null;
 
                 return (
                   <div
@@ -1933,7 +2068,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         defaultFreqDays: t.frequencyDays || 7,
                         currentFreqDays: t.frequencyDays || 7,
                         currentLastDoneDate: lastDate?.toISOString() || null,
-                        currentNextDueDate: nextDate.toISOString(),
+                        currentNextDueDate: nextDate ? nextDate.toISOString() : null,
                       });
                     }}
                     className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -1956,7 +2091,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                        <span className={`font-bold ${getDueDateColorClass(nextDate)}`}>{formatDateDisplay(nextDate)}</span>{" "}
+                        <span className={`font-bold ${getDueDateColorClass(nextDate)}`}>{formatDueDateDisplay(nextDate)}</span>{" "}
                         <span className={`text-[10px] ${getDueDateColorClass(nextDate)}`}>{getRelativeDaysDisplay(nextDate, false)}</span>
                       </div>
                     </div>
@@ -2054,11 +2189,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               <div className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                 <span className="text-slate-300">
-                  גיל המים הנוכחי: <strong className="text-white">{daysSinceRefill} ימים</strong>
+                  גיל המים הנוכחי:{" "}
+                  <strong className="text-white">
+                    {daysSinceRefill !== null ? `${daysSinceRefill} ימים` : "ממתין למילוי ראשון"}
+                  </strong>
                 </span>
               </div>
               <span className="text-[11px] text-sky-300/90 font-medium">
-                ריקון מלא בעוד {daysUntilNextRefill} יום
+                {daysUntilNextRefill !== null ? `ריקון מלא בעוד ${daysUntilNextRefill} יום` : "ללא תאריך יעד"}
               </span>
             </div>
 
@@ -2243,7 +2381,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                       defaultFreqDays: 3,
                       currentFreqDays: waterTestFreqDays,
                       currentLastDoneDate: lastWaterTestDate?.toISOString() || null,
-                      currentNextDueDate: nextWaterTestDate.toISOString(),
+                      currentNextDueDate: nextWaterTestDate ? nextWaterTestDate.toISOString() : null,
                     });
                   }}
                   className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -2266,7 +2404,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                      <span className={`font-bold ${getDueDateColorClass(nextWaterTestDate)}`}>{formatDateDisplay(nextWaterTestDate)}</span>{" "}
+                      <span className={`font-bold ${getDueDateColorClass(nextWaterTestDate)}`}>{formatDueDateDisplay(nextWaterTestDate)}</span>{" "}
                       <span className={`text-[10px] ${getDueDateColorClass(nextWaterTestDate)}`}>{getRelativeDaysDisplay(nextWaterTestDate, false)}</span>
                     </div>
                   </div>
@@ -2287,7 +2425,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                       defaultFreqDays: 7,
                       currentFreqDays: sanitizerTask?.frequencyDays || 7,
                       currentLastDoneDate: lastSanitizerDate?.toISOString() || null,
-                      currentNextDueDate: nextSanitizerDate.toISOString(),
+                      currentNextDueDate: nextSanitizerDate ? nextSanitizerDate.toISOString() : null,
                     });
                   }}
                   className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -2310,7 +2448,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                      <span className={`font-bold ${getDueDateColorClass(nextSanitizerDate)}`}>{formatDateDisplay(nextSanitizerDate)}</span>{" "}
+                      <span className={`font-bold ${getDueDateColorClass(nextSanitizerDate)}`}>{formatDueDateDisplay(nextSanitizerDate)}</span>{" "}
                       <span className={`text-[10px] ${getDueDateColorClass(nextSanitizerDate)}`}>{getRelativeDaysDisplay(nextSanitizerDate, false)}</span>
                     </div>
                   </div>
@@ -2329,7 +2467,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                       defaultFreqDays: 30,
                       currentFreqDays: 30,
                       currentLastDoneDate: lastPartialRefillDate?.toISOString() || null,
-                      currentNextDueDate: nextPartialRefillDate.toISOString(),
+                      currentNextDueDate: nextPartialRefillDate ? nextPartialRefillDate.toISOString() : null,
                     });
                   }}
                   className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -2352,7 +2490,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                      <span className={`font-bold ${getDueDateColorClass(nextPartialRefillDate)}`}>{formatDateDisplay(nextPartialRefillDate)}</span>{" "}
+                      <span className={`font-bold ${getDueDateColorClass(nextPartialRefillDate)}`}>{formatDueDateDisplay(nextPartialRefillDate)}</span>{" "}
                       <span className={`text-[10px] ${getDueDateColorClass(nextPartialRefillDate)}`}>{getRelativeDaysDisplay(nextPartialRefillDate, false)}</span>
                     </div>
                   </div>
@@ -2370,8 +2508,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                       type: "jacuzzi",
                       defaultFreqDays: 90,
                       currentFreqDays: 90,
-                      currentLastDoneDate: lastFullRefillDate.toISOString(),
-                      currentNextDueDate: nextFullRefillDate.toISOString(),
+                      currentLastDoneDate: lastFullRefillDate ? lastFullRefillDate.toISOString() : null,
+                      currentNextDueDate: nextFullRefillDate ? nextFullRefillDate.toISOString() : null,
                     });
                   }}
                   className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
@@ -2394,7 +2532,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">ריקון הבא:</span>
-                      <span className={`font-bold ${getDueDateColorClass(nextFullRefillDate)}`}>{formatDateDisplay(nextFullRefillDate)}</span>{" "}
+                      <span className={`font-bold ${getDueDateColorClass(nextFullRefillDate)}`}>{formatDueDateDisplay(nextFullRefillDate)}</span>{" "}
                       <span className={`text-[10px] ${getDueDateColorClass(nextFullRefillDate)}`}>{getRelativeDaysDisplay(nextFullRefillDate, false)}</span>
                     </div>
                   </div>
@@ -3367,7 +3505,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               />
             </div>
 
-            {/* Submit Button */}
+              {/* Submit Button */}
             <button
               type="button"
               disabled={savingClarityOdor}
@@ -3377,6 +3515,158 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               {savingClarityOdor ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
               <span>שמור נתוני צלילות, ריח והערות</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 🌟 NEW USER WELCOME BLESSING MODAL                                       */}
+      {/* ========================================================================= */}
+      {showWelcomeBlessing && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-fade-in"
+          dir="rtl"
+        >
+          <div
+            className="bg-[#0e1823] border-2 border-sky-500/80 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl shadow-sky-950/60 space-y-6 text-right relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Ambient background glow */}
+            <div className="absolute -top-16 -right-16 w-44 h-44 bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-44 h-44 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Header / Blessing Title */}
+            <div className="text-center space-y-2 pt-2 relative z-10">
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-sky-600 via-cyan-500 to-sky-400 mx-auto flex items-center justify-center text-white text-2xl shadow-lg shadow-sky-500/30 border border-white/20">
+                🌊
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-white">
+                ברוך הבא לג&apos;קוזי מאסטר! ✨
+              </h2>
+              <p className="text-sky-300 font-semibold text-xs sm:text-sm">
+                מזל טוב על ההצטרפות! המערכת החכמה לשמירה על ג&apos;קוזי צלול, נקי ובטוח
+              </p>
+            </div>
+
+            {/* Blessing Body */}
+            <div className="bg-[#080e14]/90 p-4 sm:p-5 rounded-2xl border border-sky-900/50 space-y-3.5 text-xs sm:text-sm text-slate-200 leading-relaxed relative z-10">
+              <p className="font-medium text-sky-100">
+                אנו מברכים אותך ומאחלים לך חוויית שימוש מושלמת ומרגיעה תמיד! 🥂
+              </p>
+              <div className="space-y-2 text-xs text-slate-300 pt-1 border-t border-sky-900/30">
+                <div className="flex items-start gap-2">
+                  <span className="text-sky-400 font-bold shrink-0">💧</span>
+                  <span><strong>מעקב איכות מים ובדיקות מקלון:</strong> הזנת תוצאות בדיקה וקבלת הנחיות מינון מותאמות אישית.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-sky-400 font-bold shrink-0">🛠️</span>
+                  <span><strong>שגרות תחזוקה אוטומטיות:</strong> תזכורות לשטיפת פילטרים, ניקוי קו מים, אוורור כיסוי וניקוי צנרת.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-sky-400 font-bold shrink-0">🧪</span>
+                  <span><strong>ניהול מלאי כימיקלים:</strong> שליטה בכמויות החומרים שנותרו בארון והתראה לפני סיום מלאי.</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-400 pt-1 border-t border-sky-900/30 italic">
+                * כמשתמש חדש, כל המדדים והמשימות ממתינים לביצוע הראשון שלך ויופיעו ללא תאריך יעד עד להזנה ראשונית.
+              </p>
+            </div>
+
+            {/* Action Button */}
+            <div className="relative z-10">
+              <button
+                type="button"
+                onClick={handleDismissWelcome}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 via-cyan-500 to-sky-600 hover:from-sky-400 hover:to-cyan-400 text-white font-black text-sm sm:text-base shadow-xl shadow-sky-600/30 transition-all hover:scale-[1.02] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>בואו נתחיל! 🚀</span>
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 🌟 TAB ONBOARDING GUIDANCE MODAL (Triggered on first visit to a tab)      */}
+      {/* ========================================================================= */}
+      {activeTabGuide !== null && !showWelcomeBlessing && (
+        <div
+          className="fixed inset-0 z-[105] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in"
+          dir="rtl"
+          onClick={handleDismissTabGuide}
+        >
+          <div
+            className="bg-[#0e1823] border border-sky-600/80 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl space-y-5 text-right relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(() => {
+              const guide = TAB_GUIDE_DEFINITIONS.find((g) => g.tabIndex === activeTabGuide) || TAB_GUIDE_DEFINITIONS[0];
+              const IconComp = guide.icon || Activity;
+
+              return (
+                <>
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3 border-b border-sky-900/40 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-sky-950/90 border border-sky-500/60 flex items-center justify-center text-sky-300 shadow-inner">
+                        <IconComp className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">
+                          הסבר ללשונית {activeTabGuide + 1} מתוך 4
+                        </span>
+                        <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                          {guide.title}
+                        </h3>
+                        <p className="text-xs text-slate-300 mt-0.5">{guide.subtitle}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleDismissTabGuide}
+                      className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* General Purpose */}
+                  <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 text-xs text-slate-200 leading-relaxed">
+                    <span className="text-sky-300 font-bold block mb-1">למה נועדה לשונית זו?</span>
+                    <p>{guide.description}</p>
+                  </div>
+
+                  {/* What to do - Tips */}
+                  <div className="space-y-2.5">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                      <span>מה עליך לעשות כאן:</span>
+                    </span>
+
+                    <div className="space-y-2">
+                      {guide.tips.map((tip, idx) => (
+                        <div key={idx} className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{tip}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dismiss Button */}
+                  <button
+                    type="button"
+                    onClick={handleDismissTabGuide}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>הבנתי, תודה! 👍</span>
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
