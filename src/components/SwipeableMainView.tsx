@@ -276,10 +276,16 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const [card0Order, setCard0Order] = useState<string[]>(DEFAULT_CARD_0_ORDER);
   const [card1Order, setCard1Order] = useState<string[]>(DEFAULT_CARD_1_ORDER);
   const [card2Order, setCard2Order] = useState<string[]>(DEFAULT_CARD_2_ORDER);
+  const [deletedRecommendedRoutines, setDeletedRecommendedRoutines] = useState<string[]>([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
+        const del = localStorage.getItem("deleted_recommended_routines");
+        if (del) {
+          const p = JSON.parse(del);
+          if (Array.isArray(p)) setDeletedRecommendedRoutines(p);
+        }
         const s0 = localStorage.getItem("card_0_sections_order");
         if (s0) {
           const p = JSON.parse(s0);
@@ -342,9 +348,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       setCard0Order(DEFAULT_CARD_0_ORDER);
       if (typeof window !== "undefined") localStorage.removeItem("card_0_sections_order");
     } else if (cardIndex === 1) {
+      const card1Items = ["filter-wash", "waterline-clean", "cover-clean", "deep-clean", "filter-replace"];
+      setDeletedRecommendedRoutines((prev) => {
+        const updated = prev.filter((id) => !card1Items.includes(id));
+        if (typeof window !== "undefined") localStorage.setItem("deleted_recommended_routines", JSON.stringify(updated));
+        return updated;
+      });
       setCard1Order(DEFAULT_CARD_1_ORDER);
       if (typeof window !== "undefined") localStorage.removeItem("card_1_sections_order");
     } else if (cardIndex === 2) {
+      const card2Items = ["water-test", "sanitizer-shock", "partial-refill"];
+      setDeletedRecommendedRoutines((prev) => {
+        const updated = prev.filter((id) => !card2Items.includes(id));
+        if (typeof window !== "undefined") localStorage.setItem("deleted_recommended_routines", JSON.stringify(updated));
+        return updated;
+      });
       setCard2Order(DEFAULT_CARD_2_ORDER);
       if (typeof window !== "undefined") localStorage.removeItem("card_2_sections_order");
     }
@@ -1119,6 +1137,54 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     }
   };
 
+  const handleDeleteRecommendedRoutine = async (routineId?: string, taskId?: string) => {
+    if (!routineId) return;
+    if (!confirm("האם אתה בטוח שברצונך למחוק שגרה מומלצת זו? (תוכל לשחזר אותה בכל עת בלחיצה על 'אפס סדר')")) return;
+    setModalSaving(true);
+    try {
+      const updatedDeleted = Array.from(new Set([...deletedRecommendedRoutines, routineId]));
+      setDeletedRecommendedRoutines(updatedDeleted);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("deleted_recommended_routines", JSON.stringify(updatedDeleted));
+      }
+
+      // Remove from card1Order if present
+      if (card1Order.includes(routineId)) {
+        const newCard1 = card1Order.filter((id) => id !== routineId);
+        setCard1Order(newCard1);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("card_1_sections_order", JSON.stringify(newCard1));
+        }
+      }
+
+      // Remove from card2Order if present
+      if (card2Order.includes(routineId)) {
+        const newCard2 = card2Order.filter((id) => id !== routineId);
+        setCard2Order(newCard2);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("card_2_sections_order", JSON.stringify(newCard2));
+        }
+      }
+
+      // Delete DB task if exists
+      if (taskId) {
+        try {
+          await fetch(`/api/tasks?id=${taskId}`, { method: "DELETE" });
+        } catch (e) {
+          console.warn("Error deleting task", e);
+        }
+      }
+
+      setActiveItemModal(null);
+      await loadSummaryData();
+    } catch (err: any) {
+      alert(err.message || "שגיאה במחיקת שגרה מומלצת");
+      await loadSummaryData();
+    } finally {
+      setModalSaving(false);
+    }
+  };
+
   // If a full page is opened, render it with a calm ocean return bar
   if (openPageId) {
     return (
@@ -1648,8 +1714,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     };
   });
 
+  const activeBaseScheduledEvents = baseScheduledEvents.filter((evt) => {
+    if (deletedRecommendedRoutines.includes(evt.id)) return false;
+    if (evt.id === "pipe-clean" && deletedRecommendedRoutines.includes("deep-clean")) return false;
+    return true;
+  });
+
   const allScheduledEvents = [
-    ...baseScheduledEvents,
+    ...activeBaseScheduledEvents,
     ...customScheduledEvents,
   ];
 
@@ -2102,12 +2174,13 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                {JSON.stringify(card1Order) !== JSON.stringify(DEFAULT_CARD_1_ORDER) && (
+                {(JSON.stringify(card1Order) !== JSON.stringify(DEFAULT_CARD_1_ORDER) ||
+                  deletedRecommendedRoutines.some((id) => ["filter-wash", "waterline-clean", "cover-clean", "deep-clean", "filter-replace"].includes(id))) && (
                   <button
                     type="button"
                     onClick={(e) => handleResetCardOrder(1, e)}
                     className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-sky-950 text-slate-400 hover:text-sky-300 border border-slate-800 text-[10px] flex items-center gap-1 transition-all cursor-pointer"
-                    title="אפס לסדר ברירת המחדל"
+                    title="אפס לסדר ברירת המחדל ושחזר שגרות"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span className="hidden sm:inline">אפס סדר</span>
@@ -2429,12 +2502,13 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                {JSON.stringify(card2Order) !== JSON.stringify(DEFAULT_CARD_2_ORDER) && (
+                {(JSON.stringify(card2Order) !== JSON.stringify(DEFAULT_CARD_2_ORDER) ||
+                  deletedRecommendedRoutines.some((id) => ["water-test", "sanitizer-shock", "partial-refill"].includes(id))) && (
                   <button
                     type="button"
                     onClick={(e) => handleResetCardOrder(2, e)}
                     className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-sky-950 text-slate-400 hover:text-sky-300 border border-slate-800 text-[10px] flex items-center gap-1 transition-all cursor-pointer"
-                    title="אפס לסדר ברירת המחדל"
+                    title="אפס לסדר ברירת המחדל ושחזר שגרות"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span className="hidden sm:inline">אפס סדר</span>
@@ -2708,108 +2782,120 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         {/* List of Water Treatments */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {/* Item 1: בדיקת איכות מים */}
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openItemModal({
-                                id: "water-test",
-                                title: "הגדרת תדירות בדיקת איכות מים",
-                                subtitle: "קביעת מרווח הזמן הרצוי לביצוע בדיקת מקלון (בימים)",
-                                icon: FlaskConical,
-                                type: "water-test",
-                                taskId: waterTestTask?.id,
-                                taskCategory: "WEEKLY",
-                                defaultFreqDays: 3,
-                                currentFreqDays: waterTestFreqDays,
-                                currentLastDoneDate: lastWaterTestDate?.toISOString() || null,
-                                currentNextDueDate: nextWaterTestDate ? nextWaterTestDate.toISOString() : null,
-                              });
-                            }}
-                            className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
-                                בדיקת איכות מים (מקלון)
-                              </span>
-                              <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </span>
+                          {!deletedRecommendedRoutines.includes("water-test") && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openItemModal({
+                                  id: "water-test",
+                                  title: "הגדרת תדירות בדיקת איכות מים",
+                                  subtitle: "קביעת מרווח הזמן הרצוי לביצוע בדיקת מקלון (בימים)",
+                                  icon: FlaskConical,
+                                  type: "water-test",
+                                  taskId: waterTestTask?.id,
+                                  taskCategory: "WEEKLY",
+                                  defaultFreqDays: 3,
+                                  currentFreqDays: waterTestFreqDays,
+                                  currentLastDoneDate: lastWaterTestDate?.toISOString() || null,
+                                  currentNextDueDate: nextWaterTestDate ? nextWaterTestDate.toISOString() : null,
+                                });
+                              }}
+                              className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
+                                  בדיקת איכות מים (מקלון)
+                                </span>
+                                <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </span>
+                              </div>
+                              <div className="text-xs pt-1 border-t border-sky-900/20">
+                                <span className={`font-bold ${getDueDateColorClass(nextWaterTestDate)}`}>
+                                  {formatNextDueDaysOnly(nextWaterTestDate)}
+                                </span>
+                              </div>
                             </div>
-                            <div className="text-xs pt-1 border-t border-sky-900/20">
-                              <span className={`font-bold ${getDueDateColorClass(nextWaterTestDate)}`}>
-                                {formatNextDueDaysOnly(nextWaterTestDate)}
-                              </span>
-                            </div>
-                          </div>
+                          )}
 
                           {/* Item 2: חיטוי שבועי */}
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openItemModal({
-                                id: "sanitizer-shock",
-                                title: "חיטוי שבועי",
-                                subtitle: "סימון ביצוע חיטוי שבועי, גריעת מלאי מהארון ושליטה בתדירות",
-                                icon: ShieldCheck,
-                                type: "task",
-                                taskId: sanitizerTask?.id,
-                                taskCategory: "WEEKLY",
-                                defaultFreqDays: 7,
-                                currentFreqDays: sanitizerTask?.frequencyDays || 7,
-                                currentLastDoneDate: lastSanitizerDate?.toISOString() || null,
-                                currentNextDueDate: nextSanitizerDate ? nextSanitizerDate.toISOString() : null,
-                              });
-                            }}
-                            className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
-                                חיטוי שבועי
-                              </span>
-                              <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </span>
+                          {!deletedRecommendedRoutines.includes("sanitizer-shock") && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openItemModal({
+                                  id: "sanitizer-shock",
+                                  title: "חיטוי שבועי",
+                                  subtitle: "סימון ביצוע חיטוי שבועי, גריעת מלאי מהארון ושליטה בתדירות",
+                                  icon: ShieldCheck,
+                                  type: "task",
+                                  taskId: sanitizerTask?.id,
+                                  taskCategory: "WEEKLY",
+                                  defaultFreqDays: 7,
+                                  currentFreqDays: sanitizerTask?.frequencyDays || 7,
+                                  currentLastDoneDate: lastSanitizerDate?.toISOString() || null,
+                                  currentNextDueDate: nextSanitizerDate ? nextSanitizerDate.toISOString() : null,
+                                });
+                              }}
+                              className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
+                                  חיטוי שבועי
+                                </span>
+                                <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </span>
+                              </div>
+                              <div className="text-xs pt-1 border-t border-sky-900/20">
+                                <span className={`font-bold ${getDueDateColorClass(nextSanitizerDate)}`}>
+                                  {formatNextDueDaysOnly(nextSanitizerDate)}
+                                </span>
+                              </div>
                             </div>
-                            <div className="text-xs pt-1 border-t border-sky-900/20">
-                              <span className={`font-bold ${getDueDateColorClass(nextSanitizerDate)}`}>
-                                {formatNextDueDaysOnly(nextSanitizerDate)}
-                              </span>
-                            </div>
-                          </div>
+                          )}
 
                           {/* Item 3: החלפת מים חלקית (אחוז דינמי לפי ביצוע אחרון) */}
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openItemModal({
-                                id: "partial-refill",
-                                title: `החלפת מים חלקית (${latestPartialPercent}%)`,
-                                subtitle: "רישום החלפת 25%-50% מים, שקלול גיל המים וקביעת תדירות",
-                                icon: Waves,
-                                type: "refill",
-                                defaultFreqDays: 30,
-                                currentFreqDays: 30,
-                                currentLastDoneDate: lastPartialRefillDate?.toISOString() || null,
-                                currentNextDueDate: nextPartialRefillDate ? nextPartialRefillDate.toISOString() : null,
-                              });
-                            }}
-                            className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
-                                החלפת מים חלקית ({latestPartialPercent}%)
-                              </span>
-                              <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </span>
+                          {!deletedRecommendedRoutines.includes("partial-refill") && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openItemModal({
+                                  id: "partial-refill",
+                                  title: `החלפת מים חלקית (${latestPartialPercent}%)`,
+                                  subtitle: "רישום החלפת 25%-50% מים, שקלול גיל המים וקביעת תדירות",
+                                  icon: Waves,
+                                  type: "refill",
+                                  defaultFreqDays: 30,
+                                  currentFreqDays: 30,
+                                  currentLastDoneDate: lastPartialRefillDate?.toISOString() || null,
+                                  currentNextDueDate: nextPartialRefillDate ? nextPartialRefillDate.toISOString() : null,
+                                });
+                              }}
+                              className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
+                                  החלפת מים חלקית ({latestPartialPercent}%)
+                                </span>
+                                <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </span>
+                              </div>
+                              <div className="text-xs pt-1 border-t border-sky-900/20">
+                                <span className={`font-bold ${getDueDateColorClass(nextPartialRefillDate)}`}>
+                                  {formatNextDueDaysOnly(nextPartialRefillDate)}
+                                </span>
+                              </div>
                             </div>
-                            <div className="text-xs pt-1 border-t border-sky-900/20">
-                              <span className={`font-bold ${getDueDateColorClass(nextPartialRefillDate)}`}>
-                                {formatNextDueDaysOnly(nextPartialRefillDate)}
-                              </span>
-                            </div>
-                          </div>
+                          )}
                         </div>
+
+                        {["water-test", "sanitizer-shock", "partial-refill"].every((id) => deletedRecommendedRoutines.includes(id)) && (
+                          <div className="p-4 rounded-2xl bg-[#080e14]/70 border border-slate-800 text-center text-xs text-slate-400">
+                            כל השגרות המומלצות הוסרו. ניתן לשחזרן בכל עת באמצעות כפתור &quot;אפס סדר&quot;.
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -3459,7 +3545,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   <span>שמור שינויים והגדרות</span>
                 </button>
 
-                {activeItemModal.isCustom && activeItemModal.taskId && (
+                {activeItemModal.isCustom ? (
                   <button
                     type="button"
                     disabled={modalSaving}
@@ -3468,6 +3554,16 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   >
                     <Trash2 className="w-3.5 h-3.5 text-red-400" />
                     <span>מחק שגרה מותאמת אישית זו</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={modalSaving}
+                    onClick={() => handleDeleteRecommendedRoutine(activeItemModal.id, activeItemModal.taskId)}
+                    className="w-full py-2.5 rounded-xl bg-red-950/50 hover:bg-red-900/70 border border-red-800/60 text-red-200 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    <span>מחק שגרה מומלצת זו</span>
                   </button>
                 )}
               </div>
