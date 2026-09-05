@@ -13,10 +13,6 @@ function getCanonicalOrigin(req: NextRequest): string {
   if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost")) {
     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   }
-  if (host) {
-    const protocol = req.headers.get("x-forwarded-proto") || "https";
-    return `${protocol}://${host}`;
-  }
   return "https://jacuzzi-five.vercel.app";
 }
 
