@@ -1184,6 +1184,26 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     return diffDays < 0 ? "text-rose-400 font-bold" : "text-emerald-400 font-semibold";
   };
 
+  const formatNextDueDaysOnly = (targetDate: Date | string | null | undefined) => {
+    if (!targetDate) return "ממתין לקביעת מועד";
+    const d = new Date(targetDate);
+    if (isNaN(d.getTime())) return "ממתין לקביעת מועד";
+
+    const now = new Date();
+    const dMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((dMidnight.getTime() - nowMidnight.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      const overdueDays = Math.abs(diffDays);
+      return overdueDays === 1 ? "באיחור של יום אחד!" : `באיחור של ${overdueDays} ימים!`;
+    }
+    if (diffDays === 0) return "היום";
+    if (diffDays === 1) return "בעוד יום אחד (מחר)";
+    if (diffDays === 2) return "בעוד יומיים";
+    return `בעוד ${diffDays} ימים`;
+  };
+
   const isBrandNew = checkIsBrandNewUser(data);
 
   // 1. Water Test Dates
@@ -2155,29 +2175,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             currentNextDueDate: nextFilterRinseDate ? nextFilterRinseDate.toISOString() : null,
                           });
                         }}
-                        className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                        className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-                            <span>שטיפת פילטר</span>
+                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                            שטיפת פילטר
                           </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
-                            <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                            <span>כל {filterRinseTask?.frequencyDays || 7} יום</span>
+                          <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                            <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
-                            <span className="text-white font-semibold">{formatDateDisplay(lastFilterRinseDate)}</span>{" "}
-                            <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastFilterRinseDate, true)}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                            <span className={`font-bold ${getDueDateColorClass(nextFilterRinseDate)}`}>{formatDueDateDisplay(nextFilterRinseDate)}</span>{" "}
-                            <span className={`text-[10px] ${getDueDateColorClass(nextFilterRinseDate)}`}>{getRelativeDaysDisplay(nextFilterRinseDate, false)}</span>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
+                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                          <span className={`font-bold ${getDueDateColorClass(nextFilterRinseDate)}`}>
+                            {formatNextDueDaysOnly(nextFilterRinseDate)}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -2201,29 +2213,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             currentNextDueDate: nextWaterlineDate ? nextWaterlineDate.toISOString() : null,
                           });
                         }}
-                        className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                        className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                            <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                            <span>ניקוי דפנות וקו מים</span>
+                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                            ניקוי דפנות וקו מים
                           </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
-                            <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                            <span>כל {waterlineTask?.frequencyDays || 7} יום</span>
+                          <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                            <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
-                            <span className="text-white font-semibold">{formatDateDisplay(lastWaterlineDate)}</span>{" "}
-                            <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastWaterlineDate, true)}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                            <span className={`font-bold ${getDueDateColorClass(nextWaterlineDate)}`}>{formatDueDateDisplay(nextWaterlineDate)}</span>{" "}
-                            <span className={`text-[10px] ${getDueDateColorClass(nextWaterlineDate)}`}>{getRelativeDaysDisplay(nextWaterlineDate, false)}</span>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
+                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                          <span className={`font-bold ${getDueDateColorClass(nextWaterlineDate)}`}>
+                            {formatNextDueDaysOnly(nextWaterlineDate)}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -2247,29 +2251,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             currentNextDueDate: nextCoverDate ? nextCoverDate.toISOString() : null,
                           });
                         }}
-                        className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                        className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-                            <span>ניקוי ואוורור כיסוי</span>
+                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                            ניקוי ואוורור כיסוי
                           </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
-                            <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                            <span>כל {coverTask?.frequencyDays || 7} יום</span>
+                          <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                            <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
-                            <span className="text-white font-semibold">{formatDateDisplay(lastCoverDate)}</span>{" "}
-                            <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastCoverDate, true)}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                            <span className={`font-bold ${getDueDateColorClass(nextCoverDate)}`}>{formatDueDateDisplay(nextCoverDate)}</span>{" "}
-                            <span className={`text-[10px] ${getDueDateColorClass(nextCoverDate)}`}>{getRelativeDaysDisplay(nextCoverDate, false)}</span>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
+                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                          <span className={`font-bold ${getDueDateColorClass(nextCoverDate)}`}>
+                            {formatNextDueDaysOnly(nextCoverDate)}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -2293,29 +2289,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             currentNextDueDate: nextPipeCleanDate ? nextPipeCleanDate.toISOString() : null,
                           });
                         }}
-                        className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                        className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                            <Wrench className="w-3.5 h-3.5 text-sky-400" />
-                            <span>ניקוי צנרת</span>
+                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                            ניקוי צנרת
                           </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
-                            <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                            <span>כל {pipeCleanTask?.frequencyDays || 90} יום</span>
+                          <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                            <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
-                            <span className="text-white font-semibold">{formatDateDisplay(lastPipeCleanDate)}</span>{" "}
-                            <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastPipeCleanDate, true)}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                            <span className={`font-bold ${getDueDateColorClass(nextPipeCleanDate)}`}>{formatDueDateDisplay(nextPipeCleanDate)}</span>{" "}
-                            <span className={`text-[10px] ${getDueDateColorClass(nextPipeCleanDate)}`}>{getRelativeDaysDisplay(nextPipeCleanDate, false)}</span>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
+                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                          <span className={`font-bold ${getDueDateColorClass(nextPipeCleanDate)}`}>
+                            {formatNextDueDaysOnly(nextPipeCleanDate)}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -2339,29 +2327,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             currentNextDueDate: nextFilterReplaceDate ? nextFilterReplaceDate.toISOString() : null,
                           });
                         }}
-                        className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                        className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                            <RefreshCw className="w-3.5 h-3.5 text-sky-400" />
-                            <span>החלפת פילטר (סנן חדש)</span>
+                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                            החלפת פילטר (סנן חדש)
                           </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
-                            <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                            <span>כל {filterReplaceTask?.frequencyDays || 180} יום</span>
+                          <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                            <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">החלפה אחרונה:</span>
-                            <span className="text-white font-semibold">{formatDateDisplay(lastFilterReplaceDate)}</span>{" "}
-                            <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastFilterReplaceDate, true)}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block text-[10px]">החלפה הבאה:</span>
-                            <span className={`font-bold ${getDueDateColorClass(nextFilterReplaceDate)}`}>{formatDueDateDisplay(nextFilterReplaceDate)}</span>{" "}
-                            <span className={`text-[10px] ${getDueDateColorClass(nextFilterReplaceDate)}`}>{getRelativeDaysDisplay(nextFilterReplaceDate, false)}</span>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
+                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                          <span className={`font-bold ${getDueDateColorClass(nextFilterReplaceDate)}`}>
+                            {formatNextDueDaysOnly(nextFilterReplaceDate)}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -2370,7 +2350,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     {sectionId === "custom-routines" && customTasks.length > 0 && (
                       <div className="space-y-3 pt-1 border-t border-sky-900/20">
                         <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <Wrench className="w-3.5 h-3.5 text-sky-400" />
                           <span>שגרות מותאמות אישית:</span>
                         </div>
 
@@ -2379,7 +2358,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             const lastDate = t.lastDoneDate ? new Date(t.lastDoneDate) : null;
                             const nextDate = lastDate
                               ? (t.nextDueDate ? new Date(t.nextDueDate) : new Date(lastDate.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000))
-                              : null;
+                              : (t.nextDueDate ? new Date(t.nextDueDate) : null);
 
                             return (
                               <div
@@ -2401,29 +2380,21 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                     currentNextDueDate: nextDate ? nextDate.toISOString() : null,
                                   });
                                 }}
-                                className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                                className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                                    <Wrench className="w-3.5 h-3.5 text-sky-400" />
-                                    <span className="truncate">{t.title}</span>
+                                  <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors truncate">
+                                    {t.title}
                                   </span>
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1 shrink-0">
-                                    <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                                    <span>כל {t.frequencyDays || 7} ימים</span>
+                                  <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center shrink-0">
+                                    <Edit2 className="w-3.5 h-3.5" />
                                   </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
-                                  <div>
-                                    <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
-                                    <span className="text-white font-semibold">{formatDateDisplay(lastDate)}</span>{" "}
-                                    <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastDate, true)}</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                                    <span className={`font-bold ${getDueDateColorClass(nextDate)}`}>{formatDueDateDisplay(nextDate)}</span>{" "}
-                                    <span className={`text-[10px] ${getDueDateColorClass(nextDate)}`}>{getRelativeDaysDisplay(nextDate, false)}</span>
-                                  </div>
+                                <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
+                                  <span className="text-slate-400 font-medium">יעד הבא:</span>
+                                  <span className={`font-bold ${getDueDateColorClass(nextDate)}`}>
+                                    {formatNextDueDaysOnly(nextDate)}
+                                  </span>
                                 </div>
                               </div>
                             );
