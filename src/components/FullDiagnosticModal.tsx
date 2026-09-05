@@ -28,6 +28,23 @@ export default function FullDiagnosticModal({ isOpen, onClose }: FullDiagnosticM
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<FullJacuzziDiagnosticResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAiGuide, setShowAiGuide] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && typeof window !== "undefined") {
+      const hasSeen = localStorage.getItem("has_seen_ai_guide");
+      if (!hasSeen) {
+        setShowAiGuide(true);
+      }
+    }
+  }, [isOpen]);
+
+  const handleDismissAiGuide = () => {
+    setShowAiGuide(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("has_seen_ai_guide", "true");
+    }
+  };
 
   const fetchDiagnostic = async () => {
     setLoading(true);
@@ -415,6 +432,90 @@ export default function FullDiagnosticModal({ isOpen, onClose }: FullDiagnosticM
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* 🌟 AI Diagnostic Onboarding Guide Modal */}
+        {showAiGuide && (
+          <div
+            className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-fade-in"
+            dir="rtl"
+            onClick={handleDismissAiGuide}
+          >
+            <div
+              className="bg-[#0e1823] border border-cyan-500/80 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl space-y-5 text-right relative max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 border-b border-sky-900/40 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-cyan-950/90 border border-cyan-500/60 flex items-center justify-center text-cyan-300 shadow-inner">
+                    <Activity className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block">
+                      הסבר ליכולות המערכת 🤖
+                    </span>
+                    <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                      אבחון כולל לג&apos;קוזי (AI) 🩺
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-0.5">ניתוח מערכתי מלא, סריקת חריגות והמלצות חכמות</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleDismissAiGuide}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* General Purpose */}
+              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 text-xs text-slate-200 leading-relaxed">
+                <span className="text-cyan-300 font-bold block mb-1">למה נועד אבחון זה?</span>
+                <p>
+                  מנוע ה-AI סורק את כל נתוני הג&apos;קוזי שלך ברגע זה (איכות מים, שגרות תחזוקה, ארון כימיקלים וגיל המים) ומפיק דוח בריאות וסיכום מקיף.
+                </p>
+              </div>
+
+              {/* Core Capabilities */}
+              <div className="space-y-2.5">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>יכולות מרכזיות באבחון AI:</span>
+                </span>
+
+                <div className="space-y-2">
+                  <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                    <span className="text-cyan-400 font-bold shrink-0">💧</span>
+                    <span>ניתוח כימי מלא של בדיקת המקלון האחרונה והצגת סכנות וחריגות בזמן אמת.</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                    <span className="text-cyan-400 font-bold shrink-0">🛠️</span>
+                    <span>סריקת כל שגרות הציוד והמסננים והתראה על פעולות דחופות שנדרשות.</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                    <span className="text-cyan-400 font-bold shrink-0">🧪</span>
+                    <span>בדיקת יתרות מלאי בארון החומרים וחישוב מינונים מדויקים לנפח המים.</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                    <span className="text-cyan-400 font-bold shrink-0">💡</span>
+                    <span>הנחיות פעולה מידיות וברורות לייצוב המים ושמירה על הג&apos;קוזי.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dismiss Button */}
+              <button
+                type="button"
+                onClick={handleDismissAiGuide}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+              >
+                <span>הבנתי, תודה! 👍</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

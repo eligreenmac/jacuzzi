@@ -1173,6 +1173,26 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   // Compute upcoming tasks in next 7 days for the Status Card
   const nowMs = Date.now();
   // Identify all custom routines created by the user
+  const isDefaultSystemTask = (t: any) => {
+    const title = t.title || "";
+    return (
+      title.includes("בדיקת איכות מים") ||
+      title.includes("תוספת אנזימים") ||
+      title.includes("שטיפת פילטר") ||
+      title.includes("שוק חיטוי") ||
+      title.includes("ניקוי קו מים") ||
+      title.includes("ניקוי פילטר עמוק") ||
+      title.includes("החלפת מים חלקית") ||
+      title.includes("בדיקת אטימות") ||
+      title.includes("אוורור כיסוי") ||
+      title.includes("ניקוי כיסוי") ||
+      title.includes("שטיפת צנרת") ||
+      title.includes("ניקוי צנרת") ||
+      title.includes("החלפת פילטר") ||
+      title.includes("חיטוי")
+    );
+  };
+
   const standardTaskIds = new Set([
     waterTestTask?.id,
     sanitizerTask?.id,
@@ -1183,7 +1203,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     filterReplaceTask?.id,
   ].filter(Boolean));
 
-  const customTasks = tasks.filter((t: any) => !standardTaskIds.has(t.id) && !t.isCompleted);
+  const customTasks = tasks.filter((t: any) => !standardTaskIds.has(t.id) && !isDefaultSystemTask(t) && !t.isCompleted);
 
   const baseScheduledEvents = [
     {
@@ -1509,17 +1529,16 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       case 0:
         return (
           <div
-            onClick={() => setOpenPageId("calendar")}
-            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40 h-full flex flex-col justify-between min-h-[580px]"
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all h-full flex flex-col justify-between min-h-[580px]"
           >
             {/* Header */}
             <div className="flex items-center justify-between gap-3 border-b border-sky-900/30 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner">
                   <Activity className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
+                  <h2 className="text-xl sm:text-2xl font-black text-white">
                     סטטוס
                   </h2>
                   <p className="text-xs text-slate-300">
@@ -1623,10 +1642,26 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               </div>
 
               {/* גיל המים הנוכחי ומועד החלפה הבא */}
-              <div className="bg-[#080e14]/90 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 flex items-center justify-between text-xs">
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openItemModal({
+                    id: "water-age",
+                    title: "גיל המים וריקון מלא",
+                    subtitle: "הגדרת תאריך מילוי המים האחרון ותדירות ריקון",
+                    icon: Clock,
+                    type: "refill",
+                    defaultFreqDays: jacuzzi?.refillFrequencyDays || 90,
+                    currentFreqDays: jacuzzi?.refillFrequencyDays || 90,
+                    currentLastDoneDate: lastFullRefillDate ? lastFullRefillDate.toISOString() : null,
+                    currentNextDueDate: nextFullRefillDate ? nextFullRefillDate.toISOString() : null,
+                  });
+                }}
+                className="bg-[#080e14]/90 hover:bg-sky-950/40 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all flex items-center justify-between text-xs cursor-pointer group/age"
+              >
                 <div className="flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                  <span className="text-slate-300">
+                  <span className="text-slate-300 group-hover/age:text-white transition-colors">
                     גיל המים הנוכחי:{" "}
                     <strong className="text-white">
                       {daysSinceRefill !== null ? `${daysSinceRefill} ימים` : "ממתין למילוי ראשון"}
@@ -1669,7 +1704,13 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
 
                   {/* צלילות, עכירות, ריח והערות בסטטוס */}
-                  <div className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 space-y-2 text-xs">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsClarityOdorModalOpen(true);
+                    }}
+                    className="bg-[#080e14]/90 hover:bg-sky-950/40 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/50 space-y-2 text-xs transition-all cursor-pointer"
+                  >
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <span className="text-slate-300 font-bold text-xs flex items-center gap-1.5">
                         <Droplets className="w-3.5 h-3.5 text-sky-400" />
@@ -1718,16 +1759,40 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   )}
                 </>
               ) : (
-                <div className="p-3 bg-[#080e14]/90 rounded-2xl border border-sky-900/30 text-center text-xs text-slate-300">
-                  טרם תועדה בדיקת מים במערכת
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openItemModal({
+                      id: "water-test",
+                      title: "הגדרת תדירות בדיקת איכות מים",
+                      subtitle: "קביעת מרווח הזמן הרצוי לביצוע בדיקת מקלון",
+                      icon: FlaskConical,
+                      type: "water-test",
+                      taskId: waterTestTask?.id,
+                      taskCategory: "DAILY",
+                      defaultFreqDays: 7,
+                      currentFreqDays: waterTestTask?.frequencyDays || 7,
+                      currentLastDoneDate: lastWaterTestDate?.toISOString() || null,
+                      currentNextDueDate: nextWaterTestDate ? nextWaterTestDate.toISOString() : null,
+                    });
+                  }}
+                  className="p-3 bg-[#080e14]/90 hover:bg-sky-950/40 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 text-center text-xs text-slate-300 transition-all cursor-pointer group/test"
+                >
+                  <span className="group-hover/test:text-sky-300 transition-colors font-medium">טרם תועדה בדיקת מים במערכת (לחץ כאן להגדרה וביצוע)</span>
                 </div>
               )}
             </div>
 
             {/* 3. הזמנת חומרים במידה ויש חוסר */}
-            <div className="space-y-2 pt-1 border-t border-sky-900/20">
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = "/inventory";
+              }}
+              className="space-y-2 pt-1 border-t border-sky-900/20 cursor-pointer group/inv"
+            >
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-white flex items-center gap-1.5">
+                <span className="font-bold text-white group-hover/inv:text-sky-300 transition-colors flex items-center gap-1.5">
                   <Package className="w-3.5 h-3.5 text-sky-400" />
                   <span>הזמנת חומרים ומצב מלאי:</span>
                 </span>
@@ -1760,7 +1825,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenPageId("inventory");
+                      window.location.href = "/inventory";
                     }}
                     className="w-full mt-1 py-2 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
@@ -1774,16 +1839,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>כל החומרים בארון מעל סף המינימום ולא נדרשת הזמנה ✓</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenPageId("inventory");
-                    }}
-                    className="text-[10px] text-sky-300 hover:text-white underline cursor-pointer"
-                  >
+                  <span className="text-[10px] text-sky-300 group-hover/inv:text-white underline">
                     לארון החומרים
-                  </button>
+                  </span>
                 </div>
               )}
             </div>
@@ -2598,7 +2656,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ הוסף חומר</span>
+                <span>הוסף חומר לג&apos;קוזי</span>
               </button>
             </div>
 
@@ -2632,9 +2690,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     <FlaskConical className="w-6 h-6 opacity-60" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-bold text-white">לא תועדו עדיין חומרים שנוספו לג'קוזי</p>
+                    <p className="text-sm font-bold text-white">לא תועדו עדיין חומרים שנוספו לג&apos;קוזי</p>
                     <p className="text-xs text-slate-400">
-                      לחץ על "+ הוסף חומר" למעלה כדי לרשום חומר שהוספת למים ולגרוע מהמלאי
+                      לחץ על &quot;הוסף חומר לג&apos;קוזי&quot; למעלה כדי לרשום חומר שהוספת למים ולגרוע מהמלאי
                     </p>
                   </div>
                 </div>

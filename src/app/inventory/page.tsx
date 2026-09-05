@@ -67,6 +67,8 @@ export default function InventoryPage() {
     addedDate: "",
   });
 
+  const [showInventoryGuide, setShowInventoryGuide] = useState(false);
+
   const loadChemicals = async () => {
     try {
       const res = await fetch("/api/chemicals");
@@ -83,7 +85,20 @@ export default function InventoryPage() {
 
   useEffect(() => {
     loadChemicals();
+    if (typeof window !== "undefined") {
+      const hasSeen = localStorage.getItem("has_seen_inventory_guide");
+      if (!hasSeen) {
+        setShowInventoryGuide(true);
+      }
+    }
   }, []);
+
+  const handleDismissInventoryGuide = () => {
+    setShowInventoryGuide(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("has_seen_inventory_guide", "true");
+    }
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1044,6 +1059,86 @@ export default function InventoryPage() {
                 סגור
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 Inventory Onboarding Guide Modal */}
+      {showInventoryGuide && (
+        <div
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-fade-in"
+          dir="rtl"
+          onClick={handleDismissInventoryGuide}
+        >
+          <div
+            className="bg-[#0e1823] border border-sky-500/80 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl space-y-5 text-right relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-sky-900/40 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/90 border border-sky-500/60 flex items-center justify-center text-sky-300 shadow-inner">
+                  <Package className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">
+                    הסבר ליכולות המערכת 📦
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                    ארון חומרים ומלאי 🧪
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5">שליטה מלאה במלאי, צילום תוויות וסריקת AI</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDismissInventoryGuide}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* General Purpose */}
+            <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 text-xs text-slate-200 leading-relaxed">
+              <span className="text-sky-300 font-bold block mb-1">למה נועד ארון החומרים?</span>
+              <p>
+                כאן תוכל לנהל את כל הכימיקלים והחומרים שברשותך, לעקוב אחר יתרות מדויקות בגרמים/מ&quot;ל ולקבל התראות לפני סיום המלאי.
+              </p>
+            </div>
+
+            {/* Core Capabilities */}
+            <div className="space-y-2.5">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                <span>יכולות מרכזיות בארון החומרים:</span>
+              </span>
+
+              <div className="space-y-2">
+                <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                  <span className="text-sky-400 font-bold shrink-0">📸</span>
+                  <span><strong>צילום וסריקת תווית עם AI:</strong> זיהוי אוטומטי של שם החומר, מרכיבים פעילים ומינונים מומלצים.</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                  <span className="text-sky-400 font-bold shrink-0">⚖️</span>
+                  <span><strong>מעקב כמויות בזמן אמת:</strong> ניהול כמויות בגרמים/מ&quot;ל וקביעת סף מינימום מותאם.</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                  <span className="text-sky-400 font-bold shrink-0">🔔</span>
+                  <span><strong>התראות מלאי נמוך:</strong> התראה מיידית כאשר חומר עומד להיגמר כדי שלא תיתקע ללא חיטוי.</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Dismiss Button */}
+            <button
+              type="button"
+              onClick={handleDismissInventoryGuide}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+            >
+              <span>הבנתי, תודה! 👍</span>
+            </button>
           </div>
         </div>
       )}

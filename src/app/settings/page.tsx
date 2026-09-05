@@ -63,6 +63,7 @@ export default function SettingsPage() {
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [showSettingsGuide, setShowSettingsGuide] = useState(false);
 
   const loadSettings = async () => {
     try {
@@ -96,7 +97,20 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadSettings();
+    if (typeof window !== "undefined") {
+      const hasSeen = localStorage.getItem("has_seen_settings_guide");
+      if (!hasSeen) {
+        setShowSettingsGuide(true);
+      }
+    }
   }, []);
+
+  const handleDismissSettingsGuide = () => {
+    setShowSettingsGuide(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("has_seen_settings_guide", "true");
+    }
+  };
 
   const handleClose = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -563,6 +577,90 @@ export default function SettingsPage() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 Settings Onboarding Guide Modal */}
+      {showSettingsGuide && (
+        <div
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-fade-in"
+          dir="rtl"
+          onClick={handleDismissSettingsGuide}
+        >
+          <div
+            className="bg-[#0e1823] border border-sky-500/80 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl space-y-5 text-right relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-sky-900/40 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/90 border border-sky-500/60 flex items-center justify-center text-sky-300 shadow-inner">
+                  <Settings className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">
+                    הסבר ליכולות המערכת ⚙️
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                    הגדרות הג&apos;קוזי והמערכת
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5">התאמת מאפייני הג&apos;קוזי, תזכורות והעדפות אישיות</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDismissSettingsGuide}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* General Purpose */}
+            <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 text-xs text-slate-200 leading-relaxed">
+              <span className="text-sky-300 font-bold block mb-1">למה נועד מסך ההגדרות?</span>
+              <p>
+                כאן תוכל לעדכן את נפח המים, סוג החיטוי, תדירויות טיפולים, הגדרת מדדי מקלון הבדיקה שברשותך וניהול תזכורות במייל.
+              </p>
+            </div>
+
+            {/* Core Capabilities */}
+            <div className="space-y-2.5">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-sky-400" />
+                <span>יכולות מרכזיות בהגדרות:</span>
+              </span>
+
+              <div className="space-y-2">
+                <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                  <span className="text-sky-400 font-bold shrink-0">📐</span>
+                  <span><strong>נפח ושיטת חיטוי:</strong> הגדרת נפח המים (בליטרים) לחישוב מינונים מדויק ובחירת שיטת חיטוי (כלור/ברום/מלח).</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                  <span className="text-sky-400 font-bold shrink-0">🧪</span>
+                  <span><strong>התאמת מקלון בדיקה:</strong> בחירת מדדי המקלון שברשותך (pH, כלור חופשי, בסיסיות, קשיות ועוד).</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                  <span className="text-sky-400 font-bold shrink-0">📧</span>
+                  <span><strong>תזכורות חכמות במייל:</strong> קבלת תזכורת אוטומטית לפני משימות דחופות והחלפת מים.</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#080e14]/70 border border-sky-900/30 flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                  <span className="text-sky-400 font-bold shrink-0">🗑️</span>
+                  <span><strong>ניהול חשבון:</strong> אפשרות מחיקת חשבון וכל המידע לצמיתות במידת הצורך.</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Dismiss Button */}
+            <button
+              type="button"
+              onClick={handleDismissSettingsGuide}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+            >
+              <span>הבנתי, תודה! 👍</span>
+            </button>
           </div>
         </div>
       )}
