@@ -17,9 +17,9 @@ function LoginForm() {
   );
   const [error, setError] = useState(
     searchParams.get("error") === "google_not_configured"
-      ? "התחברות רשמית ב-Google דורשת הזנת מזהה GOOGLE_CLIENT_ID בהגדרות הסביבה (Google Cloud). עד אז ניתן להיכנס רגיל עם אימייל וסיסמה."
+      ? "התחברות רשמית ב-Google דורשת הזנת מזהה GOOGLE_CLIENT_ID ו-GOOGLE_CLIENT_SECRET בהגדרות הסביבה של Vercel."
       : searchParams.get("error")
-      ? "אימות עם Google נכשל, נסה שנית או התחבר עם אימייל."
+      ? `שגיאת התחברות עם Google: ${searchParams.get("error")}`
       : ""
   );
   const [loading, setLoading] = useState(false);

@@ -52,7 +52,8 @@ export async function GET(req: NextRequest) {
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
       console.error("Google token error:", tokenData);
-      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
+      const errDetail = tokenData.error_description || tokenData.error || "google_auth_failed";
+      return NextResponse.redirect(`${appUrl}/login?error=${encodeURIComponent(errDetail)}`);
     }
 
     // 2. Fetch User Profile from Google
@@ -146,7 +147,7 @@ export async function GET(req: NextRequest) {
       name: user.name || undefined,
     });
 
-    const response = NextResponse.redirect(`${appUrl}/dashboard`);
+    const response = NextResponse.redirect(`${appUrl}/`);
     response.cookies.set(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -156,8 +157,8 @@ export async function GET(req: NextRequest) {
     });
 
     return response;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Google Auth Exception:", err);
-    return NextResponse.redirect(`${appUrl}/login?error=server_error`);
+    return NextResponse.redirect(`${appUrl}/login?error=${encodeURIComponent(err?.message || "server_error")}`);
   }
 }
