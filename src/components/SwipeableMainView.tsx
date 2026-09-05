@@ -2169,87 +2169,22 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </h2>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenPageId("water-tests-new");
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>הזן בדיקת מקלון</span>
+              </button>
             </div>
 
-            {/* 🌟 כפתור הזנת בדיקת מקלון חדשה */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpenPageId("water-tests-new");
-              }}
-              className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer group/btn"
-            >
-              <FlaskConical className="w-4 h-4 text-sky-100 group-hover/btn:scale-110 transition-transform" />
-              <span>הזן בדיקת מקלון חדשה</span>
-            </button>
-
-            {/* 🌟 1. מעליו: הגדרות מקלון (Test Strip Settings) */}
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                setModalSelectedParams([...activeParamIds]);
-                openItemModal({
-                  id: "test-strip-settings",
-                  title: "הגדרות מקלון בדיקה",
-                  subtitle: "בחירת המדדים הפעילים שברשותך בערכת הבדיקה",
-                  icon: Sliders,
-                  type: "strip-settings",
-                  defaultFreqDays: 0,
-                  currentFreqDays: 0,
-                  currentLastDoneDate: null,
-                  currentNextDueDate: null,
-                });
-              }}
-              className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/strip"
-            >
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-white flex items-center gap-1.5 group-hover/strip:text-sky-300 transition-colors">
-                  <Settings className="w-3.5 h-3.5 text-sky-400" />
-                  <span>מקלון בדיקה ({activeParamIds.length} מדדים פעילים):</span>
-                </span>
-                <span className="text-[11px] text-sky-300/80 flex items-center gap-1 font-bold bg-sky-950/60 px-2 py-0.5 rounded-lg border border-sky-800/40 group-hover/strip:border-sky-500/60 transition-colors">
-                  <Settings className="w-3 h-3 text-sky-400" />
-                  <span>ערוך מקלון</span>
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                {activeParamIds.map((paramId) => (
-                  <span
-                    key={paramId}
-                    className="text-[11px] font-mono font-bold bg-sky-950/90 text-sky-200 border border-sky-800/60 px-2.5 py-0.5 rounded-lg"
-                  >
-                    {getShortParamLabel(paramId)}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* 🌟 גיל המים הנוכחי ומועד החלפה הבא */}
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpenPageId("settings");
-              }}
-              className="bg-[#080e14]/90 hover:bg-sky-950/40 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all flex items-center justify-between text-xs cursor-pointer group/age"
-            >
-              <div className="flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                <span className="text-slate-300 group-hover/age:text-white transition-colors">
-                  גיל המים הנוכחי:{" "}
-                  <strong className="text-white">
-                    {daysSinceRefill !== null ? `${daysSinceRefill} ימים` : "ממתין למילוי ראשון"}
-                  </strong>
-                </span>
-              </div>
-              <span className="text-[11px] text-sky-300/90 font-medium">
-                {daysUntilNextRefill !== null ? `ריקון מלא בעוד ${daysUntilNextRefill} יום` : "ללא תאריך יעד"}
-              </span>
-            </div>
-
-            {/* 🌟 2. קודם: מצב איכות המים (Water Quality Status & Dangers) */}
-            <div className="space-y-3 pt-1 border-t border-sky-900/20">
+            {/* 🌟 1. מצב איכות המים (Water Quality Status & Dangers) */}
+            <div className="space-y-3 pt-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-white flex items-center gap-1.5">
                   <FlaskConical className="w-3.5 h-3.5 text-sky-400" />
@@ -2341,8 +2276,14 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   )}
                 </>
               ) : (
-                <div className="p-4 rounded-2xl bg-[#080e14]/90 border border-sky-900/30 text-center text-slate-300 text-xs">
-                  לחץ כאן כדי להזין את בדיקת המקלון הראשונה שלך
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenPageId("water-tests-new");
+                  }}
+                  className="p-4 rounded-2xl bg-[#080e14]/90 hover:bg-sky-950/40 border border-sky-900/30 hover:border-sky-500/60 text-center text-slate-300 hover:text-sky-300 text-xs transition-all cursor-pointer font-medium"
+                >
+                  טרם תועדה בדיקת מים במערכת (לחץ כאן להזנת תוצאות בדיקת מקלון)
                 </div>
               )}
 
@@ -2401,6 +2342,70 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <span>היסטוריית בדיקות איכות המים</span>
                 <ChevronLeft className="w-3.5 h-3.5 opacity-60 mr-auto" />
               </button>
+            </div>
+
+            {/* 🌟 2. גיל המים הנוכחי ומועד החלפה הבא (מוצג מתחת למצב איכות המים) */}
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenPageId("settings");
+              }}
+              className="bg-[#080e14]/90 hover:bg-sky-950/40 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all flex items-center justify-between text-xs cursor-pointer group/age"
+            >
+              <div className="flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                <span className="text-slate-300 group-hover/age:text-white transition-colors">
+                  גיל המים הנוכחי:{" "}
+                  <strong className="text-white">
+                    {daysSinceRefill !== null ? `${daysSinceRefill} ימים` : "ממתין למילוי ראשון"}
+                  </strong>
+                </span>
+              </div>
+              <span className="text-[11px] text-sky-300/90 font-medium">
+                {daysUntilNextRefill !== null ? `ריקון מלא בעוד ${daysUntilNextRefill} יום` : "ללא תאריך יעד"}
+              </span>
+            </div>
+
+            {/* 🌟 3. חלונית הגדרות מקלון בדיקה (מוצגת מתחת למצב איכות המים) */}
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setModalSelectedParams([...activeParamIds]);
+                openItemModal({
+                  id: "test-strip-settings",
+                  title: "הגדרות מקלון בדיקה",
+                  subtitle: "בחירת המדדים הפעילים שברשותך בערכת הבדיקה",
+                  icon: Sliders,
+                  type: "strip-settings",
+                  defaultFreqDays: 0,
+                  currentFreqDays: 0,
+                  currentLastDoneDate: null,
+                  currentNextDueDate: null,
+                });
+              }}
+              className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/strip"
+            >
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5 group-hover/strip:text-sky-300 transition-colors">
+                  <Settings className="w-3.5 h-3.5 text-sky-400" />
+                  <span>מקלון בדיקה ({activeParamIds.length} מדדים פעילים):</span>
+                </span>
+                <span className="text-[11px] text-sky-300/80 flex items-center gap-1 font-bold bg-sky-950/60 px-2 py-0.5 rounded-lg border border-sky-800/40 group-hover/strip:border-sky-500/60 transition-colors">
+                  <Settings className="w-3 h-3 text-sky-400" />
+                  <span>ערוך מקלון</span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                {activeParamIds.map((paramId) => (
+                  <span
+                    key={paramId}
+                    className="text-[11px] font-mono font-bold bg-sky-950/90 text-sky-200 border border-sky-800/60 px-2.5 py-0.5 rounded-lg"
+                  >
+                    {getShortParamLabel(paramId)}
+                  </span>
+                ))}
+              </div>
             </div>
 
             {/* 🌟 3. תחתיו: שגרת טיפולי מים ותוספות חומרים */}
