@@ -74,36 +74,22 @@ export default function FullDiagnosticModal({ isOpen, onClose }: FullDiagnosticM
   const getStatusColor = (status?: string) => {
     switch (status) {
       case "EXCELLENT":
+      case "GOOD":
         return {
           bg: "bg-emerald-950/80 text-emerald-300 border-emerald-700/80",
           border: "border-emerald-500/50",
           badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-          label: "מעולה ומאוזן ✓",
-          icon: CheckCircle2,
-        };
-      case "GOOD":
-        return {
-          bg: "bg-sky-950/80 text-sky-300 border-sky-700/80",
-          border: "border-sky-500/50",
-          badge: "bg-sky-500/20 text-sky-300 border-sky-500/40",
-          label: "מצב טוב ויציב ✓",
+          label: "בתוקף ותקין ✓",
           icon: CheckCircle2,
         };
       case "ATTENTION":
-        return {
-          bg: "bg-amber-950/80 text-amber-300 border-amber-700/80",
-          border: "border-amber-500/50",
-          badge: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-          label: "דורש תשומת לב ⚠️",
-          icon: AlertTriangle,
-        };
       case "CRITICAL":
       default:
         return {
           bg: "bg-rose-950/80 text-rose-300 border-rose-700/80",
           border: "border-rose-500/50",
           badge: "bg-rose-500/20 text-rose-300 border-rose-500/40",
-          label: "נדרשת התערבות דחופה 🚨",
+          label: "פג תוקף / דורש טיפול 🚨",
           icon: AlertOctagon,
         };
     }
@@ -222,10 +208,10 @@ export default function FullDiagnosticModal({ isOpen, onClose }: FullDiagnosticM
                 </div>
               </div>
 
-              {/* 3 Component Columns / Cards */}
+              {/* 3 Component Columns / Cards (Clean Bullet Points, No Duplication) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* 1. איכות המים, מראה וריח */}
-                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 space-y-2 flex flex-col justify-between">
+                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 space-y-2.5 flex flex-col justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-white text-xs flex items-center gap-1.5">
@@ -236,34 +222,34 @@ export default function FullDiagnosticModal({ isOpen, onClose }: FullDiagnosticM
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
                           data.waterAnalysis.status === "OK"
                             ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                            : data.waterAnalysis.status === "WARNING"
-                            ? "bg-amber-950 text-amber-300 border-amber-800"
                             : "bg-rose-950 text-rose-300 border-rose-800"
                         }`}
                       >
-                        {data.waterAnalysis.statusLabel}
+                        {data.waterAnalysis.status === "OK" ? (data.waterAnalysis.statusLabel || "בתוקף ותקין ✓") : (data.waterAnalysis.statusLabel || "פג תוקף / טיפול 🚨")}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-300 leading-normal">
-                      {data.waterAnalysis.summary}
-                    </p>
-                  </div>
-
-                  {data.waterAnalysis.keyPoints && data.waterAnalysis.keyPoints.length > 0 && (
-                    <div className="pt-2 border-t border-sky-900/30 space-y-1">
-                      {data.waterAnalysis.keyPoints.slice(0, 3).map((pt, i) => (
-                        <div key={i} className="text-[10px] text-slate-300 flex items-start gap-1">
-                          <span className="text-cyan-400 font-bold">•</span>
-                          <span>{pt}</span>
+                    {/* Clean Bullet Points Only */}
+                    <div className="space-y-1.5 pt-1">
+                      {data.waterAnalysis.keyPoints && data.waterAnalysis.keyPoints.length > 0 ? (
+                        data.waterAnalysis.keyPoints.map((pt, i) => (
+                          <div key={i} className="text-[11px] text-slate-200 flex items-start gap-1.5 leading-snug">
+                            <span className="text-emerald-400 font-bold text-sm leading-none">•</span>
+                            <span>{pt}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-[11px] text-slate-200 flex items-start gap-1.5 leading-snug">
+                          <span className="text-emerald-400 font-bold text-sm leading-none">•</span>
+                          <span>{data.waterAnalysis.summary || "מדדי המים נבדקו ותועדו במערכת."}</span>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* 2. תחזוקת המתקן והפילטרים */}
-                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 space-y-2 flex flex-col justify-between">
+                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 space-y-2.5 flex flex-col justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-white text-xs flex items-center gap-1.5">
@@ -274,34 +260,34 @@ export default function FullDiagnosticModal({ isOpen, onClose }: FullDiagnosticM
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
                           data.equipmentAnalysis.status === "OK"
                             ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                            : data.equipmentAnalysis.status === "WARNING"
-                            ? "bg-amber-950 text-amber-300 border-amber-800"
                             : "bg-rose-950 text-rose-300 border-rose-800"
                         }`}
                       >
-                        {data.equipmentAnalysis.statusLabel}
+                        {data.equipmentAnalysis.status === "OK" ? (data.equipmentAnalysis.statusLabel || "בתוקף ותקין ✓") : (data.equipmentAnalysis.statusLabel || "פג תוקף / טיפול 🚨")}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-300 leading-normal">
-                      {data.equipmentAnalysis.summary}
-                    </p>
-                  </div>
-
-                  {data.equipmentAnalysis.keyPoints && data.equipmentAnalysis.keyPoints.length > 0 && (
-                    <div className="pt-2 border-t border-sky-900/30 space-y-1">
-                      {data.equipmentAnalysis.keyPoints.slice(0, 3).map((pt, i) => (
-                        <div key={i} className="text-[10px] text-slate-300 flex items-start gap-1">
-                          <span className="text-sky-400 font-bold">•</span>
-                          <span>{pt}</span>
+                    {/* Clean Bullet Points Only */}
+                    <div className="space-y-1.5 pt-1">
+                      {data.equipmentAnalysis.keyPoints && data.equipmentAnalysis.keyPoints.length > 0 ? (
+                        data.equipmentAnalysis.keyPoints.map((pt, i) => (
+                          <div key={i} className="text-[11px] text-slate-200 flex items-start gap-1.5 leading-snug">
+                            <span className="text-emerald-400 font-bold text-sm leading-none">•</span>
+                            <span>{pt}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-[11px] text-slate-200 flex items-start gap-1.5 leading-snug">
+                          <span className="text-emerald-400 font-bold text-sm leading-none">•</span>
+                          <span>{data.equipmentAnalysis.summary || "מצב הפילטרים והמתקן מעודכן במערכת."}</span>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* 3. ארון חומרים ומלאי */}
-                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 space-y-2 flex flex-col justify-between">
+                <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/40 space-y-2.5 flex flex-col justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-white text-xs flex items-center gap-1.5">
@@ -312,30 +298,30 @@ export default function FullDiagnosticModal({ isOpen, onClose }: FullDiagnosticM
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
                           data.inventoryAnalysis.status === "OK"
                             ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                            : data.inventoryAnalysis.status === "WARNING"
-                            ? "bg-amber-950 text-amber-300 border-amber-800"
                             : "bg-rose-950 text-rose-300 border-rose-800"
                         }`}
                       >
-                        {data.inventoryAnalysis.statusLabel}
+                        {data.inventoryAnalysis.status === "OK" ? (data.inventoryAnalysis.statusLabel || "בתוקף ותקין ✓") : (data.inventoryAnalysis.statusLabel || "חוסר במלאי 🚨")}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-300 leading-normal">
-                      {data.inventoryAnalysis.summary}
-                    </p>
-                  </div>
-
-                  {data.inventoryAnalysis.keyPoints && data.inventoryAnalysis.keyPoints.length > 0 && (
-                    <div className="pt-2 border-t border-sky-900/30 space-y-1">
-                      {data.inventoryAnalysis.keyPoints.slice(0, 3).map((pt, i) => (
-                        <div key={i} className="text-[10px] text-slate-300 flex items-start gap-1">
-                          <span className="text-indigo-400 font-bold">•</span>
-                          <span>{pt}</span>
+                    {/* Clean Bullet Points Only */}
+                    <div className="space-y-1.5 pt-1">
+                      {data.inventoryAnalysis.keyPoints && data.inventoryAnalysis.keyPoints.length > 0 ? (
+                        data.inventoryAnalysis.keyPoints.map((pt, i) => (
+                          <div key={i} className="text-[11px] text-slate-200 flex items-start gap-1.5 leading-snug">
+                            <span className="text-emerald-400 font-bold text-sm leading-none">•</span>
+                            <span>{pt}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-[11px] text-slate-200 flex items-start gap-1.5 leading-snug">
+                          <span className="text-emerald-400 font-bold text-sm leading-none">•</span>
+                          <span>{data.inventoryAnalysis.summary || "מלאי החומרים נסרק במערכת."}</span>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -348,47 +334,42 @@ export default function FullDiagnosticModal({ isOpen, onClose }: FullDiagnosticM
                       <span>המלצות ממוקדות לפעולה מיידית:</span>
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      {data.actionItems.length} פעולות מומלצות
+                      {data.actionItems.length} פעולות
                     </span>
                   </div>
 
                   <div className="space-y-2">
-                    {data.actionItems.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-2.5 rounded-xl border flex items-start justify-between gap-2 text-xs ${
-                          item.priority === "HIGH"
-                            ? "bg-rose-950/30 border-rose-900/50"
-                            : item.priority === "MEDIUM"
-                            ? "bg-amber-950/30 border-amber-900/50"
-                            : "bg-sky-950/30 border-sky-900/50"
-                        }`}
-                      >
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="font-bold text-white block">
-                            {idx + 1}. {item.title}
-                          </span>
-                          <span className="text-[11px] text-slate-300 block leading-snug">
-                            {item.description}
-                          </span>
-                        </div>
-                        <span
-                          className={`text-[9px] font-bold px-2 py-0.5 rounded-md shrink-0 border ${
-                            item.priority === "HIGH"
-                              ? "bg-rose-950 text-rose-300 border-rose-800"
-                              : item.priority === "MEDIUM"
-                              ? "bg-amber-950 text-amber-300 border-amber-800"
-                              : "bg-sky-950 text-sky-300 border-sky-800"
+                    {data.actionItems.map((item, idx) => {
+                      const isHighPriority = item.priority === "HIGH";
+                      return (
+                        <div
+                          key={idx}
+                          className={`p-2.5 rounded-xl border flex items-start justify-between gap-2 text-xs ${
+                            isHighPriority
+                              ? "bg-rose-950/30 border-rose-900/50"
+                              : "bg-emerald-950/20 border-emerald-900/40"
                           }`}
                         >
-                          {item.priority === "HIGH"
-                            ? "דחיפות גבוהה"
-                            : item.priority === "MEDIUM"
-                            ? "בינונית"
-                            : "המלצה"}
-                        </span>
-                      </div>
-                    ))}
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-bold text-white block">
+                              {idx + 1}. {item.title}
+                            </span>
+                            <span className="text-[11px] text-slate-300 block leading-snug">
+                              {item.description}
+                            </span>
+                          </div>
+                          <span
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded-md shrink-0 border ${
+                              isHighPriority
+                                ? "bg-rose-950 text-rose-300 border-rose-800"
+                                : "bg-emerald-950 text-emerald-300 border-emerald-800"
+                            }`}
+                          >
+                            {isHighPriority ? "דחוף / פג תוקף 🚨" : "שגרה בתוקף ✓"}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

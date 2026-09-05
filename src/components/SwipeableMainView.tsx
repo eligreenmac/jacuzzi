@@ -839,11 +839,19 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
       if (daysAgo === 1) return "(אתמול)";
       return `(לפני ${daysAgo} ימים)`;
     } else {
-      if (diffDays < 0) return "(באיחור!)";
-      if (diffDays === 0) return "(היום!)";
-      if (diffDays === 1) return "(מחר)";
-      return `(בעוד ${diffDays} ימים)`;
+      if (diffDays < 0) return `(פג תוקף - באיחור ${Math.abs(diffDays)} ימים!)`;
+      if (diffDays === 0) return "(בתוקף - היום)";
+      if (diffDays === 1) return "(בתוקף - מחר)";
+      return `(בתוקף - בעוד ${diffDays} ימים)`;
     }
+  };
+
+  const getDueDateColorClass = (targetDate: Date | string | null | undefined) => {
+    if (!targetDate) return "text-emerald-400";
+    const d = new Date(targetDate);
+    if (isNaN(d.getTime())) return "text-emerald-400";
+    const diffDays = Math.round((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return diffDays < 0 ? "text-rose-400 font-bold" : "text-emerald-400 font-semibold";
   };
 
   // 1. Water Test Dates
@@ -1397,16 +1405,26 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-2.5 cursor-pointer group/task ${
                           isOverdue
                             ? "bg-rose-950/30 border-rose-900/50 hover:border-rose-500/70"
-                            : isToday
-                            ? "bg-amber-950/30 border-amber-900/50 hover:border-amber-500/70"
-                            : "bg-[#080e14]/90 border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40"
+                            : "bg-emerald-950/20 border-emerald-900/40 hover:border-emerald-500/60"
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-7 h-7 rounded-xl bg-sky-950/80 border border-sky-800/50 flex items-center justify-center text-sky-300 shrink-0">
+                          <div
+                            className={`w-7 h-7 rounded-xl border flex items-center justify-center shrink-0 ${
+                              isOverdue
+                                ? "bg-rose-950/80 border-rose-800/50 text-rose-300"
+                                : "bg-emerald-950/80 border-emerald-800/50 text-emerald-300"
+                            }`}
+                          >
                             <IconComp className="w-3.5 h-3.5" />
                           </div>
-                          <span className="text-xs font-bold text-white truncate group-hover/task:text-sky-300 transition-colors">
+                          <span
+                            className={`text-xs font-bold truncate transition-colors ${
+                              isOverdue
+                                ? "text-rose-200 group-hover/task:text-rose-100"
+                                : "text-white group-hover/task:text-emerald-300"
+                            }`}
+                          >
                             {t.title}
                           </span>
                         </div>
@@ -1415,20 +1433,16 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0 border ${
                             isOverdue
                               ? "bg-rose-950 text-rose-300 border-rose-800"
-                              : isToday
-                              ? "bg-amber-950 text-amber-300 border-amber-800"
-                              : isTomorrow
-                              ? "bg-sky-950 text-sky-300 border-sky-800"
-                              : "bg-slate-900 text-slate-300 border-slate-700"
+                              : "bg-emerald-950 text-emerald-300 border-emerald-800"
                           }`}
                         >
                           {isOverdue
-                            ? `באיחור של ${Math.abs(t.diffDays)} ימים!`
+                            ? `פג תוקף (באיחור של ${Math.abs(t.diffDays)} ימים!)`
                             : isToday
-                            ? "היום!"
+                            ? "בתוקף (היום)"
                             : isTomorrow
-                            ? "מחר"
-                            : `בעוד ${t.diffDays} ימים`}
+                            ? "בתוקף (מחר)"
+                            : `בתוקף (בעוד ${t.diffDays} ימים)`}
                         </span>
                       </div>
                     );
@@ -1919,8 +1933,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                      <span className="text-sky-300 font-bold">{formatDateDisplay(nextWaterTestDate)}</span>{" "}
-                      <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextWaterTestDate, false)}</span>
+                      <span className={`font-bold ${getDueDateColorClass(nextWaterTestDate)}`}>{formatDateDisplay(nextWaterTestDate)}</span>{" "}
+                      <span className={`text-[10px] ${getDueDateColorClass(nextWaterTestDate)}`}>{getRelativeDaysDisplay(nextWaterTestDate, false)}</span>
                     </div>
                   </div>
                 </div>
@@ -1963,8 +1977,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                      <span className="text-sky-300 font-bold">{formatDateDisplay(nextSanitizerDate)}</span>{" "}
-                      <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextSanitizerDate, false)}</span>
+                      <span className={`font-bold ${getDueDateColorClass(nextSanitizerDate)}`}>{formatDateDisplay(nextSanitizerDate)}</span>{" "}
+                      <span className={`text-[10px] ${getDueDateColorClass(nextSanitizerDate)}`}>{getRelativeDaysDisplay(nextSanitizerDate, false)}</span>
                     </div>
                   </div>
                 </div>
@@ -2005,8 +2019,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                      <span className="text-sky-300 font-bold">{formatDateDisplay(nextPartialRefillDate)}</span>{" "}
-                      <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextPartialRefillDate, false)}</span>
+                      <span className={`font-bold ${getDueDateColorClass(nextPartialRefillDate)}`}>{formatDateDisplay(nextPartialRefillDate)}</span>{" "}
+                      <span className={`text-[10px] ${getDueDateColorClass(nextPartialRefillDate)}`}>{getRelativeDaysDisplay(nextPartialRefillDate, false)}</span>
                     </div>
                   </div>
                 </div>
@@ -2047,8 +2061,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">ריקון הבא:</span>
-                      <span className="text-sky-300 font-bold">{formatDateDisplay(nextFullRefillDate)}</span>{" "}
-                      <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextFullRefillDate, false)}</span>
+                      <span className={`font-bold ${getDueDateColorClass(nextFullRefillDate)}`}>{formatDateDisplay(nextFullRefillDate)}</span>{" "}
+                      <span className={`text-[10px] ${getDueDateColorClass(nextFullRefillDate)}`}>{getRelativeDaysDisplay(nextFullRefillDate, false)}</span>
                     </div>
                   </div>
                 </div>
@@ -2191,8 +2205,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextFilterRinseDate)}</span>{" "}
-                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextFilterRinseDate, false)}</span>
+                    <span className={`font-bold ${getDueDateColorClass(nextFilterRinseDate)}`}>{formatDateDisplay(nextFilterRinseDate)}</span>{" "}
+                    <span className={`text-[10px] ${getDueDateColorClass(nextFilterRinseDate)}`}>{getRelativeDaysDisplay(nextFilterRinseDate, false)}</span>
                   </div>
                 </div>
               </div>
@@ -2235,8 +2249,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextWaterlineDate)}</span>{" "}
-                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextWaterlineDate, false)}</span>
+                    <span className={`font-bold ${getDueDateColorClass(nextWaterlineDate)}`}>{formatDateDisplay(nextWaterlineDate)}</span>{" "}
+                    <span className={`text-[10px] ${getDueDateColorClass(nextWaterlineDate)}`}>{getRelativeDaysDisplay(nextWaterlineDate, false)}</span>
                   </div>
                 </div>
               </div>
@@ -2279,8 +2293,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextCoverDate)}</span>{" "}
-                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextCoverDate, false)}</span>
+                    <span className={`font-bold ${getDueDateColorClass(nextCoverDate)}`}>{formatDateDisplay(nextCoverDate)}</span>{" "}
+                    <span className={`text-[10px] ${getDueDateColorClass(nextCoverDate)}`}>{getRelativeDaysDisplay(nextCoverDate, false)}</span>
                   </div>
                 </div>
               </div>
@@ -2323,8 +2337,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">יעד הבא:</span>
-                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextPipeCleanDate)}</span>{" "}
-                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextPipeCleanDate, false)}</span>
+                    <span className={`font-bold ${getDueDateColorClass(nextPipeCleanDate)}`}>{formatDateDisplay(nextPipeCleanDate)}</span>{" "}
+                    <span className={`text-[10px] ${getDueDateColorClass(nextPipeCleanDate)}`}>{getRelativeDaysDisplay(nextPipeCleanDate, false)}</span>
                   </div>
                 </div>
               </div>
@@ -2367,8 +2381,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">החלפה הבאה:</span>
-                    <span className="text-sky-300 font-bold">{formatDateDisplay(nextFilterReplaceDate)}</span>{" "}
-                    <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextFilterReplaceDate, false)}</span>
+                    <span className={`font-bold ${getDueDateColorClass(nextFilterReplaceDate)}`}>{formatDateDisplay(nextFilterReplaceDate)}</span>{" "}
+                    <span className={`text-[10px] ${getDueDateColorClass(nextFilterReplaceDate)}`}>{getRelativeDaysDisplay(nextFilterReplaceDate, false)}</span>
                   </div>
                 </div>
               </div>
@@ -2422,8 +2436,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                        <span className="text-sky-300 font-bold">{formatDateDisplay(nextDate)}</span>{" "}
-                        <span className="text-sky-400/90 text-[10px]">{getRelativeDaysDisplay(nextDate, false)}</span>
+                        <span className={`font-bold ${getDueDateColorClass(nextDate)}`}>{formatDateDisplay(nextDate)}</span>{" "}
+                        <span className={`text-[10px] ${getDueDateColorClass(nextDate)}`}>{getRelativeDaysDisplay(nextDate, false)}</span>
                       </div>
                     </div>
                   </div>
