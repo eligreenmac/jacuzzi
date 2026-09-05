@@ -1776,10 +1776,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                 <button
                   type="button"
                   onClick={(e) => handleResetCardOrder(0, e)}
-                  className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-sky-950 text-slate-400 hover:text-sky-300 border border-slate-800 text-[10px] flex items-center gap-1 transition-all cursor-pointer"
+                  className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-sky-950 text-slate-400 hover:text-sky-300 border border-slate-800 text-[10px] flex items-center transition-all cursor-pointer"
                   title="אפס לסדר ברירת המחדל"
                 >
-                  <RotateCcw className="w-3 h-3" />
                   <span className="hidden sm:inline">אפס סדר</span>
                 </button>
               )}
@@ -1811,9 +1810,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     {sectionId === "upcoming-tasks" && (
                       <div className="space-y-2.5 pt-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-white flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-sky-400" />
-                            <span>משימות קרובות (טווח 7 ימים):</span>
+                          <span className="font-bold text-white">
+                            משימות קרובות (טווח 7 ימים):
                           </span>
                           <span className="text-[10px] text-sky-300 font-semibold">
                             {sevenDaysUpcomingTasks.length} פעולות לביצוע
@@ -1823,7 +1821,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         {sevenDaysUpcomingTasks.length > 0 ? (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-0.5">
                             {sevenDaysUpcomingTasks.map((t) => {
-                              const IconComp = t.icon || Calendar;
                               const isOverdue = t.diffDays < 0;
                               const isToday = t.diffDays === 0;
                               const isTomorrow = t.diffDays === 1;
@@ -1841,26 +1838,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                       : "bg-emerald-950/20 border-emerald-900/40 hover:border-emerald-500/60"
                                   }`}
                                 >
-                                  <div className="flex items-center gap-2.5 min-w-0">
-                                    <div
-                                      className={`w-7 h-7 rounded-xl border flex items-center justify-center shrink-0 ${
-                                        isOverdue
-                                          ? "bg-rose-950/80 border-rose-800/50 text-rose-300"
-                                          : "bg-emerald-950/80 border-emerald-800/50 text-emerald-300"
-                                      }`}
-                                    >
-                                      <IconComp className="w-3.5 h-3.5" />
-                                    </div>
-                                    <span
-                                      className={`text-xs font-bold truncate transition-colors ${
-                                        isOverdue
-                                          ? "text-rose-200 group-hover/task:text-rose-100"
-                                          : "text-white group-hover/task:text-emerald-300"
-                                      }`}
-                                    >
-                                      {t.title}
-                                    </span>
-                                  </div>
+                                  <span
+                                    className={`text-xs font-bold truncate transition-colors ${
+                                      isOverdue
+                                        ? "text-rose-200 group-hover/task:text-rose-100"
+                                        : "text-white group-hover/task:text-emerald-300"
+                                    }`}
+                                  >
+                                    {t.title}
+                                  </span>
 
                                   <span
                                     className={`text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0 border ${
@@ -1882,8 +1868,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             })}
                           </div>
                         ) : (
-                          <div className="p-3 bg-[#080e14]/90 rounded-2xl border border-emerald-900/30 flex items-center justify-center gap-2 text-xs text-emerald-300">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <div className="p-3 bg-[#080e14]/90 rounded-2xl border border-emerald-900/30 flex items-center justify-center text-xs text-emerald-300">
                             <span>אין משימות קרובות ל-7 הימים הקרובים ✓</span>
                           </div>
                         )}
@@ -1892,89 +1877,88 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
                     {/* Section: מצב איכות המים הנוכחי */}
                     {sectionId === "water-status" && (
-                      <div className="space-y-2.5 pt-1">
+                      <div className="space-y-3 pt-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-white flex items-center gap-1.5">
-                            <FlaskConical className="w-3.5 h-3.5 text-sky-400" />
-                            <span>מצב איכות המים הנוכחי:</span>
-                          </span>
-                          <span className="text-[10px] text-slate-400">
-                            {latestWaterLog ? `נבדק: ${new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")}` : "טרם בוצעה בדיקה"}
+                          <span className="text-xs text-slate-300 font-semibold">
+                            {latestWaterLog
+                              ? `בדיקה אחרונה: ${new Date(latestWaterLog.testedAt).toLocaleDateString("he-IL")}`
+                              : "טרם בוצעה בדיקת מים"}
                           </span>
                         </div>
 
                         {latestWaterLog ? (
                           <>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                              <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-sky-900/30 text-center space-y-0.5">
-                                <span className="text-[10px] text-slate-400">חומציות (pH)</span>
-                                <div className="text-sm font-black text-white">{latestWaterLog.ph || latestWaterLog.phRange || "7.4"}</div>
-                                <span className="text-[9px] text-sky-300/80">יעד: 7.2 - 7.6</span>
-                              </div>
+                            {(() => {
+                              const phVal = extractParamValue(latestWaterLog, "ph");
+                              const phDomain = getGenericDomain("ph", phVal.val, phVal.rangeStr);
 
-                              <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-sky-900/30 text-center space-y-0.5">
-                                <span className="text-[10px] text-slate-400">כלור / חיטוי</span>
-                                <div className="text-sm font-black text-white">{latestWaterLog.freeChlorine || latestWaterLog.chlorineRange || "3.0"}</div>
-                                <span className="text-[9px] text-sky-300/80">יעד: 2.0 - 4.0</span>
-                              </div>
+                              const clVal = extractParamValue(latestWaterLog, "chlorine");
+                              const clDomain = getGenericDomain("chlorine", clVal.val, clVal.rangeStr);
 
-                              <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-sky-900/30 text-center space-y-0.5">
-                                <span className="text-[10px] text-slate-400">בסיסיות (TA)</span>
-                                <div className="text-sm font-black text-white">{latestWaterLog.alkalinity || latestWaterLog.alkalinityRange || "90"}</div>
-                                <span className="text-[9px] text-sky-300/80">יעד: 80 - 120</span>
-                              </div>
+                              const taVal = extractParamValue(latestWaterLog, "alkalinity");
+                              const taDomain = getGenericDomain("alkalinity", taVal.val, taVal.rangeStr);
 
-                              <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-sky-900/30 text-center space-y-0.5">
-                                <span className="text-[10px] text-slate-400">צלילות ומראה</span>
-                                <div className="text-sm font-black text-white">
-                                  {getClarityDisplay(latestWaterLog.waterClarity).label}
+                              const getStatusColorClass = (id: string) => {
+                                if (id === "OK") return "text-emerald-400";
+                                if (id === "LOW" || id === "HIGH") return "text-amber-400";
+                                if (id === "VERY_LOW" || id === "VERY_HIGH") return "text-rose-400";
+                                return "text-slate-300";
+                              };
+
+                              return (
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenPageId("water-tests");
+                                    }}
+                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                  >
+                                    <span className="text-[10px] text-slate-400 block">חומציות (pH)</span>
+                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(phDomain.id)}`}>
+                                      {phDomain.label}
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenPageId("water-tests");
+                                    }}
+                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                  >
+                                    <span className="text-[10px] text-slate-400 block">כלור / חיטוי</span>
+                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(clDomain.id)}`}>
+                                      {clDomain.label}
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenPageId("water-tests");
+                                    }}
+                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                  >
+                                    <span className="text-[10px] text-slate-400 block">בסיסיות כוללת (TA)</span>
+                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(taDomain.id)}`}>
+                                      {taDomain.label}
+                                    </div>
+                                  </div>
                                 </div>
-                                <span className="text-[9px] text-sky-300/80">בדיקה חושית</span>
-                              </div>
-                            </div>
+                              );
+                            })()}
 
-                            {/* צלילות, עכירות, ריח והערות בסטטוס */}
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsClarityOdorModalOpen(true);
-                              }}
-                              className="bg-[#080e14]/90 hover:bg-sky-950/40 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/50 space-y-2 text-xs transition-all cursor-pointer"
-                            >
-                              <div className="flex items-center justify-between gap-2 flex-wrap">
-                                <span className="text-slate-300 font-bold text-xs flex items-center gap-1.5">
-                                  <Droplets className="w-3.5 h-3.5 text-sky-400" />
-                                  <span>צלילות ועכירות & ריח המים:</span>
-                                </span>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-sky-950 text-sky-200 border border-sky-800 flex items-center gap-1">
-                                    <span>{getClarityDisplay(latestWaterLog.waterClarity).icon}</span>
-                                    <span>{getClarityDisplay(latestWaterLog.waterClarity).label}</span>
-                                  </span>
-                                  <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-sky-950 text-sky-200 border border-sky-800 flex items-center gap-1">
-                                    <span>{getOdorDisplay(latestWaterLog.waterOdor).icon}</span>
-                                    <span>{getOdorDisplay(latestWaterLog.waterOdor).label}</span>
-                                  </span>
-                                </div>
-                              </div>
-                              {(latestWaterLog.clarityOdorNotes || latestWaterLog.description) && (
-                                <div className="text-[11px] text-slate-300 bg-sky-950/40 p-2.5 rounded-xl border border-sky-900/30 flex items-start gap-1.5">
-                                  <span className="text-sky-400 font-bold shrink-0">הערות:</span>
-                                  <span className="leading-snug text-slate-200">{latestWaterLog.clarityOdorNotes || latestWaterLog.description}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* סכנות המופיעות מבדיקת מים אחרונה */}
+                            {/* סכנות של מדדים שאינם תקינים */}
                             {latestAbnormalRisks.length > 0 ? (
-                              <div className="bg-[#180e14]/95 border border-rose-900/60 rounded-2xl p-3 space-y-1.5 text-xs text-right shadow-md">
-                                <div className="flex items-center gap-1.5 text-rose-400 font-bold text-xs">
-                                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                  <span>סכנות שהתגלו בבדיקת המים האחרונה:</span>
+                              <div className="bg-[#180e14]/95 border border-rose-900/60 rounded-2xl p-3.5 space-y-2 text-xs text-right shadow-lg">
+                                <div className="text-rose-400 font-bold text-xs">
+                                  <span>סכנות של מדדים שאינם תקינים:</span>
                                 </div>
-                                <div className="space-y-1 pt-1 border-t border-rose-900/30">
+
+                                <div className="space-y-1.5 pt-1 border-t border-rose-900/30">
                                   {latestAbnormalRisks.map((risk, idx) => (
-                                    <div key={idx} className="text-[11px] text-slate-200">
+                                    <div key={idx} className="leading-relaxed text-slate-200 text-[11px]">
                                       <span className="text-rose-300 font-bold">• {risk.name} ({risk.statusLabel}):</span>{" "}
                                       <span className="text-slate-300">{risk.risk}</span>
                                     </div>
@@ -1982,11 +1966,41 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                 </div>
                               </div>
                             ) : (
-                              <div className="bg-[#080e14]/90 p-2 rounded-xl border border-emerald-900/30 flex items-center gap-2 text-[11px] text-emerald-300">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                <span className="font-bold">כל מדדי המים מאוזנים לחלוטין וללא סכנות ✓</span>
+                              <div className="bg-[#080e14]/90 p-2.5 rounded-xl border border-emerald-900/30 text-[11px] text-emerald-300">
+                                <span className="font-bold">כל המדדים שנבדקו נמצאים בטווח האידיאלי והמים מאוזנים לחלוטין ✓</span>
                               </div>
                             )}
+
+                            {/* נראות וריח */}
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openClarityOdorModal();
+                              }}
+                              className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/clarity"
+                            >
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-white group-hover/clarity:text-sky-300 transition-colors">
+                                  נראות וריח
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                                <span className="text-[11px] font-bold bg-sky-950/90 text-sky-200 border border-sky-800/70 px-2.5 py-1 rounded-xl">
+                                  צלילות: {getClarityDisplay(latestWaterLog?.waterClarity).label}
+                                </span>
+                                <span className="text-[11px] font-bold bg-sky-950/90 text-sky-200 border border-sky-800/70 px-2.5 py-1 rounded-xl">
+                                  ריח: {getOdorDisplay(latestWaterLog?.waterOdor).label}
+                                </span>
+                              </div>
+
+                              {(latestWaterLog?.clarityOdorNotes || latestWaterLog?.description) && (
+                                <div className="text-[11px] text-slate-300 bg-sky-950/50 p-2.5 rounded-xl border border-sky-900/40 flex items-start gap-1.5">
+                                  <span className="text-sky-400 font-bold shrink-0">הערות:</span>
+                                  <span className="leading-snug text-slate-200">{latestWaterLog?.clarityOdorNotes || latestWaterLog?.description}</span>
+                                </div>
+                              )}
+                            </div>
                           </>
                         ) : (
                           <div
@@ -1994,9 +2008,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                               e.stopPropagation();
                               setOpenPageId("water-tests-new");
                             }}
-                            className="p-3 bg-[#080e14]/90 hover:bg-sky-950/40 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 text-center text-xs text-slate-300 transition-all cursor-pointer group/test"
+                            className="p-4 rounded-2xl bg-[#080e14]/90 hover:bg-sky-950/40 border border-sky-900/30 hover:border-sky-500/60 text-center text-slate-300 hover:text-sky-300 text-xs transition-all cursor-pointer font-medium"
                           >
-                            <span className="group-hover/test:text-sky-300 transition-colors font-medium">טרם תועדה בדיקת מים במערכת (לחץ כאן להזנת תוצאות בדיקת מקלון)</span>
+                            טרם תועדה בדיקת מים במערכת (לחץ כאן להזנת תוצאות בדיקת מקלון)
                           </div>
                         )}
                       </div>
@@ -2011,8 +2025,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         }}
                         className="bg-[#080e14]/90 hover:bg-sky-950/40 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all flex items-center justify-between text-xs cursor-pointer group/age"
                       >
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                        <div>
                           <span className="text-slate-300 group-hover/age:text-white transition-colors">
                             גיל המים הנוכחי:{" "}
                             <strong className="text-white">
@@ -2036,9 +2049,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         className="space-y-2 pt-1 border-t border-sky-900/20 cursor-pointer group/inv"
                       >
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-white group-hover/inv:text-sky-300 transition-colors flex items-center gap-1.5">
-                            <Package className="w-3.5 h-3.5 text-sky-400" />
-                            <span>הזמנת חומרים ומצב מלאי:</span>
+                          <span className="font-bold text-white group-hover/inv:text-sky-300 transition-colors">
+                            הזמנת חומרים ומצב מלאי:
                           </span>
                           <span className="text-[10px] text-slate-400">
                             {lowStockChems.length > 0 ? `${lowStockChems.length} חומרים בחוסר` : "מלאי מספק"}
@@ -2047,8 +2059,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
                         {lowStockChems.length > 0 ? (
                           <div className="space-y-2 bg-[#180e14]/80 p-3 rounded-2xl border border-rose-900/50">
-                            <div className="text-[11px] text-rose-300 font-bold flex items-center gap-1.5">
-                              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                            <div className="text-[11px] text-rose-300 font-bold">
                               <span>נמצאו חומרים מתחת לסף המינימום - נדרשת הזמנה:</span>
                             </div>
 
@@ -2073,16 +2084,12 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                               }}
                               className="w-full mt-1 py-2 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
                             >
-                              <ShoppingCart className="w-3.5 h-3.5" />
                               <span>פתח ארון חומרים להזמנה ועדכון מלאי</span>
                             </button>
                           </div>
                         ) : (
                           <div className="p-2.5 bg-[#080e14]/90 rounded-xl border border-emerald-900/30 flex items-center justify-between text-[11px] text-emerald-300">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span>כל החומרים בארון מעל סף המינימום ולא נדרשת הזמנה ✓</span>
-                            </div>
+                            <span>כל החומרים בארון מעל סף המינימום ולא נדרשת הזמנה ✓</span>
                             <span className="text-[10px] text-sky-300 group-hover/inv:text-white underline">
                               לארון החומרים
                             </span>
