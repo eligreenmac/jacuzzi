@@ -337,7 +337,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     // 🌟 Update visual dot indicator SIMULTANEOUSLY (0 lag)
     setVisualActiveIndex(newIdx);
     setIsAnimating(true);
-    setDragOffset(-width);
+    setDragOffset(width);
 
     setTimeout(() => {
       setIsAnimating(false);
@@ -354,7 +354,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     // 🌟 Update visual dot indicator SIMULTANEOUSLY (0 lag)
     setVisualActiveIndex(newIdx);
     setIsAnimating(true);
-    setDragOffset(width);
+    setDragOffset(-width);
 
     setTimeout(() => {
       setIsAnimating(false);
@@ -372,7 +372,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     // 🌟 Update visual dot indicator SIMULTANEOUSLY (0 lag)
     setVisualActiveIndex(safe);
     setIsAnimating(true);
-    setDragOffset(isForward ? -width : width);
+    setDragOffset(isForward ? width : -width);
 
     setTimeout(() => {
       setIsAnimating(false);
@@ -428,21 +428,23 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
     const threshold = Math.min(60, width * 0.15);
 
-    if (offset < -threshold) {
+    if (offset > threshold) {
+      // Dragged right -> advance to next card (in RTL)
       const newIdx = (currentIndex + 1) % CARD_TABS.length;
       setVisualActiveIndex(newIdx);
       setIsAnimating(true);
-      setDragOffset(-width);
+      setDragOffset(width);
       setTimeout(() => {
         setIsAnimating(false);
         setDragOffset(0);
         setCurrentIndex(newIdx);
       }, 350);
-    } else if (offset > threshold) {
+    } else if (offset < -threshold) {
+      // Dragged left -> return to prev card (in RTL)
       const newIdx = (currentIndex - 1 + CARD_TABS.length) % CARD_TABS.length;
       setVisualActiveIndex(newIdx);
       setIsAnimating(true);
-      setDragOffset(width);
+      setDragOffset(-width);
       setTimeout(() => {
         setIsAnimating(false);
         setDragOffset(0);
@@ -2591,9 +2593,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               : "none",
           }}
         >
-          {/* Slide 0: Previous Card */}
+          {/* Slide 0: Next Card (revealed when dragging right) */}
           <div className="w-full min-w-full max-w-full shrink-0 px-1 flex flex-col h-full" dir="rtl">
-            {renderCard(prevIdx)}
+            {renderCard(nextIdx)}
           </div>
 
           {/* Slide 1: Current Card */}
@@ -2601,9 +2603,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             {renderCard(currIdx)}
           </div>
 
-          {/* Slide 2: Next Card */}
+          {/* Slide 2: Previous Card (revealed when dragging left) */}
           <div className="w-full min-w-full max-w-full shrink-0 px-1 flex flex-col h-full" dir="rtl">
-            {renderCard(nextIdx)}
+            {renderCard(prevIdx)}
           </div>
         </div>
       </div>
