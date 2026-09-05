@@ -21,6 +21,8 @@ model User {
   subscriptionStatus        String              @default("TRIAL")
   stripeCustomerId          String?
   stripeSubscriptionId      String?
+  lemonSqueezyCustomerId    String?
+  lemonSqueezySubscriptionId String?
   currentPeriodEnd          DateTime?
   createdAt                 DateTime            @default(now())
   updatedAt                 DateTime            @updatedAt

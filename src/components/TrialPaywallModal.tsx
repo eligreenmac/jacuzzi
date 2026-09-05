@@ -156,12 +156,12 @@ export default function TrialPaywallModal({
             {loading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>מעביר לדף תשלום מאובטח ב-Stripe...</span>
+                <span>מעביר לדף תשלום מאובטח...</span>
               </>
             ) : (
               <>
                 <CreditCard className="w-4 h-4" />
-                <span>המשך לתשלום מאובטח של $5 ב-Stripe</span>
+                <span>המשך לתשלום מאובטח של $5</span>
                 <ArrowLeft className="w-4 h-4 mr-auto" />
               </>
             )}
@@ -169,7 +169,7 @@ export default function TrialPaywallModal({
 
           <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>סליקה מאובטחת ע"י Stripe • תמיכה ב-Apple Pay, Google Pay וכרטיסי אשראי</span>
+            <span>סליקה מאובטחת ע"י Lemon Squeezy • תמיכה ב-Apple Pay, Google Pay, PayPal וכרטיסי אשראי</span>
           </div>
         </div>
       </div>

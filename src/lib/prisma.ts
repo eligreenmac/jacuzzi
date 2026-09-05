@@ -52,6 +52,8 @@ export async function ensureDbSchema() {
         ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionStatus" TEXT DEFAULT 'TRIAL';
         ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "stripeCustomerId" TEXT;
         ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "stripeSubscriptionId" TEXT;
+        ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lemonSqueezyCustomerId" TEXT;
+        ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lemonSqueezySubscriptionId" TEXT;
         ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "currentPeriodEnd" TIMESTAMP WITH TIME ZONE;
         UPDATE "User" SET "subscriptionStatus" = 'ADMIN' WHERE LOWER(TRIM("email")) = 'eligreenmail@gmail.com';
         UPDATE "User" 
