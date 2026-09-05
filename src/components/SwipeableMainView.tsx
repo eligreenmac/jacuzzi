@@ -2528,47 +2528,81 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
                         {latestWaterLog ? (
                           <>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenPageId("water-tests");
-                                }}
-                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center flex items-center justify-center min-h-[48px] cursor-pointer"
-                              >
-                                <span className="text-xs sm:text-sm font-bold text-white">חומציות (pH)</span>
-                              </div>
+                            {(() => {
+                              const phVal = extractParamValue(latestWaterLog, "ph");
+                              const phDomain = getGenericDomain("ph", phVal.val, phVal.rangeStr);
 
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenPageId("water-tests");
-                                }}
-                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center flex items-center justify-center min-h-[48px] cursor-pointer"
-                              >
-                                <span className="text-xs sm:text-sm font-bold text-white">כלור / חיטוי</span>
-                              </div>
+                              const clVal = extractParamValue(latestWaterLog, "chlorine");
+                              const clDomain = getGenericDomain("chlorine", clVal.val, clVal.rangeStr);
 
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenPageId("water-tests");
-                                }}
-                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center flex items-center justify-center min-h-[48px] cursor-pointer"
-                              >
-                                <span className="text-xs sm:text-sm font-bold text-white">בסיסיות כוללת (TA)</span>
-                              </div>
+                              const taVal = extractParamValue(latestWaterLog, "alkalinity");
+                              const taDomain = getGenericDomain("alkalinity", taVal.val, taVal.rangeStr);
 
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openClarityOdorModal();
-                                }}
-                                className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center flex items-center justify-center min-h-[48px] cursor-pointer"
-                              >
-                                <span className="text-xs sm:text-sm font-bold text-white">צלילות ומראה</span>
-                              </div>
-                            </div>
+                              const clarityObj = getClarityDisplay(latestWaterLog?.waterClarity);
+
+                              const getStatusColorClass = (id: string) => {
+                                if (id === "OK") return "text-emerald-400";
+                                if (id === "LOW" || id === "HIGH") return "text-amber-400";
+                                if (id === "VERY_LOW" || id === "VERY_HIGH") return "text-rose-400";
+                                return "text-slate-300";
+                              };
+
+                              return (
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenPageId("water-tests");
+                                    }}
+                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                  >
+                                    <span className="text-[10px] text-slate-400 block">חומציות (pH)</span>
+                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(phDomain.id)}`}>
+                                      {phDomain.label}
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenPageId("water-tests");
+                                    }}
+                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                  >
+                                    <span className="text-[10px] text-slate-400 block">כלור / חיטוי</span>
+                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(clDomain.id)}`}>
+                                      {clDomain.label}
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenPageId("water-tests");
+                                    }}
+                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                  >
+                                    <span className="text-[10px] text-slate-400 block">בסיסיות כוללת (TA)</span>
+                                    <div className={`text-sm sm:text-base font-black ${getStatusColorClass(taDomain.id)}`}>
+                                      {taDomain.label}
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openClarityOdorModal();
+                                    }}
+                                    className="bg-[#080e14]/90 p-3 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all text-center space-y-1 cursor-pointer"
+                                  >
+                                    <span className="text-[10px] text-slate-400 block">צלילות ומראה</span>
+                                    <div className={`text-sm sm:text-base font-black ${latestWaterLog?.waterClarity === "CLEAR" ? "text-emerald-400" : "text-amber-400"}`}>
+                                      {clarityObj.label}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             {/* סכנות של מדדים שאינם תקינים */}
                             {latestAbnormalRisks.length > 0 ? (
