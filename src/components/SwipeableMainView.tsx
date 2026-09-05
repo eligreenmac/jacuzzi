@@ -269,8 +269,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     }
   };
 
-  // 🌟 Category Drag & Drop Reordering Across Tabs
-  const DEFAULT_CARD_0_ORDER = ["upcoming-tasks", "water-status", "water-age", "chemical-inventory"];
+  const DEFAULT_CARD_0_ORDER = ["upcoming-tasks", "water-status", "water-age"];
   const DEFAULT_CARD_1_ORDER = ["filter-wash", "waterline-clean", "cover-clean", "deep-clean", "filter-replace", "custom-routines"];
   const DEFAULT_CARD_2_ORDER = ["water-quality", "strip-settings", "scheduled-treatments"];
 
@@ -2072,64 +2071,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                       </div>
                     )}
 
-                    {/* Section: הזמנת חומרים ומצב מלאי */}
-                    {sectionId === "chemical-inventory" && (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.location.href = "/inventory";
-                        }}
-                        className="space-y-2 pt-1 border-t border-sky-900/20 cursor-pointer group/inv"
-                      >
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-white group-hover/inv:text-sky-300 transition-colors">
-                            הזמנת חומרים ומצב מלאי:
-                          </span>
-                          <span className="text-[10px] text-slate-400">
-                            {lowStockChems.length > 0 ? `${lowStockChems.length} חומרים בחוסר` : "מלאי מספק"}
-                          </span>
-                        </div>
-
-                        {lowStockChems.length > 0 ? (
-                          <div className="space-y-2 bg-[#180e14]/80 p-3 rounded-2xl border border-rose-900/50">
-                            <div className="text-[11px] text-rose-300 font-bold">
-                              <span>נמצאו חומרים מתחת לסף המינימום - נדרשת הזמנה:</span>
-                            </div>
-
-                            <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                              {lowStockChems.map((c: any) => (
-                                <span
-                                  key={c.id}
-                                  className="text-[11px] bg-rose-950/90 text-rose-200 border border-rose-800/70 px-2.5 py-1 rounded-xl font-bold flex items-center gap-1"
-                                >
-                                  <span>{c.name}:</span>
-                                  <span className="text-white">{c.quantity} {formatChemUnit(c.unit)}</span>
-                                  <span className="text-rose-400 text-[9px]">(סף: {c.minThreshold || 100})</span>
-                                </span>
-                              ))}
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.location.href = "/inventory";
-                              }}
-                              className="w-full mt-1 py-2 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
-                            >
-                              <span>פתח ארון חומרים להזמנה ועדכון מלאי</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="p-2.5 bg-[#080e14]/90 rounded-xl border border-emerald-900/30 flex items-center justify-between text-[11px] text-emerald-300">
-                            <span>כל החומרים בארון מעל סף המינימום ולא נדרשת הזמנה ✓</span>
-                            <span className="text-[10px] text-sky-300 group-hover/inv:text-white underline">
-                              לארון החומרים
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })}
