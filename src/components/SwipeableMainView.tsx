@@ -51,7 +51,8 @@ import {
 
 export const CARD_TABS = [
   { id: "status", title: "סטטוס", subtitle: "משימות ל-7 ימים, איכות מים, סכנות והזמנת חומרים", icon: Activity },
-  { id: "water-maintenance", title: "תחזוקת מים", subtitle: "הגדרות מקלון, מצב איכות מים, שגרת טיפולים ותוספות חומרים", icon: Droplets },
+  { id: "water-maintenance", title: "תחזוקת מים", subtitle: "הגדרות מקלון, מצב איכות מים ושגרת בדיקות וטיפולים", icon: Droplets },
+  { id: "chemicals", title: "כימיקלים", subtitle: "היסטוריית כל החומרים והמינונים שהוספו לג'קוזי לאורך הזמן", icon: FlaskConical },
   { id: "jacuzzi-maintenance", title: "תחזוקת מתקן", subtitle: "שטיפת פילטר, ניקוי דפנות, מכסה, צנרת והחלפת פילטר", icon: Wrench },
 ];
 
@@ -255,13 +256,16 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     }
   };
 
-  // Carousel index state (0..5 with infinite wrap)
+  // Carousel index state (0..3 with infinite wrap)
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visualActiveIndex, setVisualActiveIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isBouncing, setIsBouncing] = useState(false);
+
+  // Pagination for Chemicals tab (15 items per page)
+  const [chemicalsPage, setChemicalsPage] = useState(0);
 
   // App Data for live summary cards
   const [data, setData] = useState<any>(null);
@@ -924,8 +928,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const itemsFromInventory = chemicals
     .filter((c: any) => c.lastUsedDate && c.lastUsedAmount && c.lastUsedAmount > 0)
     .map((c: any) => ({
-      id: `chem-${c.id}`,
-      title: `${c.name}: ${c.lastUsedAmount} ${c.unit || "גרם"}`,
+      id: `chem-${c.id}-${c.lastUsedDate}`,
+      title: `${c.name}: ${c.lastUsedAmount} ${c.unit === "GRAMS" ? "גר'" : c.unit === "ML" ? 'מ"ל' : c.unit || "גרם"}`,
       date: c.lastUsedDate,
       formattedDate: formatDateDisplay(c.lastUsedDate),
       relativeDate: getRelativeDaysDisplay(c.lastUsedDate, true),
@@ -933,14 +937,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   const itemsFromDiary = diaryEntries
     .filter((d: any) => {
-      if (!d.chemicalsAdded) return false;
+      if (d.chemicalsAdded) return true;
       const t = `${d.title || ""} ${d.content || ""}`.toLowerCase();
       if (t.includes("הזמנ") || t.includes("הגעת") || t.includes("קני") || t.includes("רכיש")) return false;
-      return true;
+      if (t.includes("הוספת חומר") || t.includes("תוספת חומר") || t.includes("הוסף לג'קוזי") || t.includes("חיטוי שבועי")) return true;
+      return false;
     })
     .map((d: any) => ({
       id: `diary-${d.id}`,
-      title: d.chemicalsAdded,
+      title: d.chemicalsAdded || d.title,
       date: d.entryDate || d.createdAt,
       formattedDate: formatDateDisplay(d.entryDate || d.createdAt),
       relativeDate: getRelativeDaysDisplay(d.entryDate || d.createdAt, true),
@@ -954,9 +959,16 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     }
   });
 
-  const adHocChemicalList = Array.from(allAddedChemicalsMap.values())
-    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+  const allAddedChemicalsList = Array.from(allAddedChemicalsMap.values())
+    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const CHEMICALS_PER_PAGE = 15;
+  const totalChemicalPages = Math.max(1, Math.ceil(allAddedChemicalsList.length / CHEMICALS_PER_PAGE));
+  const validChemicalsPage = Math.min(chemicalsPage, totalChemicalPages - 1);
+  const displayedChemicals = allAddedChemicalsList.slice(
+    validChemicalsPage * CHEMICALS_PER_PAGE,
+    (validChemicalsPage + 1) * CHEMICALS_PER_PAGE
+  );
 
   // Jacuzzi Maintenance Dates
   // 6. Weekly Filter Rinse Dates
@@ -1633,7 +1645,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
             {/* Footer */}
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">1 מתוך 3 ◂</span>
+              <span className="text-sky-300 font-bold">1 מתוך 4 ◂</span>
             </div>
           </div>
         );
@@ -2067,73 +2079,153 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   </div>
                 </div>
               </div>
-
-              {/* חומרים שנוספו לג'קוזי (ללא תאריך הבא!) */}
-              <div className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-white flex items-center gap-1.5">
-                    <Beaker className="w-3.5 h-3.5 text-sky-400" />
-                    <span>חומרים שנוספו לג'קוזי (ללא תאריך הבא):</span>
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openItemModal({
-                        id: "adhoc-chemical",
-                        title: "רישום תוספת חומר לג'קוזי",
-                        subtitle: "בחירת חומר מהארון, גריעת כמות ותיעוד הוספה למים",
-                        icon: Beaker,
-                        type: "adhoc-chemical",
-                        defaultFreqDays: 0,
-                        currentFreqDays: 0,
-                        currentLastDoneDate: new Date().toISOString(),
-                        currentNextDueDate: null,
-                      });
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-sky-950/90 hover:bg-sky-900 border border-sky-800/80 text-sky-200 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3 text-sky-400" />
-                    <span>+ הוסף חומר</span>
-                  </button>
-                </div>
-
-                {adHocChemicalList.length > 0 ? (
-                  <div className="space-y-1.5 pt-1 border-t border-sky-900/20">
-                    {adHocChemicalList.map((item: any) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between text-[11px] bg-sky-950/40 px-3 py-1.5 rounded-xl border border-sky-900/30"
-                      >
-                        <span className="font-semibold text-white truncate max-w-[200px] sm:max-w-xs">
-                          🧪 {item.title}
-                        </span>
-                        <span className="text-slate-300 text-[10px] shrink-0">
-                          הוסף בתאריך {item.formattedDate} {item.relativeDate}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-[11px] text-slate-400 text-center py-1">
-                    לא תועדו חומרים שנוספו לג'קוזי • לחץ על "+ הוסף חומר" לתיעוד הוספה
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Footer */}
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">2 מתוך 3 ◂</span>
+              <span className="text-sky-300 font-bold">2 מתוך 4 ◂</span>
             </div>
           </div>
         );
 
       // -------------------------------------------------------------
-      // CARD 2: תחזוקת מתקן (כולל ניקוי צנרת והחלפת פילטר)
+      // CARD 2: כימיקלים (היסטוריית כל החומרים שהוספו לג'קוזי לאורך הזמן)
       // -------------------------------------------------------------
       case 2:
+        return (
+          <div
+            onClick={() => setOpenPageId("inventory")}
+            className="bg-[#0e1823]/95 border border-sky-900/40 hover:border-sky-600/70 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl transition-all group cursor-pointer hover:shadow-sky-950/40 h-full flex flex-col justify-between min-h-[580px]"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 border-b border-sky-900/30 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-950/70 border border-sky-800/60 flex items-center justify-center text-sky-300 shadow-inner group-hover:scale-110 transition-transform">
+                  <FlaskConical className="w-6 h-6 text-sky-300" />
+                </div>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-sky-200 transition-colors">
+                    כימיקלים
+                  </h2>
+                  <p className="text-xs text-slate-300">
+                    היסטוריית תוספות חומרים לג'קוזי ({allAddedChemicalsList.length} תיעודים)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openItemModal({
+                    id: "adhoc-chemical",
+                    title: "רישום תוספת חומר לג'קוזי",
+                    subtitle: "בחירת חומר מהארון, גריעת כמות ותיעוד הוספה למים",
+                    icon: Beaker,
+                    type: "adhoc-chemical",
+                    defaultFreqDays: 0,
+                    currentFreqDays: 0,
+                    currentLastDoneDate: new Date().toISOString(),
+                    currentNextDueDate: null,
+                  });
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ הוסף חומר</span>
+              </button>
+            </div>
+
+            {/* Body: 15 items list with pagination */}
+            <div className="space-y-3 flex-1 flex flex-col justify-between">
+              {displayedChemicals.length > 0 ? (
+                <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-0.5">
+                  {displayedChemicals.map((item: any, idx: number) => (
+                    <div
+                      key={item.id || idx}
+                      className="flex items-center justify-between text-xs bg-sky-950/40 hover:bg-sky-950/70 px-3.5 py-2 rounded-xl border border-sky-900/30 transition-colors"
+                    >
+                      <span className="font-bold text-white truncate max-w-[220px] sm:max-w-sm flex items-center gap-1.5">
+                        <span className="text-cyan-400">🧪</span>
+                        <span>{item.title}</span>
+                      </span>
+                      <div className="text-left shrink-0">
+                        <span className="text-slate-300 text-[11px] font-medium block">
+                          {item.formattedDate}
+                        </span>
+                        <span className="text-emerald-400 text-[10px] block">
+                          {item.relativeDate}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3 bg-[#080e14]/60 rounded-2xl border border-sky-900/20">
+                  <div className="w-12 h-12 rounded-full bg-sky-950/60 border border-sky-800/40 flex items-center justify-center text-sky-400">
+                    <FlaskConical className="w-6 h-6 opacity-60" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-white">לא תועדו עדיין חומרים שנוספו לג'קוזי</p>
+                    <p className="text-xs text-slate-400">
+                      לחץ על "+ הוסף חומר" למעלה כדי לרשום חומר שהוספת למים ולגרוע מהמלאי
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Pagination Controls (15 items per page) */}
+              {totalChemicalPages > 1 && (
+                <div
+                  className="flex items-center justify-between pt-2 border-t border-sky-900/30 text-xs mt-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    disabled={validChemicalsPage === 0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setChemicalsPage((p) => Math.max(0, p - 1));
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800 text-sky-200 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer font-bold transition-all text-xs"
+                    title="15 הקודמים"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                    <span>15 הקודמים</span>
+                  </button>
+
+                  <span className="text-slate-300 font-semibold text-[11px]">
+                    עמוד {validChemicalsPage + 1} מתוך {totalChemicalPages} ({allAddedChemicalsList.length} סה"כ)
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={validChemicalsPage >= totalChemicalPages - 1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setChemicalsPage((p) => Math.min(totalChemicalPages - 1, p + 1));
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800 text-sky-200 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer font-bold transition-all text-xs"
+                    title="15 הבאים"
+                  >
+                    <span>15 הבאים</span>
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
+              <span className="text-sky-300 font-bold">3 מתוך 4 ◂</span>
+            </div>
+          </div>
+        );
+
+      // -------------------------------------------------------------
+      // CARD 3: תחזוקת מתקן (כולל ניקוי צנרת והחלפת פילטר ושגרות מותאמות)
+      // -------------------------------------------------------------
+      case 3:
       default:
         return (
           <div
@@ -2158,24 +2250,23 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                   e.stopPropagation();
                   openCreateRoutineModal();
                 }}
-                className="px-3 py-1.5 rounded-xl bg-sky-950/90 hover:bg-sky-900 border border-sky-800/80 text-sky-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5 text-sky-400" />
-                <span>+ הוסף שגרה</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ שגרה חדשה</span>
               </button>
             </div>
 
-            {/* List of Specific Jacuzzi Equipment Actions */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Item 1: שטיפת פילטר שבועית */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 overflow-y-auto pr-0.5">
+              {/* Task 1: שטיפת פילטר שבועית */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   openItemModal({
-                    id: "filter-rinse",
-                    title: "שטיפת פילטר שבועית",
-                    subtitle: "סימון שטיפת פילטר, קביעת תדירות ושליטה בתאריכי היעד",
-                    icon: RefreshCw,
+                    id: "filter-wash",
+                    title: "שטיפת פילטר",
+                    subtitle: "סימון שטיפת הפילטר בזרם מים, עדכון תאריך ביצוע ושינוי תדירות",
+                    icon: ShieldCheck,
                     type: "task",
                     taskId: filterRinseTask?.id,
                     taskCategory: "WEEKLY",
@@ -2446,7 +2537,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
             </div>
 
             <div className="flex items-center justify-end text-xs text-slate-400 pt-1">
-              <span className="text-sky-300 font-bold">3 מתוך 3 ◂</span>
+              <span className="text-sky-300 font-bold">4 מתוך 4 ◂</span>
             </div>
           </div>
         );
