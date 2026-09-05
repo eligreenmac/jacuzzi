@@ -21,6 +21,7 @@ import {
   Cpu,
   Zap,
   ChevronRight,
+  FileDown,
 } from "lucide-react";
 import { compressImageForAI } from "@/lib/image-utils";
 
@@ -287,6 +288,352 @@ export default function InventoryPage() {
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handleExportPdf = () => {
+    if (!aiAnalysis) return;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("נא לאפשר חלונות קופצים בדפדפן כדי לייצא את הדוח כ-PDF.");
+      return;
+    }
+
+    const dateStr = new Date().toLocaleDateString("he-IL", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const missingItemsHtml =
+      aiAnalysis.missingCritical && aiAnalysis.missingCritical.length > 0
+        ? aiAnalysis.missingCritical
+            .map(
+              (item: any, i: number) => `
+          <div class="card ${item.urgency === "CRITICAL" ? "critical" : "recommended"}">
+            <div class="card-header">
+              <span class="badge ${item.urgency === "CRITICAL" ? "badge-critical" : "badge-recommended"}">
+                ${item.urgency === "CRITICAL" ? "חובה קריטית" : "מומלץ מאוד"}
+              </span>
+              <h3 class="card-title">${i + 1}. ${item.nameHe || item.name || ""}</h3>
+            </div>
+            <p class="card-desc"><strong>למה נדרש:</strong> ${item.whyNeeded || ""}</p>
+            ${item.suggestedProduct ? `<p class="card-product"><strong>מוצר מומלץ לרכישה:</strong> ${item.suggestedProduct}</p>` : ""}
+          </div>
+        `
+            )
+            .join("")
+        : '<div class="card success"><p class="card-desc">מעולה! ארון החומרים שלך מצויד בכל הכימיקלים הנדרשים לתחזוקה תקינה.</p></div>';
+
+    const safetyItemsHtml =
+      aiAnalysis.safetyRecommendations && aiAnalysis.safetyRecommendations.length > 0
+        ? `
+        <div class="section">
+          <h2 class="section-title">🛡️ הנחיות בטיחות ואחסון חומרים</h2>
+          <ul class="safety-list">
+            ${aiAnalysis.safetyRecommendations.map((tip: string) => `<li>${tip}</li>`).join("")}
+          </ul>
+        </div>
+      `
+        : "";
+
+    const inventoryListHtml =
+      chemicals && chemicals.length > 0
+        ? `
+        <div class="section">
+          <h2 class="section-title">📦 פירוט מלאי קיים בארון (${chemicals.length} פריטים)</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>שם החומר</th>
+                <th>כמות נוכחית</th>
+                <th>סף התרעה מינימלי</th>
+                <th>מצב מלאי</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${chemicals
+                .map((c) => {
+                  const unitLabel =
+                    c.unit === "GRAMS"
+                      ? "גרם"
+                      : c.unit === "MILLILITERS"
+                      ? "מ\"ל"
+                      : c.unit === "TABLETS"
+                      ? "טבליות"
+                      : "יח'";
+                  const isLow = c.quantity <= (c.minThreshold || 0);
+                  return `
+                  <tr>
+                    <td><strong>${c.nameHe || c.name}</strong></td>
+                    <td>${c.quantity} ${unitLabel}</td>
+                    <td>${c.minThreshold || "-"} ${unitLabel}</td>
+                    <td><span class="${isLow ? "text-danger" : "text-ok"}">${isLow ? "⚠️ מלאי נמוך" : "✓ תקין"}</span></td>
+                  </tr>
+                `;
+                })
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      `
+        : "";
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="utf-8">
+        <title>דוח ניתוח מלאי וחומרים חסרים - Jacuzzi AI</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 15mm;
+          }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            direction: rtl;
+            color: #0f172a;
+            background: #ffffff;
+            padding: 24px;
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.5;
+          }
+          .header {
+            border-bottom: 2px solid #8b5cf6;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+          }
+          .header-title {
+            margin: 0;
+            font-size: 20px;
+            color: #1e1b4b;
+            font-weight: 800;
+          }
+          .header-subtitle {
+            font-size: 12px;
+            color: #6d28d9;
+            font-weight: 600;
+            margin-top: 3px;
+          }
+          .header-meta {
+            font-size: 11px;
+            color: #64748b;
+            text-align: left;
+            line-height: 1.4;
+          }
+          .summary-box {
+            background-color: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-right: 4px solid #7c3aed;
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #4c1d95;
+            line-height: 1.6;
+          }
+          .section {
+            margin-bottom: 22px;
+          }
+          .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+          .card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            page-break-inside: avoid;
+          }
+          .card.critical {
+            border-right: 4px solid #ef4444;
+            background-color: #fef2f2;
+          }
+          .card.recommended {
+            border-right: 4px solid #f59e0b;
+            background-color: #fffbeb;
+          }
+          .card.success {
+            border-right: 4px solid #10b981;
+            background-color: #f0fdf4;
+          }
+          .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+          }
+          .card-title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+          }
+          .badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 9999px;
+          }
+          .badge-critical {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+          }
+          .badge-recommended {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+          }
+          .card-desc {
+            margin: 4px 0;
+            color: #334155;
+            font-size: 12px;
+          }
+          .card-product {
+            margin: 4px 0 0 0;
+            color: #0369a1;
+            font-size: 11.5px;
+          }
+          .safety-list {
+            margin: 0;
+            padding-right: 20px;
+            color: #334155;
+            font-size: 12px;
+            line-height: 1.6;
+          }
+          .safety-list li {
+            margin-bottom: 6px;
+          }
+          .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 12px;
+          }
+          .table th, .table td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 10px;
+            text-align: right;
+          }
+          .table th {
+            background-color: #f1f5f9;
+            font-weight: 700;
+            color: #334155;
+          }
+          .text-danger {
+            color: #dc2626;
+            font-weight: 700;
+          }
+          .text-ok {
+            color: #16a34a;
+            font-weight: 600;
+          }
+          .footer {
+            margin-top: 30px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 10px;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+          }
+          .print-toolbar {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .print-btn {
+            background: #7c3aed;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+          }
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+            body {
+              padding: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-toolbar no-print">
+          <div>💡 <strong>טיפ:</strong> בחלון ההדפסה שייפתח, בחר באפשרות <strong>"שמור כ-PDF" (Save as PDF)</strong> כדי להוריד את הקובץ.</div>
+          <button class="print-btn" onclick="window.print()">🖨️ הדפס / שמור כ-PDF</button>
+        </div>
+
+        <div class="header">
+          <div>
+            <h1 class="header-title">✨ דוח ניתוח מלאי חומרים וזיהוי חוסרים (AI)</h1>
+            <div class="header-subtitle">מערכת ניהול ובקרת ג'קוזי חכמה</div>
+          </div>
+          <div class="header-meta">
+            <div><strong>תאריך הפקה:</strong> ${dateStr}</div>
+            <div><strong>סוג בדיקה:</strong> אבחון כימיקלים וציוד מלאי</div>
+          </div>
+        </div>
+
+        <div class="summary-box">
+          <strong>סיכום מצב הארון:</strong><br/>
+          ${aiAnalysis.inventorySummary || ""}
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">🚨 חומרים קריטיים שחסרים בארון</h2>
+          ${missingItemsHtml}
+        </div>
+
+        ${safetyItemsHtml}
+
+        ${inventoryListHtml}
+
+        <div class="footer">
+          הופק אוטומטית באמצעות יועץ ה-AI של מערכת תחזוקת הג'קוזי.
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   const updateQuantityQuick = async (chem: any, delta: number) => {
@@ -1067,10 +1414,20 @@ export default function InventoryPage() {
               </div>
             ) : null}
 
-            <div className="text-left pt-2">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+              {aiAnalysis ? (
+                <button
+                  type="button"
+                  onClick={handleExportPdf}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-purple-900/40 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>שמור / הורד דוח כ-PDF</span>
+                </button>
+              ) : <div />}
               <button
                 onClick={() => setIsAiModalOpen(false)}
-                className="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold"
+                className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-all cursor-pointer"
               >
                 סגור
               </button>
