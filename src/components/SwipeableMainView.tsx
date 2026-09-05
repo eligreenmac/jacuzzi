@@ -1129,13 +1129,18 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
           <button
             type="button"
             onClick={() => {
+              const wasWaterTestsNew = openPageId === "water-tests-new";
               setOpenPageId(null);
+              if (wasWaterTestsNew) {
+                setCurrentIndex(2);
+                setVisualActiveIndex(2);
+              }
               loadSummaryData();
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all hover:scale-105 cursor-pointer select-none"
           >
             <ChevronRight className="w-4 h-4" />
-            <span>חזרה לכרטיסי הבקרה</span>
+            <span>{openPageId === "water-tests-new" ? "חזרה לתחזוקת מים" : "חזרה לכרטיסי הבקרה"}</span>
           </button>
 
           <span className="text-xs font-semibold text-sky-100 hidden sm:inline">
@@ -1148,7 +1153,15 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         {/* Full Page View Component */}
         <div className="pt-2">
           {(openPageId === "water-tests" || openPageId === "water-tests-new") && (
-            <WaterTestsPage initialOpenAddModal={openPageId === "water-tests-new"} />
+            <WaterTestsPage
+              initialOpenAddModal={openPageId === "water-tests-new"}
+              onClose={() => {
+                setOpenPageId(null);
+                setCurrentIndex(2);
+                setVisualActiveIndex(2);
+                loadSummaryData();
+              }}
+            />
           )}
           {(openPageId === "water-maintenance" || openPageId === "jacuzzi-maintenance" || openPageId === "calendar") && <CalendarPage />}
           {openPageId === "inventory" && <InventoryPage />}

@@ -42,9 +42,10 @@ export function getParamDomain(
 
 interface WaterTestsPageProps {
   initialOpenAddModal?: boolean;
+  onClose?: () => void;
 }
 
-export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTestsPageProps) {
+export default function WaterTestsPage({ initialOpenAddModal = false, onClose }: WaterTestsPageProps) {
   const [tests, setTests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeParams, setActiveParams] = useState<string[]>(DEFAULT_TEST_STRIP_PARAM_IDS);
@@ -56,6 +57,13 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const handleCloseAddModal = () => {
+    setIsAddModalOpen(false);
+    if (initialOpenAddModal && onClose) {
+      onClose();
+    }
+  };
 
   useEffect(() => {
     if (initialOpenAddModal) {
@@ -215,7 +223,10 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
 
       setIsAddModalOpen(false);
       setDescription("");
-      loadTests();
+      await loadTests();
+      if (initialOpenAddModal && onClose) {
+        onClose();
+      }
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
@@ -664,7 +675,7 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
                   <Sliders className="w-3.5 h-3.5" />
                   <span>הגדרות מקלון</span>
                 </button>
-                <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white p-1">
+                <button onClick={handleCloseAddModal} className="text-slate-400 hover:text-white p-1">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -806,7 +817,7 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={handleCloseAddModal}
                   className="px-4 py-2 text-xs text-slate-400 hover:text-white"
                 >
                   ביטול
