@@ -2702,7 +2702,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     {sectionId === "scheduled-treatments" && (
                       <div className="space-y-3 pt-1 border-t border-sky-900/20">
                         <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <span>שגרת טיפולי מים:</span>
+                          <span>שגרות מומלצות:</span>
                         </div>
 
                         {/* List of Water Treatments */}
