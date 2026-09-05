@@ -789,27 +789,6 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
                   );
                 })}
 
-                {/* Water Clarity - Always rendered last among metrics */}
-                <div className="space-y-1.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <label className="text-xs font-semibold text-slate-300">צלילות ומראה המים (Water Clarity)</label>
-                    <span className="text-[11px] text-slate-400">אידיאלי: צלול ונקי</span>
-                  </div>
-                  <select
-                    value={clarity}
-                    onChange={(e) => setClarity(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs font-medium"
-                  >
-                    <option value="CLEAR">מים צלולים לחלוטין</option>
-                    <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
-                    <option value="VERY_CLOUDY">עכורים מאוד / חלביים</option>
-                    <option value="FOAMY">מקציפים בהפעלת ג'טים</option>
-                    <option value="GREEN">ירוקים / אצות</option>
-                    <option value="METALLIC_COPPER">גוון ירוק-טורקיז / נחושת (Copper)</option>
-                    <option value="METALLIC_RUST">גוון חלודה / ברזל (Iron / Rust)</option>
-                    <option value="BAD_ODOR">ריח חריף</option>
-                  </select>
-                </div>
               </div>
 
               {/* Free text */}
@@ -957,27 +936,6 @@ export default function WaterTestsPage({ initialOpenAddModal = false }: WaterTes
                   );
                 })}
 
-                {/* Water Clarity in Edit Modal - always rendered last */}
-                <div className="space-y-1.5 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
-                  <div className="flex items-center justify-between text-xs">
-                    <label className="text-xs font-semibold text-slate-300">צלילות ומראה המים (Water Clarity)</label>
-                    <span className="text-[11px] text-slate-400">אידיאלי: צלול ונקי</span>
-                  </div>
-                  <select
-                    value={editForm.waterClarity}
-                    onChange={(e) => setEditForm({ ...editForm, waterClarity: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
-                  >
-                    <option value="CLEAR">מים צלולים</option>
-                    <option value="SLIGHTLY_CLOUDY">מעט עכורים</option>
-                    <option value="VERY_CLOUDY">עכורים מאוד</option>
-                    <option value="FOAMY">מקציפים</option>
-                    <option value="GREEN">ירוקים / אצות</option>
-                    <option value="METALLIC_COPPER">גוון ירוק-טורקיז (נחושת)</option>
-                    <option value="METALLIC_RUST">חלודה / ברזל</option>
-                    <option value="BAD_ODOR">ריח חריף</option>
-                  </select>
-                </div>
               </div>
 
               <div className="space-y-1">

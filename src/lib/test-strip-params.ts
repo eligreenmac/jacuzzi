@@ -338,29 +338,14 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
   },
 ];
 
-export const WATER_CLARITY_PARAM: TestStripParamDef = {
-  id: "clarity",
-  nameHe: "צלילות ומראה המים",
-  enName: "Water Clarity",
-  category: "מדדי מראה וצלילות",
-  unit: "מראה",
-  idealRange: "צלול ונקי",
-  isDefault: true,
-  description: "מראה המים ועומס חלקיקים/שומנים צפים.",
-  dangerLow: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
-  dangerHigh: "עומס שומנים ולכלוך אורגני, סתימת נקבוביות הפילטר, פגיעה בסירקולציה והתפתחות בקטריאלית.",
-};
-
-export const ALL_PARAMS_WITH_CLARITY: TestStripParamDef[] = [...ALL_TEST_STRIP_PARAMS, WATER_CLARITY_PARAM];
-
 export const DEFAULT_TEST_STRIP_PARAM_IDS = ["ph", "chlorine", "alkalinity"];
 
 export function parseTestStripParams(val: any): string[] {
-  if (Array.isArray(val)) return val;
+  if (Array.isArray(val)) return val.filter((id) => id !== "clarity");
   if (typeof val === "string") {
     try {
       const parsed = JSON.parse(val);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed.filter((id) => id !== "clarity");
     } catch {}
   }
   return DEFAULT_TEST_STRIP_PARAM_IDS;

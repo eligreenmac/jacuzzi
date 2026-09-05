@@ -78,7 +78,7 @@ export async function PUT(req: NextRequest) {
         lastRefillDate: lastRefillDate ? new Date(lastRefillDate) : new Date(),
         lastDeepCleanDate: lastDeepCleanDate ? new Date(lastDeepCleanDate) : new Date(),
         lastFilterReplaceDate: lastFilterReplaceDate ? new Date(lastFilterReplaceDate) : null,
-        testStripParams: testStripParamsStr || '["ph","chlorine","alkalinity","clarity"]',
+        testStripParams: testStripParamsStr || '["ph","chlorine","alkalinity"]',
       },
       update: {
         name: name || undefined,

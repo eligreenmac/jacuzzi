@@ -63,7 +63,7 @@ export async function ensureDbSchema() {
           AND ("trialEndsAt" <= "createdAt" + INTERVAL '1 hour' OR "trialEndsAt" IS NULL);
       `);
       await prisma.$executeRawUnsafe(`
-        ALTER TABLE "Jacuzzi" ADD COLUMN IF NOT EXISTS "testStripParams" TEXT DEFAULT '["ph","chlorine","alkalinity","clarity"]';
+        ALTER TABLE "Jacuzzi" ADD COLUMN IF NOT EXISTS "testStripParams" TEXT DEFAULT '["ph","chlorine","alkalinity"]';
       `);
       await prisma.$executeRawUnsafe(`
         ALTER TABLE "WaterLog" ADD COLUMN IF NOT EXISTS "calcium" DOUBLE PRECISION;

@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
 
     const activeTestedParamsStr = testedParams
       ? (typeof testedParams === "string" ? testedParams : JSON.stringify(testedParams))
-      : (jacuzzi?.testStripParams || '["ph","chlorine","alkalinity","clarity"]');
+      : (jacuzzi?.testStripParams || '["ph","chlorine","alkalinity"]');
 
     const newTest = await prisma.waterLog.create({
       data: {
