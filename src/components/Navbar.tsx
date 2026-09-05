@@ -12,14 +12,37 @@ import {
   Package,
   Droplets,
   Activity,
+  Crown,
+  Clock,
+  CreditCard,
 } from "lucide-react";
 import FullDiagnosticModal from "./FullDiagnosticModal";
+import AdminUsersModal from "./AdminUsersModal";
+import TrialPaywallModal from "./TrialPaywallModal";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
+  const [user, setUser] = useState<{
+    id?: string;
+    name?: string;
+    email?: string;
+    isAdmin?: boolean;
+    subscriptionDetails?: {
+      status: string;
+      isAdmin: boolean;
+      hasAccess: boolean;
+      isTrial: boolean;
+      isPaying: boolean;
+      daysLeftInTrial: number;
+      formattedStatus: string;
+      badgeColor: string;
+    };
+  } | null>(null);
+
   const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isPaywallModalOpen, setIsPaywallModalOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -38,6 +61,8 @@ export default function Navbar() {
     router.push("/login");
     router.refresh();
   };
+
+  const isExpired = !!(user && !user.isAdmin && user.subscriptionDetails && !user.subscriptionDetails.hasAccess);
 
   return (
     <>
@@ -72,7 +97,7 @@ export default function Navbar() {
                     <Package className="w-4 h-4" />
                   </Link>
 
-                  {/* 🩺 אבחון כולל לג'קוזי עם AI (ליד כפתור הגדרות) */}
+                  {/* 🩺 אבחון כולל לג'קוזי עם AI */}
                   <button
                     type="button"
                     onClick={() => setIsDiagnosticModalOpen(true)}
@@ -82,7 +107,19 @@ export default function Navbar() {
                     <Activity className="w-4 h-4 text-cyan-400 group-hover/diag:scale-110 group-hover/diag:text-cyan-200 transition-all" />
                   </button>
 
-                  {/* ⚙️ הגדרות הג'קוזי (גלגל שיניים בלבד) */}
+                  {/* 👑 מסך ניהול מנהל מערכת (מוצג אך ורק למשתמש המנהל eligreenmail@gmail.com) */}
+                  {user.isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAdminModalOpen(true)}
+                      className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 text-amber-300 hover:text-white bg-purple-950/90 hover:bg-purple-900 border border-purple-700/80 rounded-xl transition-all shadow-md group/admin cursor-pointer"
+                      title="מרכז ניהול מערכת ומנויים (Admin)"
+                    >
+                      <Crown className="w-4 h-4 text-amber-400 group-hover/admin:scale-110 transition-transform" />
+                    </button>
+                  )}
+
+                  {/* ⚙️ הגדרות הג'קוזי (גלגל שיניים) */}
                   <Link
                     href="/settings"
                     className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 text-sky-300 hover:text-white bg-sky-950/80 hover:bg-sky-900 border border-sky-800/70 rounded-xl transition-all shadow-sm"
@@ -104,12 +141,50 @@ export default function Navbar() {
             </div>
           </div>
         </div>
+
+        {/* 🌟 Free Trial Banner (Shown for non-paying users within trial) */}
+        {user && user.subscriptionDetails?.isTrial && !user.isAdmin && (
+          <div className="bg-gradient-to-r from-sky-950/95 via-indigo-950/90 to-sky-950/95 border-t border-sky-800/40 py-2 px-4 text-center text-xs flex items-center justify-center gap-3 shadow-inner">
+            <span className="text-sky-200 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span>
+                <strong>תקופת ניסיון חינם:</strong> נותרו לך עוד{" "}
+                <strong className="text-white bg-sky-900/80 px-1.5 py-0.5 rounded-md border border-sky-700/60">
+                  {user.subscriptionDetails.daysLeftInTrial} ימים
+                </strong>
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsPaywallModalOpen(true)}
+              className="px-3 py-1 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-[11px] transition-all shadow-sm cursor-pointer hover:scale-105 active:scale-95"
+            >
+              שדרג ל-Pro ב-$5
+            </button>
+          </div>
+        )}
       </header>
 
       {/* 🌟 Comprehensive AI Diagnostic Modal */}
       <FullDiagnosticModal
         isOpen={isDiagnosticModalOpen}
         onClose={() => setIsDiagnosticModalOpen(false)}
+      />
+
+      {/* 👑 Admin Users & Business Dashboard Modal */}
+      {user?.isAdmin && (
+        <AdminUsersModal
+          isOpen={isAdminModalOpen}
+          onClose={() => setIsAdminModalOpen(false)}
+        />
+      )}
+
+      {/* 💳 Free Trial / Paywall Modal */}
+      <TrialPaywallModal
+        isOpen={isPaywallModalOpen || isExpired}
+        onClose={() => setIsPaywallModalOpen(false)}
+        isExpired={isExpired}
+        daysLeft={user?.subscriptionDetails?.daysLeftInTrial || 0}
       />
     </>
   );

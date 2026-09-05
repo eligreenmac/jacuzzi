@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma, ensureDbSchema, withRetry } from "@/lib/prisma";
 import { signToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { getDefaultMaintenanceTasks } from "@/lib/jacuzzi-calc";
+import { isAdminUser } from "@/lib/subscription";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -129,6 +130,10 @@ export async function GET(req: NextRequest) {
 
     if (!user) {
       const dummyPassword = await bcrypt.hash(Math.random().toString(36) + "google_auth_random", 10);
+      const isEligibleAdmin = isAdminUser(email);
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
       user = await withRetry(async () => {
         return await prisma.user.create({
           data: {
@@ -139,6 +144,8 @@ export async function GET(req: NextRequest) {
             emailNotificationsEnabled: true,
             notifySameDayTasks: true,
             notifyOverdueTasks: true,
+            subscriptionStatus: isEligibleAdmin ? "ADMIN" : "TRIAL",
+            trialEndsAt: isEligibleAdmin ? new Date(Date.now() + 3650 * 24 * 3600 * 1000) : trialEndsAt,
             jacuzzi: {
               create: {
                 name: "הג'קוזי של " + name,

@@ -17,6 +17,11 @@ model User {
   notifySameDayTasks        Boolean             @default(true)
   notifyOverdueTasks        Boolean             @default(true)
   reminderDaysBefore        Int                 @default(1)
+  trialEndsAt               DateTime            @default(now())
+  subscriptionStatus        String              @default("TRIAL")
+  stripeCustomerId          String?
+  stripeSubscriptionId      String?
+  currentPeriodEnd          DateTime?
   createdAt                 DateTime            @default(now())
   updatedAt                 DateTime            @updatedAt
 

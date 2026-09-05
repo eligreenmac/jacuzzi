@@ -24,6 +24,9 @@ import {
   Trash2,
   AlertTriangle,
   X,
+  Crown,
+  CreditCard,
+  Lock,
 } from "lucide-react";
 import {
   ALL_TEST_STRIP_PARAMS,
@@ -51,6 +54,10 @@ export default function SettingsPage() {
     notificationEmail: "",
   });
 
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -71,6 +78,7 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         const j = data.user.jacuzzi;
+        setSubscriptionInfo(data.user.subscriptionDetails || null);
         setFormData({
           name: j?.name || "הג'קוזי שלי",
           brand: j?.brand || "",
@@ -440,6 +448,116 @@ export default function SettingsPage() {
                     </a>
                   )}
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 💳 Subscription & Billing Section */}
+        <div className="bg-[#0e1823]/90 border border-sky-800/50 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
+          <div className="flex items-center justify-between gap-3 border-b border-sky-900/40 pb-3">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-sky-400" />
+              <span>מנוי ותשלומים (Jacuzzi AI Pro)</span>
+            </h2>
+            {subscriptionInfo && (
+              <span className={`px-3 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${subscriptionInfo.badgeColor}`}>
+                {subscriptionInfo.isAdmin && <Crown className="w-3.5 h-3.5 text-amber-400" />}
+                {subscriptionInfo.isPaying && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                {subscriptionInfo.isTrial && <Clock className="w-3.5 h-3.5 text-sky-400" />}
+                <span>{subscriptionInfo.formattedStatus}</span>
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-xl text-xs text-slate-300">
+              {subscriptionInfo?.isAdmin ? (
+                <p className="leading-relaxed">
+                  הינך מוגדר כ-<strong>מנהל המערכת</strong> ונהנה מגישה חופשית ובלתי מוגבלת לתמיד ללא צורך במנוי או תשלום.
+                </p>
+              ) : subscriptionInfo?.status === "ACTIVE" ? (
+                <div className="space-y-1">
+                  <p className="font-bold text-emerald-300 text-sm">המנוי שלך פעיל ומשולם ($5.00 לחודש)</p>
+                  <p className="text-slate-400">
+                    גישה מלאה לכל תכונות ה-AI, אבחונים ללא הגבלה, עדכוני מלאי והתראות.
+                    {subscriptionInfo.currentPeriodEnd && (
+                      <span className="block pt-0.5">
+                        מועד החידוש הבא: <strong>{new Date(subscriptionInfo.currentPeriodEnd).toLocaleDateString("he-IL")}</strong>
+                      </span>
+                    )}
+                  </p>
+                </div>
+              ) : subscriptionInfo?.status === "TRIAL" ? (
+                <div className="space-y-1">
+                  <p className="font-bold text-sky-300 text-sm">
+                    תקופת ניסיון חינם פעילה: נותרו לך עוד <strong>{subscriptionInfo.daysLeftInTrial} ימים</strong>
+                  </p>
+                  <p className="text-slate-400">
+                    לאחר סיום תקופת הניסיון, השימוש במערכת וב-AI יימשך בעלות של $5.00 לחודש בלבד. ניתן לשדרג כבר עכשיו כדי להבטיח רציפות.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <p className="font-bold text-rose-300 text-sm">תקופת הניסיון החינמית הסתיימה</p>
+                  <p className="text-slate-400">
+                    שדרג עכשיו למנוי Pro ב-$5 לחודש כדי להמשיך להשתמש באבחוני AI, חישוב מינונים ושליטה בג'קוזי.
+                  </p>
+                </div>
+              )}
+
+              {billingError && (
+                <div className="p-2.5 rounded-xl bg-rose-950 border border-rose-800 text-rose-300 text-xs font-bold">
+                  {billingError}
+                </div>
+              )}
+            </div>
+
+            <div className="shrink-0 flex items-center gap-2">
+              {subscriptionInfo?.isAdmin ? null : subscriptionInfo?.status === "ACTIVE" ? (
+                <button
+                  type="button"
+                  disabled={billingLoading}
+                  onClick={async () => {
+                    setBillingLoading(true);
+                    setBillingError(null);
+                    try {
+                      const res = await fetch("/api/billing/portal", { method: "POST" });
+                      const d = await res.json();
+                      if (!res.ok) throw new Error(d.error || "שגיאה בפתיחת פורטל Stripe");
+                      if (d.url) window.location.href = d.url;
+                    } catch (err: any) {
+                      setBillingError(err.message);
+                      setBillingLoading(false);
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm border border-slate-700 flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <CreditCard className="w-4 h-4 text-sky-400" />
+                  <span>{billingLoading ? "טוען פורטל..." : "ניהול מנוי וחשבוניות (Stripe)"}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={billingLoading}
+                  onClick={async () => {
+                    setBillingLoading(true);
+                    setBillingError(null);
+                    try {
+                      const res = await fetch("/api/billing/checkout", { method: "POST" });
+                      const d = await res.json();
+                      if (!res.ok) throw new Error(d.error || "שגיאה ביצירת קישור לתשלום");
+                      if (d.url) window.location.href = d.url;
+                    } catch (err: any) {
+                      setBillingError(err.message);
+                      setBillingLoading(false);
+                    }
+                  }}
+                  className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-sky-950/70 flex items-center gap-2 transition-all hover:scale-105 cursor-pointer"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>{billingLoading ? "מעביר ל-Stripe..." : "שדרג ל-Pro ב-$5/חודש"}</span>
+                </button>
               )}
             </div>
           </div>

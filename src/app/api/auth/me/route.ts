@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { prisma, ensureDbSchema, withRetry } from "@/lib/prisma";
+import { getUserSubscriptionInfo, isAdminUser } from "@/lib/subscription";
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,7 +36,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "משתמש לא נמצא" }, { status: 404 });
     }
 
-    const { passwordHash: _, ...safeUser } = fullUserData;
+    const { passwordHash: _, ...safeUser } = fullUserData as any;
+
+    // Attach subscription and admin details
+    safeUser.isAdmin = isAdminUser(safeUser.email);
+    safeUser.subscriptionDetails = getUserSubscriptionInfo(safeUser);
 
     // Ensure no purchase entries leak into maintenance diary
     safeUser.diaryEntries = (safeUser.diaryEntries || []).filter((d: any) => {

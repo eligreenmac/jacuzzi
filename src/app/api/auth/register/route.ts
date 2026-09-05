@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, signToken, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { getDefaultMaintenanceTasks } from "@/lib/jacuzzi-calc";
+import { isAdminUser } from "@/lib/subscription";
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,6 +25,9 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hashPassword(password);
+    const isEligibleAdmin = isAdminUser(normalizedEmail);
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
     // Create User, Jacuzzi, and initial maintenance tasks
     const user = await prisma.user.create({
@@ -33,6 +37,8 @@ export async function POST(req: NextRequest) {
         name: name || "משתמש ג'קוזי",
         notificationEmail: normalizedEmail,
         emailNotificationsEnabled: true,
+        subscriptionStatus: isEligibleAdmin ? "ADMIN" : "TRIAL",
+        trialEndsAt: isEligibleAdmin ? new Date(Date.now() + 3650 * 24 * 3600 * 1000) : trialEndsAt,
         jacuzzi: {
           create: {
             name: jacuzziName || "הג'קוזי שלי",
