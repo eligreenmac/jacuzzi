@@ -327,6 +327,18 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const [showWelcomeBlessing, setShowWelcomeBlessing] = useState(false);
   const [activeTabGuide, setActiveTabGuide] = useState<number | null>(null);
 
+  const checkIsBrandNewUser = (userObj: any) => {
+    if (!userObj) return false;
+    const hasLogs = Array.isArray(userObj.waterLogs) && userObj.waterLogs.length > 0;
+    const hasDiary = Array.isArray(userObj.diaryEntries) && userObj.diaryEntries.length > 0;
+    const hasDoneTask = Array.isArray(userObj.tasks) && userObj.tasks.some((t: any) => Boolean(t.lastDoneDate));
+    const hasUsedChem = Array.isArray(userObj.chemicals) && userObj.chemicals.some((c: any) => Boolean(c.lastUsedDate));
+    return !hasLogs && !hasDiary && !hasDoneTask && !hasUsedChem;
+  };
+
+  const getWelcomeStorageKey = (userId?: string) => userId ? `has_seen_welcome_blessing_${userId}` : "has_seen_welcome_blessing";
+  const getTabGuideStorageKey = (tabIdx: number, userId?: string) => userId ? `has_seen_tab_guide_${userId}_${tabIdx}` : `has_seen_tab_guide_${tabIdx}`;
+
   // App Data for live summary cards
   const [data, setData] = useState<any>(null);
   const [loadingData, setLoadingData] = useState(true);
@@ -341,14 +353,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
         setData(json.user);
 
         // Check if new user who never entered data
-        const isBrandNew =
-          (json.user?.waterLogs || []).length === 0 &&
-          (json.user?.diaryEntries || []).length === 0 &&
-          (json.user?.tasks || []).every((t: any) => !t.lastDoneDate) &&
-          !json.user?.jacuzzi?.lastRefillDate;
+        const isBrandNew = checkIsBrandNewUser(json.user);
 
         if (typeof window !== "undefined" && isBrandNew) {
-          const hasSeenWelcome = localStorage.getItem("has_seen_welcome_blessing");
+          const welcomeKey = getWelcomeStorageKey(json.user?.id);
+          const hasSeenWelcome = localStorage.getItem(welcomeKey);
           if (!hasSeenWelcome) {
             setShowWelcomeBlessing(true);
           }
@@ -391,14 +400,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   useEffect(() => {
     if (!data || showWelcomeBlessing) return;
     if (typeof window !== "undefined") {
-      const isBrandNew =
-        (data.waterLogs || []).length === 0 &&
-        (data.diaryEntries || []).length === 0 &&
-        (data.tasks || []).every((t: any) => !t.lastDoneDate) &&
-        !data.jacuzzi?.lastRefillDate;
+      const isBrandNew = checkIsBrandNewUser(data);
 
       if (isBrandNew) {
-        const tabKey = `has_seen_tab_guide_${visualActiveIndex}`;
+        const tabKey = getTabGuideStorageKey(visualActiveIndex, data?.id);
         const hasSeenGuide = localStorage.getItem(tabKey);
         if (!hasSeenGuide) {
           setActiveTabGuide(visualActiveIndex);
@@ -410,8 +415,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   const handleDismissWelcome = () => {
     setShowWelcomeBlessing(false);
     if (typeof window !== "undefined") {
+      if (data?.id) {
+        localStorage.setItem(getWelcomeStorageKey(data.id), "true");
+      }
       localStorage.setItem("has_seen_welcome_blessing", "true");
-      const tabKey = `has_seen_tab_guide_${visualActiveIndex}`;
+      const tabKey = getTabGuideStorageKey(visualActiveIndex, data?.id);
       if (!localStorage.getItem(tabKey)) {
         setActiveTabGuide(visualActiveIndex);
       }
@@ -420,6 +428,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   const handleDismissTabGuide = () => {
     if (activeTabGuide !== null && typeof window !== "undefined") {
+      if (data?.id) {
+        localStorage.setItem(getTabGuideStorageKey(activeTabGuide, data.id), "true");
+      }
       localStorage.setItem(`has_seen_tab_guide_${activeTabGuide}`, "true");
     }
     setActiveTabGuide(null);
@@ -981,6 +992,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     return diffDays < 0 ? "text-rose-400 font-bold" : "text-emerald-400 font-semibold";
   };
 
+  const isBrandNew = checkIsBrandNewUser(data);
+
   // 1. Water Test Dates
   const waterTestTask = tasks.find((t: any) =>
     t.title?.includes("בדיקת איכות מים") || t.title?.includes("בדיקת מים") || t.title?.includes("מקלון")
@@ -991,10 +1004,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     : waterTestTask?.lastDoneDate
     ? new Date(waterTestTask.lastDoneDate)
     : null;
-  const nextWaterTestDate = waterTestTask?.nextDueDate
-    ? new Date(waterTestTask.nextDueDate)
-    : lastWaterTestDate
-    ? new Date(lastWaterTestDate.getTime() + waterTestFreqDays * 24 * 3600 * 1000)
+  const nextWaterTestDate = lastWaterTestDate
+    ? (waterTestTask?.nextDueDate
+        ? new Date(waterTestTask.nextDueDate)
+        : new Date(lastWaterTestDate.getTime() + waterTestFreqDays * 24 * 3600 * 1000))
     : null;
 
   // 2. Sanitizer Dates (חיטוי שבועי)
@@ -1009,10 +1022,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     : sanitizerChem?.lastUsedDate
     ? new Date(sanitizerChem.lastUsedDate)
     : null;
-  const nextSanitizerDate = sanitizerTask?.nextDueDate
-    ? new Date(sanitizerTask.nextDueDate)
-    : lastSanitizerDate
-    ? new Date(lastSanitizerDate.getTime() + (sanitizerTask?.frequencyDays || 7) * 24 * 3600 * 1000)
+  const nextSanitizerDate = lastSanitizerDate
+    ? (sanitizerTask?.nextDueDate
+        ? new Date(sanitizerTask.nextDueDate)
+        : new Date(lastSanitizerDate.getTime() + (sanitizerTask?.frequencyDays || 7) * 24 * 3600 * 1000))
     : null;
 
   // 3. Partial Refill Dates & Percentage
@@ -1042,7 +1055,9 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   }
 
   // 4. Full Refill Dates
-  const lastFullRefillDate = jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : null;
+  const lastFullRefillDate = isBrandNew
+    ? null
+    : (jacuzzi?.lastRefillDate ? new Date(jacuzzi.lastRefillDate) : null);
   const daysSinceRefill = lastFullRefillDate
     ? Math.max(0, Math.floor((Date.now() - lastFullRefillDate.getTime()) / (1000 * 60 * 60 * 24)))
     : null;
@@ -1103,10 +1118,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     t.title?.includes("שטיפת פילטר") || (t.title?.includes("פילטר") && !t.title?.includes("השרי") && !t.title?.includes("החלפ"))
   );
   const lastFilterRinseDate = filterRinseTask?.lastDoneDate ? new Date(filterRinseTask.lastDoneDate) : null;
-  const nextFilterRinseDate = filterRinseTask?.nextDueDate
-    ? new Date(filterRinseTask.nextDueDate)
-    : lastFilterRinseDate
-    ? new Date(lastFilterRinseDate.getTime() + (filterRinseTask?.frequencyDays || 7) * 24 * 3600 * 1000)
+  const nextFilterRinseDate = lastFilterRinseDate
+    ? (filterRinseTask?.nextDueDate
+        ? new Date(filterRinseTask.nextDueDate)
+        : new Date(lastFilterRinseDate.getTime() + (filterRinseTask?.frequencyDays || 7) * 24 * 3600 * 1000))
     : null;
 
   // 7. Waterline & Shell Cleaning Dates
@@ -1114,10 +1129,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     t.title?.includes("קו מים") || t.title?.includes("דפנ") || t.title?.includes("דופן")
   );
   const lastWaterlineDate = waterlineTask?.lastDoneDate ? new Date(waterlineTask.lastDoneDate) : null;
-  const nextWaterlineDate = waterlineTask?.nextDueDate
-    ? new Date(waterlineTask.nextDueDate)
-    : lastWaterlineDate
-    ? new Date(lastWaterlineDate.getTime() + (waterlineTask?.frequencyDays || 7) * 24 * 3600 * 1000)
+  const nextWaterlineDate = lastWaterlineDate
+    ? (waterlineTask?.nextDueDate
+        ? new Date(waterlineTask.nextDueDate)
+        : new Date(lastWaterlineDate.getTime() + (waterlineTask?.frequencyDays || 7) * 24 * 3600 * 1000))
     : null;
 
   // 8. Cover Cleaning Dates
@@ -1125,10 +1140,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     t.title?.includes("כיסוי") || t.title?.includes("מכסה")
   );
   const lastCoverDate = coverTask?.lastDoneDate ? new Date(coverTask.lastDoneDate) : null;
-  const nextCoverDate = coverTask?.nextDueDate
-    ? new Date(coverTask.nextDueDate)
-    : lastCoverDate
-    ? new Date(lastCoverDate.getTime() + (coverTask?.frequencyDays || 30) * 24 * 3600 * 1000)
+  const nextCoverDate = lastCoverDate
+    ? (coverTask?.nextDueDate
+        ? new Date(coverTask.nextDueDate)
+        : new Date(lastCoverDate.getTime() + (coverTask?.frequencyDays || 30) * 24 * 3600 * 1000))
     : null;
 
   // 9. Pipe Line Cleaning (ניקוי צנרת)
@@ -1137,13 +1152,13 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   );
   const lastPipeCleanDate = pipeCleanTask?.lastDoneDate
     ? new Date(pipeCleanTask.lastDoneDate)
-    : jacuzzi?.lastDeepCleanDate
+    : (jacuzzi?.lastDeepCleanDate && !isBrandNew)
     ? new Date(jacuzzi.lastDeepCleanDate)
     : null;
-  const nextPipeCleanDate = pipeCleanTask?.nextDueDate
-    ? new Date(pipeCleanTask.nextDueDate)
-    : lastPipeCleanDate
-    ? new Date(lastPipeCleanDate.getTime() + (pipeCleanTask?.frequencyDays || 90) * 24 * 3600 * 1000)
+  const nextPipeCleanDate = lastPipeCleanDate
+    ? (pipeCleanTask?.nextDueDate
+        ? new Date(pipeCleanTask.nextDueDate)
+        : new Date(lastPipeCleanDate.getTime() + (pipeCleanTask?.frequencyDays || 90) * 24 * 3600 * 1000))
     : null;
 
   // 10. Filter Replacement (החלפת פילטר)
@@ -1151,10 +1166,10 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
     t.title?.includes("החלפת פילטר") || (t.title?.includes("פילטר") && t.title?.includes("החלפ"))
   );
   const lastFilterReplaceDate = filterReplaceTask?.lastDoneDate ? new Date(filterReplaceTask.lastDoneDate) : null;
-  const nextFilterReplaceDate = filterReplaceTask?.nextDueDate
-    ? new Date(filterReplaceTask.nextDueDate)
-    : lastFilterReplaceDate
-    ? new Date(lastFilterReplaceDate.getTime() + (filterReplaceTask?.frequencyDays || 180) * 24 * 3600 * 1000)
+  const nextFilterReplaceDate = lastFilterReplaceDate
+    ? (filterReplaceTask?.nextDueDate
+        ? new Date(filterReplaceTask.nextDueDate)
+        : new Date(lastFilterReplaceDate.getTime() + (filterReplaceTask?.frequencyDays || 180) * 24 * 3600 * 1000))
     : null;
 
   // Active Pending Tasks & Low Stock Chemicals
@@ -1336,10 +1351,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
 
   const customScheduledEvents = customTasks.map((t: any) => {
     const lastDone = t.lastDoneDate ? new Date(t.lastDoneDate) : null;
-    const due = t.nextDueDate
-      ? new Date(t.nextDueDate)
-      : lastDone
-      ? new Date(lastDone.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000)
+    const due = lastDone
+      ? (t.nextDueDate ? new Date(t.nextDueDate) : new Date(lastDone.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000))
       : null;
 
     return {
@@ -2045,10 +2058,8 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
               {/* Custom Jacuzzi Equipment Routines */}
               {customTasks.map((t: any) => {
                 const lastDate = t.lastDoneDate ? new Date(t.lastDoneDate) : null;
-                const nextDate = t.nextDueDate
-                  ? new Date(t.nextDueDate)
-                  : lastDate
-                  ? new Date(lastDate.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000)
+                const nextDate = lastDate
+                  ? (t.nextDueDate ? new Date(t.nextDueDate) : new Date(lastDate.getTime() + (t.frequencyDays || 7) * 24 * 3600 * 1000))
                   : null;
 
                 return (
