@@ -43,6 +43,32 @@ export default function Navbar() {
   const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isPaywallModalOpen, setIsPaywallModalOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const handleDirectCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "שגיאה ביצירת קישור לתשלום");
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("לא התקבל קישור תשלום");
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "שגיאה בחיבור לשירות התשלומים");
+      setCheckoutLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -156,10 +182,18 @@ export default function Navbar() {
             </span>
             <button
               type="button"
-              onClick={() => setIsPaywallModalOpen(true)}
-              className="px-3 py-1 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-[11px] transition-all shadow-sm cursor-pointer hover:scale-105 active:scale-95"
+              onClick={handleDirectCheckout}
+              disabled={checkoutLoading}
+              className="px-3.5 py-1 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-[11px] transition-all shadow-sm cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
             >
-              שדרג ל-Pro ב-$5
+              {checkoutLoading ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>מעביר לתשלום...</span>
+                </>
+              ) : (
+                <span>קנה מנוי</span>
+              )}
             </button>
           </div>
         )}

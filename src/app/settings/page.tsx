@@ -556,7 +556,7 @@ export default function SettingsPage() {
                   className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-sky-950/70 flex items-center gap-2 transition-all hover:scale-105 cursor-pointer"
                 >
                   <CreditCard className="w-4 h-4" />
-                  <span>{billingLoading ? "מעביר ל-Stripe..." : "שדרג ל-Pro ב-$5/חודש"}</span>
+                  <span>{billingLoading ? "מעביר לתשלום..." : "קנה מנוי ($5/חודש)"}</span>
                 </button>
               )}
             </div>
