@@ -2179,7 +2179,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                          <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
                             שטיפת פילטר
                           </span>
                           <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
@@ -2216,7 +2216,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                          <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
                             ניקוי דפנות וקו מים
                           </span>
                           <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
@@ -2253,7 +2253,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                          <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
                             ניקוי ואוורור כיסוי
                           </span>
                           <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
@@ -2290,7 +2290,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                          <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
                             ניקוי צנרת
                           </span>
                           <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
@@ -2327,7 +2327,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                         className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors">
+                          <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
                             החלפת פילטר (סנן חדש)
                           </span>
                           <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
@@ -2379,7 +2379,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                 className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="font-extrabold text-white text-sm sm:text-base group-hover/item:text-sky-300 transition-colors truncate">
+                                  <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors truncate">
                                     {t.title}
                                   </span>
                                   <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center shrink-0">
@@ -2715,14 +2715,11 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                     {/* Section 4: שגרת טיפולי מים */}
                     {sectionId === "scheduled-treatments" && (
                       <div className="space-y-3 pt-1 border-t border-sky-900/20">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-white flex items-center gap-1.5">
-                            <Droplets className="w-3.5 h-3.5 text-sky-400" />
-                            <span>שגרת טיפולי מים:</span>
-                          </span>
+                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <span>שגרת טיפולי מים:</span>
                         </div>
 
-                        {/* List of Water Treatments with Both Last & Next Dates */}
+                        {/* List of Water Treatments */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {/* Item 1: בדיקת איכות מים */}
                           <div
@@ -2742,29 +2739,20 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                 currentNextDueDate: nextWaterTestDate ? nextWaterTestDate.toISOString() : null,
                               });
                             }}
-                            className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                            className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                                <FlaskConical className="w-3.5 h-3.5 text-sky-400" />
-                                <span>בדיקת איכות מים (מקלון)</span>
+                              <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
+                                בדיקת איכות מים (מקלון)
                               </span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
-                                <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                                <span>כל {waterTestFreqDays} ימים</span>
+                              <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                                <Edit2 className="w-3.5 h-3.5" />
                               </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
-                              <div>
-                                <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
-                                <span className="text-white font-semibold">{formatDateDisplay(lastWaterTestDate)}</span>{" "}
-                                <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastWaterTestDate, true)}</span>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                                <span className={`font-bold ${getDueDateColorClass(nextWaterTestDate)}`}>{formatDueDateDisplay(nextWaterTestDate)}</span>{" "}
-                                <span className={`text-[10px] ${getDueDateColorClass(nextWaterTestDate)}`}>{getRelativeDaysDisplay(nextWaterTestDate, false)}</span>
-                              </div>
+                            <div className="text-xs pt-1 border-t border-sky-900/20">
+                              <span className={`font-bold ${getDueDateColorClass(nextWaterTestDate)}`}>
+                                {formatNextDueDaysOnly(nextWaterTestDate)}
+                              </span>
                             </div>
                           </div>
 
@@ -2786,29 +2774,20 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                 currentNextDueDate: nextSanitizerDate ? nextSanitizerDate.toISOString() : null,
                               });
                             }}
-                            className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                            className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                                <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-                                <span>חיטוי שבועי</span>
+                              <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
+                                חיטוי שבועי
                               </span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
-                                <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                                <span>כל {sanitizerTask?.frequencyDays || 7} ימים</span>
+                              <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                                <Edit2 className="w-3.5 h-3.5" />
                               </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
-                              <div>
-                                <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
-                                <span className="text-white font-semibold">{formatDateDisplay(lastSanitizerDate)}</span>{" "}
-                                <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastSanitizerDate, true)}</span>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                                <span className={`font-bold ${getDueDateColorClass(nextSanitizerDate)}`}>{formatDueDateDisplay(nextSanitizerDate)}</span>{" "}
-                                <span className={`text-[10px] ${getDueDateColorClass(nextSanitizerDate)}`}>{getRelativeDaysDisplay(nextSanitizerDate, false)}</span>
-                              </div>
+                            <div className="text-xs pt-1 border-t border-sky-900/20">
+                              <span className={`font-bold ${getDueDateColorClass(nextSanitizerDate)}`}>
+                                {formatNextDueDaysOnly(nextSanitizerDate)}
+                              </span>
                             </div>
                           </div>
 
@@ -2828,29 +2807,20 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                 currentNextDueDate: nextPartialRefillDate ? nextPartialRefillDate.toISOString() : null,
                               });
                             }}
-                            className="bg-[#080e14]/90 p-3.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
+                            className="bg-[#080e14]/90 p-4 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 hover:bg-sky-950/40 transition-all space-y-2 cursor-pointer group/item"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 group-hover/item:text-sky-300 transition-colors">
-                                <Waves className="w-3.5 h-3.5 text-sky-400" />
-                                <span>החלפת מים חלקית ({latestPartialPercent}%)</span>
+                              <span className="font-black text-white text-base sm:text-lg group-hover/item:text-sky-300 transition-colors">
+                                החלפת מים חלקית ({latestPartialPercent}%)
                               </span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-sky-950 text-sky-200 border border-sky-800/60 flex items-center gap-1">
-                                <Edit2 className="w-2.5 h-2.5 opacity-60" />
-                                <span>כל 30 ימים</span>
+                              <span className="p-1.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800/60 text-sky-300 hover:text-white transition-all shadow-sm group-hover/item:border-sky-500/80 flex items-center justify-center">
+                                <Edit2 className="w-3.5 h-3.5" />
                               </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-sky-900/20">
-                              <div>
-                                <span className="text-slate-400 block text-[10px]">בוצע לאחרונה:</span>
-                                <span className="text-white font-semibold">{formatDateDisplay(lastPartialRefillDate)}</span>{" "}
-                                <span className="text-slate-400 text-[10px]">{getRelativeDaysDisplay(lastPartialRefillDate, true)}</span>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[10px]">ביצוע הבא:</span>
-                                <span className={`font-bold ${getDueDateColorClass(nextPartialRefillDate)}`}>{formatDueDateDisplay(nextPartialRefillDate)}</span>{" "}
-                                <span className={`text-[10px] ${getDueDateColorClass(nextPartialRefillDate)}`}>{getRelativeDaysDisplay(nextPartialRefillDate, false)}</span>
-                              </div>
+                            <div className="text-xs pt-1 border-t border-sky-900/20">
+                              <span className={`font-bold ${getDueDateColorClass(nextPartialRefillDate)}`}>
+                                {formatNextDueDaysOnly(nextPartialRefillDate)}
+                              </span>
                             </div>
                           </div>
                         </div>
