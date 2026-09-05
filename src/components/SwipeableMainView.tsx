@@ -272,7 +272,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
   // 🌟 Category Drag & Drop Reordering Across Tabs
   const DEFAULT_CARD_0_ORDER = ["upcoming-tasks", "water-status", "water-age", "chemical-inventory"];
   const DEFAULT_CARD_1_ORDER = ["filter-wash", "waterline-clean", "cover-clean", "deep-clean", "filter-replace", "custom-routines"];
-  const DEFAULT_CARD_2_ORDER = ["water-quality", "water-age", "strip-settings", "scheduled-treatments"];
+  const DEFAULT_CARD_2_ORDER = ["water-quality", "strip-settings", "scheduled-treatments"];
 
   const [card0Order, setCard0Order] = useState<string[]>(DEFAULT_CARD_0_ORDER);
   const [card1Order, setCard1Order] = useState<string[]>(DEFAULT_CARD_1_ORDER);
@@ -2662,28 +2662,6 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                       </div>
                     )}
 
-                    {/* Section 2: גיל המים הנוכחי */}
-                    {sectionId === "water-age" && (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenPageId("settings");
-                        }}
-                        className="bg-[#080e14]/90 hover:bg-sky-950/40 px-3.5 py-2.5 rounded-2xl border border-sky-900/30 hover:border-sky-500/60 transition-all flex items-center justify-between text-xs cursor-pointer group/age"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-300 group-hover/age:text-white transition-colors">
-                            גיל המים הנוכחי:{" "}
-                            <strong className="text-white">
-                              {daysSinceRefill !== null ? `${daysSinceRefill} ימים` : "ממתין למילוי ראשון"}
-                            </strong>
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-sky-300/90 font-medium">
-                          {daysUntilNextRefill !== null ? `ריקון מלא בעוד ${daysUntilNextRefill} יום` : "ללא תאריך יעד"}
-                        </span>
-                      </div>
-                    )}
 
                     {/* Section 3: הגדרות מקלון בדיקה */}
                     {sectionId === "strip-settings" && (

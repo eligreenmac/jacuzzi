@@ -71,9 +71,10 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "מים רעבים המאכלים רכיבי מתכת, אטמי גומי ודפנות אקריל.",
     dangerHigh: "משקעי אבנית קשים על גופי החימום (גורם לשריפת גוף חימום), חסימת מעברי מים ופילטרים.",
     defaultRanges: [
-      { id: "LOW", label: "LOW", max: 150 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 99 },
+      { id: "LOW", label: "LOW", min: 100, max: 149 },
       { id: "OK", label: "OK", min: 150, max: 250, isIdeal: true },
-      { id: "HIGH", label: "HIGH", min: 250, max: 400 },
+      { id: "HIGH", label: "HIGH", min: 251, max: 400 },
       { id: "VERY_HIGH", label: "VERY HIGH", min: 400 },
     ],
   },
@@ -89,8 +90,10 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "חוסר בופר קרבונטי מוביל לחוסר יציבות בערכי ה-pH.",
     dangerHigh: "רמת קרבונט גבוהה מעידה על pH בסיסי מדי וגורמת להיווצרות אבנית מהירה ועכירות חלבית.",
     defaultRanges: [
-      { id: "OK", label: "OK", max: 10, isIdeal: true },
-      { id: "HIGH", label: "HIGH", min: 10, max: 25 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0 },
+      { id: "LOW", label: "LOW", min: 0, max: 0 },
+      { id: "OK", label: "OK", min: 0, max: 10, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 10.1, max: 25 },
       { id: "VERY_HIGH", label: "VERY HIGH", min: 25 },
     ],
   },
@@ -105,6 +108,13 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     description: "בדיקת חום המים לבטיחות המתרחצים ומניעת מכת חום.",
     dangerLow: "מים קרים שאינם מתאימים לרחצה טיפולית ונוחות בספא.",
     dangerHigh: "סכנת מכת חום, התייבשות, ירידת לחץ דם חדה ועומס קיצוני על הלב (מעל 40°C אסור לשימוש).",
+    defaultRanges: [
+      { id: "VERY_LOW", label: "VERY LOW", max: 32 },
+      { id: "LOW", label: "LOW", min: 32.1, max: 35.9 },
+      { id: "OK", label: "OK", min: 36, max: 39, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 39.1, max: 40 },
+      { id: "VERY_HIGH", label: "VERY HIGH", min: 40 },
+    ],
   },
 
   // 2. מדדי חיטוי וסניטציה
@@ -139,9 +149,11 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "רמת כלור כללית נמוכה המעידה על חוסר חיטוי.",
     dangerHigh: "נוכחות כלורמינים גבוהה ('כלור קשור'), ריח חריף וצורב, גירוי קשה בעיניים וחוסר חיטוי פעיל (דורש שוק מיידי).",
     defaultRanges: [
-      { id: "LOW", label: "LOW", max: 2.0 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0.5 },
+      { id: "LOW", label: "LOW", min: 0.6, max: 1.9 },
       { id: "OK", label: "OK", min: 2.0, max: 4.0, isIdeal: true },
-      { id: "HIGH", label: "HIGH", min: 4.0 },
+      { id: "HIGH", label: "HIGH", min: 4.1, max: 8.0 },
+      { id: "VERY_HIGH", label: "VERY HIGH", min: 8.0 },
     ],
   },
   {
@@ -175,9 +187,10 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "התפרקות מהירה של הכלור מקרני השמש והחום (הג'קוזי נשאר ללא חיטוי).",
     dangerHigh: "נעילת כלור (Chlorine Lock) - הכלור מפסיק לחטא לחלוטין למרות כמות גבוהה במים, מחייב ריקון והחלפת מים.",
     defaultRanges: [
-      { id: "LOW", label: "LOW", max: 20 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 10 },
+      { id: "LOW", label: "LOW", min: 10, max: 19 },
       { id: "OK", label: "OK", min: 20, max: 50, isIdeal: true },
-      { id: "HIGH", label: "HIGH", min: 50, max: 100 },
+      { id: "HIGH", label: "HIGH", min: 51, max: 100 },
       { id: "VERY_HIGH", label: "VERY HIGH", min: 100 },
     ],
   },
@@ -193,9 +206,10 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "תא המלח לא מייצר כלור והמים נותרים ללא חיטוי.",
     dangerHigh: "קורוזיה מואצת של חלקי מתכת ומשאבות, שחיקה מוקדמת של תא המלח וטעם מלוח במים.",
     defaultRanges: [
-      { id: "LOW", label: "LOW", max: 1500 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 1000 },
+      { id: "LOW", label: "LOW", min: 1000, max: 1499 },
       { id: "OK", label: "OK", min: 1500, max: 2500, isIdeal: true },
-      { id: "HIGH", label: "HIGH", min: 2500, max: 3500 },
+      { id: "HIGH", label: "HIGH", min: 2501, max: 3500 },
       { id: "VERY_HIGH", label: "VERY HIGH", min: 3500 },
     ],
   },
@@ -213,8 +227,10 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "רמה אפסית - מעולה ותקין לחלוטין.",
     dangerHigh: "מזון להתפתחות אצות, עומס אורגני כבד הפוגע ביעילות החיטוי ועכירות מים עקשנית.",
     defaultRanges: [
-      { id: "OK", label: "OK", max: 10, isIdeal: true },
-      { id: "HIGH", label: "HIGH", min: 10, max: 50 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0 },
+      { id: "LOW", label: "LOW", min: 0, max: 0 },
+      { id: "OK", label: "OK", min: 0, max: 10, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 10.1, max: 50 },
       { id: "VERY_HIGH", label: "VERY HIGH", min: 50 },
     ],
   },
@@ -230,8 +246,10 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "תקין ונקי לחלוטין (0 ppm).",
     dangerHigh: "עומס ביולוגי חריף של פסולת מתרחצים, צריכת חמצן במים וסכנה בריאותית.",
     defaultRanges: [
-      { id: "OK", label: "OK", max: 0.1, isIdeal: true },
-      { id: "HIGH", label: "HIGH", min: 0.1, max: 1.0 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0 },
+      { id: "LOW", label: "LOW", min: 0, max: 0 },
+      { id: "OK", label: "OK", min: 0, max: 0.1, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 0.11, max: 1.0 },
       { id: "VERY_HIGH", label: "VERY HIGH", min: 1.0 },
     ],
   },
@@ -249,9 +267,11 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "היעדר ברזל מומס - תקין ונקי.",
     dangerHigh: "צביעת המים בגוון חלודה/חום, יצירת כתמים חומים בלתי הפיכים על גוף האקריל וסתימת פילטרים.",
     defaultRanges: [
-      { id: "OK", label: "תקין / נקי (0.0 - 0.2 ppm)", max: 0.2, isIdeal: true },
-      { id: "HIGH", label: "נוכחות ברזל (0.3 - 1.0 ppm)", min: 0.3, max: 1.0 },
-      { id: "VERY_HIGH", label: "ברזל גבוה (מעל 1.0 ppm)", min: 1.0 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0 },
+      { id: "LOW", label: "LOW", min: 0, max: 0 },
+      { id: "OK", label: "OK", min: 0, max: 0.2, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 0.21, max: 1.0 },
+      { id: "VERY_HIGH", label: "VERY HIGH", min: 1.0 },
     ],
   },
   {
@@ -266,9 +286,11 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "היעדר נחושת מומסת - תקין ונקי.",
     dangerHigh: "צביעת מי הג'קוזי והשיער בגוון ירוק-טורקיז, והעדה על קורוזיה חמורה של גוף החימום.",
     defaultRanges: [
-      { id: "OK", label: "תקין / נקי (0.0 - 0.2 ppm)", max: 0.2, isIdeal: true },
-      { id: "HIGH", label: "נוכחות נחושת (0.3 - 1.0 ppm)", min: 0.3, max: 1.0 },
-      { id: "VERY_HIGH", label: "נחושת גבוהה (מעל 1.0 ppm)", min: 1.0 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0 },
+      { id: "LOW", label: "LOW", min: 0, max: 0 },
+      { id: "OK", label: "OK", min: 0, max: 0.2, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 0.21, max: 1.0 },
+      { id: "VERY_HIGH", label: "VERY HIGH", min: 1.0 },
     ],
   },
   {
@@ -283,8 +305,11 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "תקין ונקי.",
     dangerHigh: "נוכחות מתכת כבדה המעידה על מים מזוהמים מצנרת ישנה, עלולה לגרום לגירוי בעור ולנזק מצטבר.",
     defaultRanges: [
-      { id: "OK", label: "תקין / אפס (0.0 ppm)", max: 0.05, isIdeal: true },
-      { id: "VERY_HIGH", label: "נוכחות כרום במים", min: 0.05 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0 },
+      { id: "LOW", label: "LOW", min: 0, max: 0 },
+      { id: "OK", label: "OK", min: 0, max: 0.05, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 0.051, max: 0.2 },
+      { id: "VERY_HIGH", label: "VERY HIGH", min: 0.2 },
     ],
   },
   {
@@ -299,8 +324,11 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "תקין ונקי לחלוטין.",
     dangerHigh: "מתכת רעילה ומסוכנת לבריאות! יש לרוקן את המים מיידית ולבדוק את מקור המילוי.",
     defaultRanges: [
-      { id: "OK", label: "תקין / אפס (0.0 ppm)", max: 0.01, isIdeal: true },
-      { id: "VERY_HIGH", label: "נוכחות עופרת (מסוכן!)", min: 0.01 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0 },
+      { id: "LOW", label: "LOW", min: 0, max: 0 },
+      { id: "OK", label: "OK", min: 0, max: 0.01, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 0.011, max: 0.05 },
+      { id: "VERY_HIGH", label: "VERY HIGH", min: 0.05 },
     ],
   },
   {
@@ -315,8 +343,11 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "תקין ונקי לחלוטין.",
     dangerHigh: "רעלן מסוכן ביותר! המים אסורים לכל שימוש או מגע.",
     defaultRanges: [
-      { id: "OK", label: "תקין / אפס (0.0 ppm)", max: 0.002, isIdeal: true },
-      { id: "VERY_HIGH", label: "נוכחות כספית (רעלן מסוכן!)", min: 0.002 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0 },
+      { id: "LOW", label: "LOW", min: 0, max: 0 },
+      { id: "OK", label: "OK", min: 0, max: 0.002, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 0.0021, max: 0.01 },
+      { id: "VERY_HIGH", label: "VERY HIGH", min: 0.01 },
     ],
   },
   {
@@ -331,9 +362,11 @@ export const ALL_TEST_STRIP_PARAMS: TestStripParamDef[] = [
     dangerLow: "רמה נמוכה (אינה פוגעת באיכות מי הרחצה).",
     dangerHigh: "ריכוז פלואוריד חריג ממי המקור, עלול לגרום לגירויים בריכוזים קיצוניים.",
     defaultRanges: [
-      { id: "OK", label: "תקין (0.0 - 1.5 ppm)", max: 1.5, isIdeal: true },
-      { id: "HIGH", label: "גבוה (1.6 - 4.0 ppm)", min: 1.6, max: 4.0 },
-      { id: "VERY_HIGH", label: "חריג מאוד (מעל 4.0 ppm)", min: 4.0 },
+      { id: "VERY_LOW", label: "VERY LOW", max: 0.2 },
+      { id: "LOW", label: "LOW", min: 0.2, max: 0.49 },
+      { id: "OK", label: "OK", min: 0.5, max: 1.5, isIdeal: true },
+      { id: "HIGH", label: "HIGH", min: 1.51, max: 4.0 },
+      { id: "VERY_HIGH", label: "VERY HIGH", min: 4.0 },
     ],
   },
 ];
@@ -404,7 +437,7 @@ export function getGenericDomain(
     if (val <= 8.0) return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
-  if (paramId === "chlorine") {
+  if (paramId === "chlorine" || paramId === "totalChlorine") {
     if (val < 0.5) return { id: "VERY_LOW", label: "VERY LOW", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
     if (val < 2.0) return { id: "LOW", label: "LOW", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     if (val <= 4.0) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
@@ -426,13 +459,10 @@ export function getGenericDomain(
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "carbonate") {
+    if (val <= 0) return { id: "LOW", label: "LOW", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     if (val <= 10) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
     if (val <= 25) return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
-  }
-  if (paramId === "totalChlorine") {
-    if (val <= 4.0) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
-    return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
   }
   if (paramId === "bromine") {
     if (val < 1.0) return { id: "VERY_LOW", label: "VERY LOW", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
@@ -442,19 +472,24 @@ export function getGenericDomain(
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "cya") {
+    if (val < 10) return { id: "VERY_LOW", label: "VERY LOW", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
     if (val < 20) return { id: "LOW", label: "LOW", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     if (val <= 50) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
     if (val <= 100) return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "salt") {
+    if (val < 1000) return { id: "VERY_LOW", label: "VERY LOW", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
     if (val < 1500) return { id: "LOW", label: "LOW", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     if (val <= 2500) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
-    return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val <= 3500) return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "waterTemp") {
-    if (val < 35) return { id: "LOW", label: "LOW", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
+    if (val < 32) return { id: "VERY_LOW", label: "VERY LOW", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 36) return { id: "LOW", label: "LOW", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     if (val <= 39) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 40) return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "nitrate") {
@@ -474,17 +509,22 @@ export function getGenericDomain(
   }
   if (paramId === "chromium") {
     if (val <= 0.05) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 0.2) return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "lead") {
     if (val <= 0.01) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 0.05) return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "mercury") {
     if (val <= 0.002) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
+    if (val <= 0.01) return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
   }
   if (paramId === "fluoride") {
+    if (val < 0.2) return { id: "VERY_LOW", label: "VERY LOW", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
+    if (val < 0.5) return { id: "LOW", label: "LOW", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     if (val <= 1.5) return { id: "OK", label: "OK", badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" };
     if (val <= 4.0) return { id: "HIGH", label: "HIGH", badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/20" };
     return { id: "VERY_HIGH", label: "VERY HIGH", badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/20" };
