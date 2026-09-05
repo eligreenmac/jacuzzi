@@ -2186,8 +2186,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
-                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                        <div className="text-xs pt-1 border-t border-sky-900/20">
                           <span className={`font-bold ${getDueDateColorClass(nextFilterRinseDate)}`}>
                             {formatNextDueDaysOnly(nextFilterRinseDate)}
                           </span>
@@ -2224,8 +2223,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
-                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                        <div className="text-xs pt-1 border-t border-sky-900/20">
                           <span className={`font-bold ${getDueDateColorClass(nextWaterlineDate)}`}>
                             {formatNextDueDaysOnly(nextWaterlineDate)}
                           </span>
@@ -2262,8 +2260,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
-                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                        <div className="text-xs pt-1 border-t border-sky-900/20">
                           <span className={`font-bold ${getDueDateColorClass(nextCoverDate)}`}>
                             {formatNextDueDaysOnly(nextCoverDate)}
                           </span>
@@ -2300,8 +2297,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
-                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                        <div className="text-xs pt-1 border-t border-sky-900/20">
                           <span className={`font-bold ${getDueDateColorClass(nextPipeCleanDate)}`}>
                             {formatNextDueDaysOnly(nextPipeCleanDate)}
                           </span>
@@ -2338,8 +2334,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                             <Edit2 className="w-3.5 h-3.5" />
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
-                          <span className="text-slate-400 font-medium">יעד הבא:</span>
+                        <div className="text-xs pt-1 border-t border-sky-900/20">
                           <span className={`font-bold ${getDueDateColorClass(nextFilterReplaceDate)}`}>
                             {formatNextDueDaysOnly(nextFilterReplaceDate)}
                           </span>
@@ -2391,8 +2386,7 @@ function SwipeableMainContent({ initialTab }: SwipeableMainViewProps) {
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-xs pt-1 border-t border-sky-900/20">
-                                  <span className="text-slate-400 font-medium">יעד הבא:</span>
+                                <div className="text-xs pt-1 border-t border-sky-900/20">
                                   <span className={`font-bold ${getDueDateColorClass(nextDate)}`}>
                                     {formatNextDueDaysOnly(nextDate)}
                                   </span>
